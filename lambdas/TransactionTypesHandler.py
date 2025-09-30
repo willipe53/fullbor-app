@@ -1,0 +1,305 @@
+import json
+import boto3
+import pymysql
+import os
+from datetime import datetime
+from botocore.exceptions import ClientError
+from urllib.parse import unquote
+
+
+def get_db_connection():
+    """Get database connection using secrets manager."""
+    try:
+        # Get secret from AWS Secrets Manager
+        secrets_client = boto3.client(
+            'secretsmanager', region_name='us-east-2')
+        secret_arn = os.environ.get('SECRET_ARN')
+
+        if not secret_arn:
+            raise Exception("SECRET_ARN environment variable not set")
+
+        response = secrets_client.get_secret_value(SecretId=secret_arn)
+        secret = json.loads(response['SecretString'])
+
+        connection = pymysql.connect(
+            host=secret['DB_HOST'],
+            user=secret['DB_USER'],
+            password=secret['DB_PASS'],
+            database=secret['DATABASE'],
+            connect_timeout=10,
+            read_timeout=10,
+            write_timeout=10
+        )
+        return connection
+    except Exception as e:
+        raise Exception(f"Failed to connect to database: {str(e)}")
+
+
+def get_user_id_from_sub(connection, current_user_id):
+    """
+    Get the user_id from the database based on the sub (Cognito user ID).
+    Returns None if user not found.
+    """
+    try:
+        if current_user_id == 'system':
+            return None
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM users WHERE sub = %s", (current_user_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Error getting user_id from sub: {e}")
+        return None
+
+
+def lambda_handler(event, context):
+    """
+    Handle transaction type operations for V2 API.
+    Returns data compliant with OpenAPI specification.
+    """
+
+    # Extract current user from headers (case-insensitive lookup)
+    headers = event.get('headers', {})
+    current_user_id = 'system'  # default
+    for key, value in headers.items():
+        if key.lower() == 'x-current-user-id':
+            current_user_id = value
+            break
+
+    # Determine operation based on HTTP method and path
+    http_method = event.get('httpMethod', 'GET')
+    path = event.get('path', '')
+    path_parameters = event.get('pathParameters') or {}
+    body = event.get('body', '{}')
+
+    connection = None
+    try:
+        # Get database connection
+        connection = get_db_connection()
+
+        if http_method == 'GET':
+            # Handle GET operations
+            if 'transaction_type_name' in path_parameters:
+                # Get single transaction type by name: /transaction-types/{transaction_type_name}
+                transaction_type_name = unquote(
+                    path_parameters['transaction_type_name'])
+
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT name, properties, update_date, updated_user_id
+                        FROM transaction_types
+                        WHERE name = %s
+                    """, (transaction_type_name,))
+                    result = cursor.fetchone()
+
+                    if not result:
+                        return {
+                            "statusCode": 404,
+                            "body": json.dumps({"error": "Transaction type not found"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                    # Map database fields to OpenAPI schema
+                    properties = json.loads(result[1]) if result[1] else {}
+
+                    response = {
+                        "transaction_type_name": result[0],
+                        "properties": properties,
+                        "update_date": result[2].isoformat() + "Z" if result[2] else None,
+                        "updated_by_user_name": str(result[3]) if result[3] else None
+                    }
+            else:
+                # List all transaction types: /transaction-types
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT name, properties, update_date, updated_user_id
+                        FROM transaction_types
+                        ORDER BY name
+                    """)
+                    results = cursor.fetchall()
+
+                    response = []
+                    for result in results:
+                        # Map database fields to OpenAPI schema
+                        properties = json.loads(result[1]) if result[1] else {}
+
+                        response.append({
+                            "transaction_type_name": result[0],
+                            "properties": properties,
+                            "update_date": result[2].isoformat() + "Z" if result[2] else None,
+                            "updated_by_user_name": str(result[3]) if result[3] else None
+                        })
+
+        elif http_method == 'POST':
+            # Handle POST operations: /transaction-types (create or upsert)
+            try:
+                request_data = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "Invalid JSON in request body"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            # Validate required fields
+            transaction_type_name = request_data.get('transaction_type_name')
+            if not transaction_type_name:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "transaction_type_name is required"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            # Get user ID for tracking (optional for GET, required for POST/PUT/DELETE)
+            user_id = get_user_id_from_sub(connection, current_user_id)
+
+            properties = request_data.get('properties', {})
+            properties_json = json.dumps(properties) if properties else None
+
+            with connection.cursor() as cursor:
+                # Check if transaction type already exists
+                cursor.execute(
+                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                existing = cursor.fetchone()
+
+                if existing:
+                    # Update existing transaction type
+                    cursor.execute("""
+                        UPDATE transaction_types 
+                        SET properties = %s, update_date = NOW(), updated_user_id = %s
+                        WHERE name = %s
+                    """, (properties_json, user_id, transaction_type_name))
+                    connection.commit()
+                    response = {
+                        "message": "Transaction type updated successfully"}
+                else:
+                    # Insert new transaction type
+                    cursor.execute("""
+                        INSERT INTO transaction_types (name, properties, updated_user_id)
+                        VALUES (%s, %s, %s)
+                    """, (transaction_type_name, properties_json, user_id))
+                    connection.commit()
+                    response = {
+                        "message": "Transaction type created successfully"}
+
+        elif http_method == 'PUT':
+            # Handle PUT operations: /transaction-types/{transaction_type_name} (update)
+            if 'transaction_type_name' not in path_parameters:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "transaction_type_name is required in path"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            try:
+                request_data = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "Invalid JSON in request body"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            transaction_type_name = unquote(
+                path_parameters['transaction_type_name'])
+
+            # Get user ID for tracking
+            user_id = get_user_id_from_sub(connection, current_user_id)
+
+            properties = request_data.get('properties', {})
+            properties_json = json.dumps(properties) if properties else None
+
+            with connection.cursor() as cursor:
+                # Check if transaction type exists
+                cursor.execute(
+                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                existing = cursor.fetchone()
+
+                if not existing:
+                    return {
+                        "statusCode": 404,
+                        "body": json.dumps({"error": "Transaction type not found"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Update transaction type
+                cursor.execute("""
+                    UPDATE transaction_types 
+                    SET properties = %s, update_date = NOW(), updated_user_id = %s
+                    WHERE name = %s
+                """, (properties_json, user_id, transaction_type_name))
+                connection.commit()
+                response = {"message": "Transaction type updated successfully"}
+
+        elif http_method == 'DELETE':
+            # Handle DELETE operations: /transaction-types/{transaction_type_name}
+            if 'transaction_type_name' not in path_parameters:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "transaction_type_name is required in path"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            transaction_type_name = unquote(
+                path_parameters['transaction_type_name'])
+
+            # Get user ID for tracking
+            user_id = get_user_id_from_sub(connection, current_user_id)
+
+            with connection.cursor() as cursor:
+                # Check if transaction type exists
+                cursor.execute(
+                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                existing = cursor.fetchone()
+
+                if not existing:
+                    return {
+                        "statusCode": 404,
+                        "body": json.dumps({"error": "Transaction type not found"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Delete transaction type
+                cursor.execute(
+                    "DELETE FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                connection.commit()
+                response = {"message": "Transaction type deleted successfully"}
+
+        else:
+            # Handle unsupported methods
+            return {
+                "statusCode": 405,
+                "body": json.dumps({"error": f"Method {http_method} not allowed for transaction types"}),
+                "headers": {"Content-Type": "application/json"}
+            }
+
+        connection.close()
+
+        # Return appropriate status code based on operation
+        status_code = 200
+        if http_method == 'POST':
+            status_code = 201
+        elif http_method == 'DELETE':
+            status_code = 204
+
+        return {
+            "statusCode": status_code,
+            "body": json.dumps(response) if response is not None else "",
+            "headers": {"Content-Type": "application/json"}
+        }
+
+    except Exception as e:
+        # Try to close connection if it exists
+        try:
+            if connection:
+                connection.close()
+        except:
+            pass
+
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
+            "headers": {"Content-Type": "application/json"}
+        }

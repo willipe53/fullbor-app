@@ -1,0 +1,552 @@
+import json
+import boto3
+import pymysql
+import os
+from datetime import datetime
+from botocore.exceptions import ClientError
+from urllib.parse import unquote
+
+
+def get_db_connection():
+    """Get database connection using secrets manager."""
+    try:
+        # Get secret from AWS Secrets Manager
+        secrets_client = boto3.client(
+            'secretsmanager', region_name='us-east-2')
+        secret_arn = os.environ.get('SECRET_ARN')
+
+        if not secret_arn:
+            raise Exception("SECRET_ARN environment variable not set")
+
+        response = secrets_client.get_secret_value(SecretId=secret_arn)
+        secret = json.loads(response['SecretString'])
+
+        connection = pymysql.connect(
+            host=secret['DB_HOST'],
+            user=secret['DB_USER'],
+            password=secret['DB_PASS'],
+            database=secret['DATABASE'],
+            connect_timeout=10,
+            read_timeout=10,
+            write_timeout=10
+        )
+        return connection
+    except Exception as e:
+        raise Exception(f"Failed to connect to database: {str(e)}")
+
+
+def get_user_id_from_sub(connection, current_user_id):
+    """
+    Get the user_id from the database based on the sub (Cognito user ID).
+    Returns None if user not found.
+    """
+    try:
+        if current_user_id == 'system':
+            return None
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM users WHERE sub = %s", (current_user_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Error getting user_id from sub: {e}")
+        return None
+
+
+def get_user_client_groups(connection, user_id):
+    """
+    Get all client group IDs that the user is affiliated with.
+    Returns a list of client_group_ids.
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT client_group_id 
+                FROM client_group_users 
+                WHERE user_id = %s
+            """, (user_id,))
+            results = cursor.fetchall()
+            return [row[0] for row in results]
+    except Exception as e:
+        print(f"Error getting user client groups: {e}")
+        return []
+
+
+def get_valid_user_ids_for_current_user(connection, current_user_id):
+    """
+    Get all user IDs that the current user is authorized to view/modify.
+    This includes all users in the same client groups as the current user.
+    Returns a list of user_ids.
+    """
+    try:
+        # Get current user's client groups
+        current_user_id_db = get_user_id_from_sub(connection, current_user_id)
+        if not current_user_id_db:
+            return []
+
+        user_client_groups = get_user_client_groups(
+            connection, current_user_id_db)
+        if not user_client_groups:
+            return []
+
+        # Get all user IDs that are in any of the current user's client groups
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT user_id 
+                FROM client_group_users 
+                WHERE client_group_id IN ({})
+            """.format(','.join(['%s'] * len(user_client_groups))),
+                user_client_groups)
+            results = cursor.fetchall()
+            return [row[0] for row in results]
+    except Exception as e:
+        print(f"Error getting valid user IDs: {e}")
+        return []
+
+
+def get_client_group_id_by_name(connection, client_group_name):
+    """Get client_group_id from client_group_name."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT client_group_id FROM client_groups WHERE name = %s", (client_group_name,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Error getting client group ID by name: {e}")
+        return None
+
+
+def get_client_group_name_by_id(connection, client_group_id):
+    """Get client_group_name from client_group_id."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Error getting client group name by ID: {e}")
+        return None
+
+
+def lambda_handler(event, context):
+    """
+    Handle user operations for V2 API.
+    Returns data compliant with OpenAPI specification.
+    """
+
+    # Extract current user from headers (case-insensitive lookup)
+    headers = event.get('headers', {})
+    current_user_id = 'system'  # default
+    for key, value in headers.items():
+        if key.lower() == 'x-current-user-id':
+            current_user_id = value
+            break
+
+    # Determine operation based on HTTP method and path
+    http_method = event.get('httpMethod', 'GET')
+    path = event.get('path', '')
+    path_parameters = event.get('pathParameters') or {}
+    query_parameters = event.get('queryStringParameters') or {}
+    body = event.get('body', '{}')
+
+    connection = None
+    try:
+        # Get database connection
+        connection = get_db_connection()
+
+        # Get valid user IDs for authorization
+        valid_user_ids = get_valid_user_ids_for_current_user(
+            connection, current_user_id)
+        if not valid_user_ids:
+            return {
+                "statusCode": 403,
+                "body": json.dumps({"error": "User has no client group affiliations or access denied"}),
+                "headers": {"Content-Type": "application/json"}
+            }
+
+        if http_method == 'GET':
+            # Handle GET operations
+            if '/client-groups:set' in path:
+                # This should be a POST operation, return 405
+                return {
+                    "statusCode": 405,
+                    "body": json.dumps({"error": "Method not allowed. Use POST for setting client groups."}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+            elif 'user_name' in path_parameters:
+                # Get single user by name: /users/{user_name}
+                user_name = unquote(path_parameters['user_name'])
+
+                with connection.cursor() as cursor:
+                    # Try to find user by email (assuming user_name is email)
+                    cursor.execute("""
+                        SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date,
+                               cg.name as primary_client_group_name
+                        FROM users u
+                        LEFT JOIN client_groups cg ON u.primary_client_group_id = cg.client_group_id
+                        WHERE u.email = %s AND u.user_id IN ({})
+                    """.format(','.join(['%s'] * len(valid_user_ids))),
+                        [user_name] + valid_user_ids)
+                    result = cursor.fetchone()
+
+                    if not result:
+                        return {
+                            "statusCode": 404,
+                            "body": json.dumps({"error": "User not found or access denied"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                    # Map database fields to OpenAPI schema
+                    preferences = json.loads(result[3]) if result[3] else {}
+
+                    response = {
+                        "user_name": result[2],  # email as user_name
+                        "email": result[2],
+                        "sub": result[1],
+                        "preferences": preferences,
+                        "primary_client_group_name": result[6],
+                        "update_date": result[5].isoformat() + "Z" if result[5] else None
+                    }
+            else:
+                # List all users: /users
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date,
+                               cg.name as primary_client_group_name
+                        FROM users u
+                        LEFT JOIN client_groups cg ON u.primary_client_group_id = cg.client_group_id
+                        WHERE u.user_id IN ({})
+                        ORDER BY u.email
+                    """.format(','.join(['%s'] * len(valid_user_ids))),
+                        valid_user_ids)
+
+                    results = cursor.fetchall()
+
+                    response = []
+                    for result in results:
+                        # Map database fields to OpenAPI schema
+                        preferences = json.loads(
+                            result[3]) if result[3] else {}
+
+                        response.append({
+                            "user_name": result[2],  # email as user_name
+                            "email": result[2],
+                            "sub": result[1],
+                            "preferences": preferences,
+                            "primary_client_group_name": result[6],
+                            "update_date": result[5].isoformat() + "Z" if result[5] else None
+                        })
+
+        elif http_method == 'POST':
+            # Handle POST operations
+            if '/client-groups:set' in path:
+                # Set client groups for user: /users/{user_name}/client-groups:set
+                user_name = unquote(path_parameters['user_name'])
+
+                try:
+                    request_data = json.loads(body) if body else {}
+                except json.JSONDecodeError:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "Invalid JSON in request body"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Get client groups from request
+                client_group_names = request_data.get('client_group_names', [])
+                client_group_ids = request_data.get('client_group_ids', [])
+
+                if not client_group_names and not client_group_ids:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "Either client_group_names or client_group_ids is required"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Get user_id for the target user
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT user_id FROM users WHERE email = %s", (user_name,))
+                    user_result = cursor.fetchone()
+                    if not user_result:
+                        return {
+                            "statusCode": 404,
+                            "body": json.dumps({"error": "User not found"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                    target_user_id = user_result[0]
+
+                    # Check if current user can modify this user
+                    if target_user_id not in valid_user_ids:
+                        return {
+                            "statusCode": 403,
+                            "body": json.dumps({"error": "Access denied - cannot modify this user"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                # Convert client group names to IDs if needed
+                final_client_group_ids = []
+                if client_group_names:
+                    for name in client_group_names:
+                        cg_id = get_client_group_id_by_name(connection, name)
+                        if cg_id:
+                            final_client_group_ids.append(cg_id)
+                        else:
+                            return {
+                                "statusCode": 400,
+                                "body": json.dumps({"error": f"Client group '{name}' not found"}),
+                                "headers": {"Content-Type": "application/json"}
+                            }
+                else:
+                    final_client_group_ids = client_group_ids
+
+                # Update client_group_users table (delete existing, insert new)
+                with connection.cursor() as cursor:
+                    # Delete existing relationships
+                    cursor.execute(
+                        "DELETE FROM client_group_users WHERE user_id = %s", (target_user_id,))
+
+                    # Insert new relationships
+                    for cg_id in final_client_group_ids:
+                        cursor.execute("""
+                            INSERT INTO client_group_users (client_group_id, user_id)
+                            VALUES (%s, %s)
+                        """, (cg_id, target_user_id))
+
+                    connection.commit()
+                    response = {
+                        "message": "Client groups updated successfully"}
+            else:
+                # Create new user: /users
+                try:
+                    request_data = json.loads(body) if body else {}
+                except json.JSONDecodeError:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "Invalid JSON in request body"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Validate required fields
+                email = request_data.get('email')
+                sub = request_data.get('sub')
+                if not email or not sub:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "email and sub are required"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Get user ID for tracking
+                user_id = get_user_id_from_sub(connection, current_user_id)
+
+                # Extract fields from request
+                preferences = request_data.get('preferences', {})
+                preferences_json = json.dumps(
+                    preferences) if preferences else None
+                primary_client_group_name = request_data.get(
+                    'primary_client_group_name')
+
+                # Get primary_client_group_id if primary_client_group_name is provided
+                primary_client_group_id = None
+                if primary_client_group_name:
+                    primary_client_group_id = get_client_group_id_by_name(
+                        connection, primary_client_group_name)
+                    if not primary_client_group_id:
+                        return {
+                            "statusCode": 400,
+                            "body": json.dumps({"error": f"Primary client group '{primary_client_group_name}' not found"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                with connection.cursor() as cursor:
+                    # Check if user already exists
+                    cursor.execute(
+                        "SELECT user_id FROM users WHERE email = %s OR sub = %s", (email, sub))
+                    existing = cursor.fetchone()
+
+                    if existing:
+                        # Update existing user
+                        cursor.execute("""
+                            UPDATE users 
+                            SET preferences = %s, primary_client_group_id = %s, update_date = NOW()
+                            WHERE user_id = %s
+                        """, (preferences_json, primary_client_group_id, existing[0]))
+
+                        # Update primary client group relationship if needed
+                        if primary_client_group_id:
+                            cursor.execute("""
+                                INSERT IGNORE INTO client_group_users (client_group_id, user_id)
+                                VALUES (%s, %s)
+                            """, (primary_client_group_id, existing[0]))
+
+                        connection.commit()
+                        response = {"message": "User updated successfully"}
+                    else:
+                        # Insert new user
+                        cursor.execute("""
+                            INSERT INTO users (sub, email, preferences, primary_client_group_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, (sub, email, preferences_json, primary_client_group_id))
+
+                        new_user_id = cursor.lastrowid
+
+                        # Add primary client group relationship if specified
+                        if primary_client_group_id:
+                            cursor.execute("""
+                                INSERT INTO client_group_users (client_group_id, user_id)
+                                VALUES (%s, %s)
+                            """, (primary_client_group_id, new_user_id))
+
+                        connection.commit()
+                        response = {"message": "User created successfully"}
+
+        elif http_method == 'PUT':
+            # Handle PUT operations: /users/{user_name} (update)
+            if 'user_name' not in path_parameters:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "user_name is required in path"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            try:
+                request_data = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "Invalid JSON in request body"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            user_name = unquote(path_parameters['user_name'])
+
+            # Get user ID for tracking
+            user_id = get_user_id_from_sub(connection, current_user_id)
+
+            # Extract fields from request
+            preferences = request_data.get('preferences', {})
+            preferences_json = json.dumps(preferences) if preferences else None
+            primary_client_group_name = request_data.get(
+                'primary_client_group_name')
+
+            # Get primary_client_group_id if primary_client_group_name is provided
+            primary_client_group_id = None
+            if primary_client_group_name:
+                primary_client_group_id = get_client_group_id_by_name(
+                    connection, primary_client_group_name)
+                if not primary_client_group_id:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": f"Primary client group '{primary_client_group_name}' not found"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+            with connection.cursor() as cursor:
+                # Check if user exists and current user can modify it
+                cursor.execute("""
+                    SELECT user_id FROM users 
+                    WHERE email = %s AND user_id IN ({})
+                """.format(','.join(['%s'] * len(valid_user_ids))),
+                    [user_name] + valid_user_ids)
+                existing = cursor.fetchone()
+
+                if not existing:
+                    return {
+                        "statusCode": 404,
+                        "body": json.dumps({"error": "User not found or access denied"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                target_user_id = existing[0]
+
+                # Update user
+                cursor.execute("""
+                    UPDATE users 
+                    SET preferences = %s, primary_client_group_id = %s, update_date = NOW()
+                    WHERE user_id = %s
+                """, (preferences_json, primary_client_group_id, target_user_id))
+
+                # Update primary client group relationship if needed
+                if primary_client_group_id:
+                    cursor.execute("""
+                        INSERT IGNORE INTO client_group_users (client_group_id, user_id)
+                        VALUES (%s, %s)
+                    """, (primary_client_group_id, target_user_id))
+
+                connection.commit()
+                response = {"message": "User updated successfully"}
+
+        elif http_method == 'DELETE':
+            # Handle DELETE operations: /users/{user_name}
+            if 'user_name' not in path_parameters:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "user_name is required in path"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            user_name = unquote(path_parameters['user_name'])
+
+            with connection.cursor() as cursor:
+                # Check if user exists and current user can modify it
+                cursor.execute("""
+                    SELECT user_id FROM users 
+                    WHERE email = %s AND user_id IN ({})
+                """.format(','.join(['%s'] * len(valid_user_ids))),
+                    [user_name] + valid_user_ids)
+                existing = cursor.fetchone()
+
+                if not existing:
+                    return {
+                        "statusCode": 404,
+                        "body": json.dumps({"error": "User not found or access denied"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Delete user (CASCADE will handle client_group_users)
+                cursor.execute(
+                    "DELETE FROM users WHERE user_id = %s", (existing[0],))
+                connection.commit()
+                response = {"message": "User deleted successfully"}
+
+        else:
+            # Handle unsupported methods
+            return {
+                "statusCode": 405,
+                "body": json.dumps({"error": f"Method {http_method} not allowed for users"}),
+                "headers": {"Content-Type": "application/json"}
+            }
+
+        connection.close()
+
+        # Return appropriate status code based on operation
+        status_code = 200
+        if http_method == 'POST':
+            status_code = 201
+        elif http_method == 'DELETE':
+            status_code = 204
+
+        return {
+            "statusCode": status_code,
+            "body": json.dumps(response) if response is not None else "",
+            "headers": {"Content-Type": "application/json"}
+        }
+
+    except Exception as e:
+        # Try to close connection if it exists
+        try:
+            if connection:
+                connection.close()
+        except:
+            pass
+
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
+            "headers": {"Content-Type": "application/json"}
+        }

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fullbor.ai — The asset allocator’s toolkit</title>
+    <meta
+      name="description"
+      content="Fullbor.ai — Your complete book of record. The asset allocator’s toolkit."
+    />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0a; /* Near-black */
+        --text: #f4f4f5; /* Soft white */
+        --muted: #a1a1aa; /* Warm gray */
+        --accent: #ff6a00; /* Orange */
+        --accent-2: #ffae00; /* Amber */
+        --card: #121212ee; /* Glassy dark card */
+        --ring: 0 0 0 2px var(--accent) inset;
+        --hero-bg: url("background.jpg");
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+          "Segoe UI Emoji";
+        color: var(--text);
+        background: radial-gradient(
+          1400px 800px at 10% 10%,
+          #1a1a1a 0%,
+          #0a0a0a 60%,
+          #060606 100%
+        );
+        letter-spacing: 0.1px;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+          "Segoe UI Emoji";
+        color: var(--text);
+        background: radial-gradient(
+          1200px 800px at 10% 10%,
+          #132038 0%,
+          #0b1220 50%,
+          #070b13 100%
+        );
+        letter-spacing: 0.1px;
+      }
+
+      /* Hero background image layer */
+      .hero::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: var(--hero-bg);
+        background-size: cover;
+        background-position: 50% 30%;
+        opacity: 0.15; /* keep it subtle/clean */
+        filter: grayscale(30%) contrast(110%);
+        z-index: -2;
+      }
+      /* Gradient overlay for depth */
+      .hero::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+            700px 450px at 75% 20%,
+            rgba(255, 106, 0, 0.18),
+            transparent 60%
+          ),
+          radial-gradient(
+            800px 520px at 5% 80%,
+            rgba(255, 174, 0, 0.14),
+            transparent 65%
+          );
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px clamp(16px, 4vw, 40px);
+      }
+
+      /* Top Nav */
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        font-family: "Space Grotesk", Inter, sans-serif;
+      }
+      .brand-badge {
+        display: none;
+      }
+      .brand-logo {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        box-shadow: 0 0 0 2px #0a0a0a, 0 8px 28px rgba(255, 106, 0, 0.35);
+      }
+      .brand span {
+        font-weight: 800;
+        font-size: 18px;
+      }
+
+      /* Hero */
+      .hero {
+        padding-top: clamp(32px, 5vw, 56px);
+        padding-bottom: clamp(48px, 8vw, 120px);
+      }
+      .grid {
+        display: grid;
+        gap: clamp(28px, 5vw, 48px);
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 11px;
+      }
+      .eyebrow .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 0 3px rgba(35, 240, 199, 0.25);
+      }
+
+      h1 {
+        font-family: "Space Grotesk", Inter, sans-serif;
+        margin: 12px 0 12px;
+        font-size: clamp(44px, 7vw, 78px);
+        line-height: 1.02;
+        letter-spacing: -0.022em;
+        font-weight: 800;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: clamp(16px, 2.2vw, 20px);
+        line-height: 1.65;
+        max-width: 52ch;
+      }
+
+      /* CTA */
+      .cta-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 28px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        --shadow: 0 12px 30px rgba(255, 106, 0, 0.28),
+          0 2px 10px rgba(0, 0, 0, 0.55);
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        padding: 14px 22px;
+        border-radius: 14px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #0a0a0a;
+        box-shadow: var(--shadow);
+        transition: transform 0.18s ease, box-shadow 0.18s ease,
+          filter 0.18s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        filter: saturate(1.06);
+        box-shadow: 0 16px 38px rgba(255, 106, 0, 0.38);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      /* Right visual (attached image) */
+      .card {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.06),
+          rgba(255, 255, 255, 0.02)
+        );
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+        isolation: isolate;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        background: radial-gradient(
+          600px 300px at 10% 0%,
+          rgba(255, 106, 0, 0.18),
+          transparent 60%
+        );
+        z-index: 1;
+      }
+      .card img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .tagline {
+        margin-top: 10px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      /* Footer */
+      .footer {
+        margin-top: 64px;
+        color: #90a3be;
+        font-size: 13px;
+        opacity: 0.85;
+      }
+      .footer a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      /* Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .btn {
+          transition: none;
+        }
+      }
+    </style>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="alternate icon" href="favicon.ico" />
+  </head>
+  <body>
+    <header class="container nav">
+      <div class="brand" aria-label="Fullbor.ai">
+        <img class="brand-logo" src="favicon_white.png" alt="" />
+        <span>Fullbor<span style="color: var(--accent)">.ai</span></span>
+      </div>
+      <nav>
+        <a
+          class="btn"
+          href="https://app.fullbor.ai"
+          aria-label="Client Login to Fullbor app"
+          >Client Login →</a
+        >
+      </nav>
+    </header>
+
+    <main class="hero">
+      <div class="container grid">
+        <section>
+          <div class="eyebrow">
+            <span class="dot"></span><span>Purpose-built for Allocators</span>
+          </div>
+          <h1>
+            Your complete
+            <span
+              style="
+                background: linear-gradient(
+                  90deg,
+                  var(--accent),
+                  var(--accent-2)
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+              "
+              >book of record</span
+            >
+          </h1>
+          <p class="subtitle">
+            The asset allocator’s toolkit. Unify portfolios, counterparties, and
+            transactions in one opinionated system of record—fast, accurate,
+            audit-ready.
+          </p>
+          <p class="tagline">FULL BORE • SECURE • AUDITABLE</p>
+        </section>
+
+        <aside>
+          <!-- Replace the src below with your attached/brand image -->
+          <figure class="card" aria-label="Brand visual">
+            <img src="fullbor.png" alt="Fullbor logo" />
+          </figure>
+        </aside>
+      </div>
+
+      <div class="container footer">
+        © <span id="y"></span> Fullbor.ai · All rights reserved
+      </div>
+    </main>
+
+    <script>
+      // Set year in footer
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

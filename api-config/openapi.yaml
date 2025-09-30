@@ -1,0 +1,1759 @@
+openapi: 3.0.3
+info:
+  title: FullBor API
+  version: 2.0.0
+  description:
+    'FullBor v2 API (API Gateway + Lambda). All endpoints require the current
+    user context via `X-Current-User-Id` header. For referential fields (client group,
+    entity type, transaction type/status, entities, etc.) the API expects and returns
+    **string names** rather than integer IDs. Association "set" endpoints optionally
+    accept ID arrays in addition to name arrays for convenience.
+
+    '
+servers:
+  - url: https://api.fullbor.ai/v2
+tags:
+  - name: ClientGroups
+  - name: Entities
+  - name: EntityTypes
+  - name: Transactions
+  - name: TransactionTypes
+  - name: TransactionStatuses
+  - name: PositionKeeper
+  - name: Users
+  - name: Invitations
+components:
+  securitySchemes:
+    CognitoUserPoolAuthorizer:
+      type: apiKey
+      in: header
+      name: Authorization
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - arn:aws:cognito-idp:us-east-2:316490106381:userpool/us-east-2_IJ1C0mWXW
+  parameters:
+    CurrentUserIdHeader:
+      name: X-Current-User-Id
+      in: header
+      required: true
+      description: The **current_user_id** context used for authorization scoping.
+      schema:
+        type: string
+  schemas:
+    ClientGroup:
+      type: object
+      properties:
+        client_group_name:
+          type: string
+        preferences:
+          type: object
+          additionalProperties: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - client_group_name
+    Entity:
+      type: object
+      properties:
+        entity_name:
+          type: string
+        entity_type_name:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - entity_name
+        - entity_type_name
+    EntityType:
+      type: object
+      properties:
+        entity_type_name:
+          type: string
+        attributes_schema:
+          type: object
+          additionalProperties: true
+        short_label:
+          type: string
+          maxLength: 5
+          nullable: true
+        label_color:
+          type: string
+          pattern: ^[A-Fa-f0-9]{6}$
+          nullable: true
+        entity_category:
+          type: string
+          nullable: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - entity_type_name
+    Transaction:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+          readOnly: true
+        portfolio_entity_name:
+          type: string
+        contra_entity_name:
+          type: string
+          nullable: true
+        instrument_entity_name:
+          type: string
+          nullable: true
+        transaction_status_name:
+          type: string
+        transaction_type_name:
+          type: string
+        properties:
+          type: object
+          additionalProperties: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - portfolio_entity_name
+        - transaction_status_name
+        - transaction_type_name
+    TransactionType:
+      type: object
+      properties:
+        transaction_type_name:
+          type: string
+        properties:
+          type: object
+          additionalProperties: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - transaction_type_name
+    TransactionStatus:
+      type: object
+      properties:
+        transaction_status_name:
+          type: string
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - transaction_status_name
+    User:
+      type: object
+      properties:
+        user_name:
+          type: string
+          description: Display name or friendly name
+        email:
+          type: string
+          format: email
+        sub:
+          type: string
+          description: IdP subject (Cognito sub)
+        preferences:
+          type: object
+          additionalProperties: true
+        primary_client_group_name:
+          type: string
+          nullable: true
+        update_date:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - user_name
+        - email
+        - sub
+    Invitation:
+      type: object
+      properties:
+        invitation_id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          minLength: 16
+          maxLength: 16
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+        client_group_name:
+          type: string
+        email_sent_to:
+          type: string
+          format: email
+          nullable: true
+        updated_by_user_name:
+          type: string
+          nullable: true
+      required:
+        - expires_at
+        - client_group_name
+    ClientGroupEntitiesSetRequest:
+      type: object
+      properties:
+        entity_names:
+          type: array
+          items:
+            type: string
+        entity_ids:
+          type: array
+          items:
+            type: integer
+      description: Provide either `entity_names` (preferred) or `entity_ids`.
+      anyOf:
+        - required:
+            - entity_names
+        - required:
+            - entity_ids
+    ClientGroupUsersSetRequest:
+      type: object
+      properties:
+        user_names:
+          type: array
+          items:
+            type: string
+        user_ids:
+          type: array
+          items:
+            type: integer
+      description: Provide either `user_names` (preferred) or `user_ids`.
+      anyOf:
+        - required:
+            - user_names
+        - required:
+            - user_ids
+    UserClientGroupsSetRequest:
+      type: object
+      properties:
+        client_group_names:
+          type: array
+          items:
+            type: string
+        client_group_ids:
+          type: array
+          items:
+            type: integer
+      description: Provide either `client_group_names` (preferred) or `client_group_ids`.
+      anyOf:
+        - required:
+            - client_group_names
+        - required:
+            - client_group_ids
+    TransactionsQuery:
+      type: object
+      properties:
+        portfolio_entity_name:
+          type: string
+        contra_entity_name:
+          type: string
+        instrument_entity_name:
+          type: string
+        transaction_status_name:
+          type: string
+        transaction_type_name:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+security:
+  - CognitoUserPoolAuthorizer: []
+paths:
+  /client-groups:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - ClientGroups
+      summary: List Client Groups (optionally filter by entity)
+      parameters:
+        - in: query
+          name: entity_name
+          schema:
+            type: string
+          description: Return client groups that include this Entity.
+      responses:
+        "200":
+          description: Client groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientGroup"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - ClientGroups
+      summary: Create or upsert a Client Group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroup"
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /client-groups/{client_group_name}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - ClientGroups
+      summary: Get a Client Group by name
+      responses:
+        "200":
+          description: Client group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroup"
+        "400": &id001
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id002
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id003
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - ClientGroups
+      summary: Update a Client Group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroup"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroup"
+        "400": *id001
+        "401": *id002
+        "403": *id003
+    delete:
+      tags:
+        - ClientGroups
+      summary: Delete a Client Group
+      responses:
+        "204":
+          description: Deleted
+        "400": *id001
+        "401": *id002
+        "403": *id003
+  /client-groups/{client_group_name}/entities:set:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - ClientGroups
+      summary: Set Entities that are valid for a Client Group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroupEntitiesSetRequest"
+      responses:
+        "201":
+          description: Associations updated
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /client-groups/{client_group_name}/users:set:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - ClientGroups
+      summary: Set Users that are valid for a Client Group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroupUsersSetRequest"
+      responses:
+        "201":
+          description: Associations updated
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /entities:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - Entities
+      summary: List Entities (filter by user, entity type, or client group)
+      parameters:
+        - in: query
+          name: user_name
+          schema:
+            type: string
+          description:
+            Return Entities visible to the specified user (distinct from
+            header current_user_id)
+        - in: query
+          name: entity_type_name
+          schema:
+            type: string
+        - in: query
+          name: client_group_name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Entities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entity"
+        "400": &id004
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id005
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id006
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - Entities
+      summary: Create or upsert an Entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Entity"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id004
+        "401": *id005
+        "403": *id006
+  /entities/{entity_name}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: entity_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Entities
+      summary: Get an Entity by name
+      responses:
+        "200":
+          description: Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entity"
+        "400": &id007
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id008
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id009
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - Entities
+      summary: Update an Entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Entity"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id007
+        "401": *id008
+        "403": *id009
+    delete:
+      tags:
+        - Entities
+      summary: Delete an Entity
+      responses:
+        "204":
+          description: Deleted
+        "400": *id007
+        "401": *id008
+        "403": *id009
+  /entity-types:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - EntityTypes
+      summary: List Entity Types
+      parameters:
+        - in: query
+          name: entity_category
+          schema:
+            type: string
+          description: Filter entity types by category (e.g., "Investment", "Trading", "Security", "Currency", "Instrument")
+      responses:
+        "200":
+          description: Entity types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EntityType"
+        "400": &id010
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id011
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id012
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - EntityTypes
+      summary: Create or upsert an Entity Type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntityType"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id010
+        "401": *id011
+        "403": *id012
+  /entity-types/{entity_type_name}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: entity_type_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - EntityTypes
+      summary: Get an Entity Type by name
+      responses:
+        "200":
+          description: Entity type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntityType"
+        "400": &id013
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id014
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id015
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - EntityTypes
+      summary: Update an Entity Type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntityType"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id013
+        "401": *id014
+        "403": *id015
+    delete:
+      tags:
+        - EntityTypes
+      summary: Delete an Entity Type
+      responses:
+        "204":
+          description: Deleted
+        "400": *id013
+        "401": *id014
+        "403": *id015
+  /transactions:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - Transactions
+      summary: List Transactions (filterable) or return count
+      parameters:
+        - in: query
+          name: portfolio_entity_name
+          schema:
+            type: string
+        - in: query
+          name: contra_entity_name
+          schema:
+            type: string
+        - in: query
+          name: instrument_entity_name
+          schema:
+            type: string
+        - in: query
+          name: transaction_status_name
+          schema:
+            type: string
+        - in: query
+          name: transaction_type_name
+          schema:
+            type: string
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Transactions or count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Transaction"
+                  count:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        "400": &id016
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id017
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id018
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - Transactions
+      summary: Create a Transaction (name-based foreign keys)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Transaction"
+      responses:
+        "201":
+          description: Created
+        "400": *id016
+        "401": *id017
+        "403": *id018
+  /transactions/{transaction_id}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: transaction_id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - Transactions
+      summary: Get Transaction by ID
+      responses:
+        "200":
+          description: Transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400": &id019
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id020
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id021
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - Transactions
+      summary: Update Transaction (name-based foreign keys)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Transaction"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id019
+        "401": *id020
+        "403": *id021
+    delete:
+      tags:
+        - Transactions
+      summary: Delete Transaction
+      responses:
+        "204":
+          description: Deleted
+        "400": *id019
+        "401": *id020
+        "403": *id021
+  /transaction-types:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - TransactionTypes
+      summary: List Transaction Types
+      responses:
+        "200":
+          description: Transaction types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionType"
+        "400": &id022
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id023
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id024
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - TransactionTypes
+      summary: Create or upsert a Transaction Type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionType"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id022
+        "401": *id023
+        "403": *id024
+  /transaction-types/{transaction_type_name}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: transaction_type_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - TransactionTypes
+      summary: Get a Transaction Type by name
+      responses:
+        "200":
+          description: Transaction type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionType"
+        "400": &id025
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id026
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id027
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - TransactionTypes
+      summary: Update a Transaction Type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionType"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id025
+        "401": *id026
+        "403": *id027
+    delete:
+      tags:
+        - TransactionTypes
+      summary: Delete a Transaction Type
+      responses:
+        "204":
+          description: Deleted
+        "400": *id025
+        "401": *id026
+        "403": *id027
+  /transaction-statuses:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - TransactionStatuses
+      summary: List Transaction Statuses
+      responses:
+        "200":
+          description: Transaction statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionStatus"
+        "400": &id028
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id029
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id030
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /position-keeper:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    post:
+      tags:
+        - PositionKeeper
+      summary: Control the Position Keeper process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  enum:
+                    - start
+                    - stop
+                  description: Command to execute (start or stop the Position Keeper)
+              required:
+                - command
+      responses:
+        "400":
+          description: Bad request - invalid command or parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
+        "409":
+          description:
+            Conflict - Position Keeper is already running or lock acquisition
+            failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
+                  status:
+                    type: string
+                    description: Current status of the Position Keeper
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "201":
+          description: Command executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  command:
+                    type: string
+                    description: The command that was executed
+                  status:
+                    type: string
+                    description: Status of the command execution
+                  message:
+                    type: string
+                    description: Additional information about the execution
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: When the command was executed
+                required:
+                  - command
+                  - status
+                  - timestamp
+  /users:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - Users
+      summary: List users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "400": &id034
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id035
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id036
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - Users
+      summary: Create or upsert a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id034
+        "401": *id035
+        "403": *id036
+  /users/{user_name}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: user_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Users
+      summary: Get user by name
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400": &id037
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id038
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id039
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      tags:
+        - Users
+      summary: Update user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400": *id037
+        "401": *id038
+        "403": *id039
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      responses:
+        "204":
+          description: Deleted
+        "400": *id037
+        "401": *id038
+        "403": *id039
+  /users/{user_name}/client-groups:set:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: user_name
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Users
+      summary: Set Client Groups for a User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserClientGroupsSetRequest"
+      responses:
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "201":
+          description: Associations updated
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Response for /users/{user_name}/client-groups:set POST
+  /invitations:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - Invitations
+      summary: List invitations (optionally by client group)
+      parameters:
+        - in: query
+          name: client_group_name
+          schema:
+            type: string
+          description: Filter invitations by client group name
+        - in: query
+          name: filter
+          schema:
+            type: string
+            enum: [unexpired]
+          description: Filter invitations by expiration status. Use 'unexpired' to only return invitations that haven't expired yet.
+      responses:
+        "200":
+          description: Invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+        "400": &id040
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id041
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id042
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - Invitations
+      summary: Create a new invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invitation"
+      responses:
+        "201":
+          description: Created
+        "400": *id040
+        "401": *id041
+        "403": *id042
+  /invitations/{invitation_id}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: invitation_id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - Invitations
+      summary: Get an invitation by ID
+      responses:
+        "200":
+          description: Invitation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "400": &id043
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401": &id044
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403": &id045
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    delete:
+      tags:
+        - Invitations
+      summary: Delete an invitation
+      responses:
+        "204":
+          description: Deleted
+        "400": *id043
+        "401": *id044
+        "403": *id045
+  /client-groups/{client_group_name}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Invitations
+      summary: List all invitations for a Client Group
+      responses:
+        "200":
+          description: Invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /invitations/redeem/{code}:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: code
+        required: true
+        schema:
+          type: string
+          minLength: 16
+          maxLength: 16
+    post:
+      tags:
+        - Invitations
+      summary: Redeem an invitation code
+      responses:
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "201":
+          description: Invitation redeemed
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Response for /invitations/redeem/{code} POST

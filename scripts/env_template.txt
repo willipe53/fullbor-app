@@ -1,0 +1,8 @@
+# Test credentials for API testing
+TEST_USERNAME=your_test_username_here
+TEST_PASSWORD=your_test_password_here
+
+# AWS Configuration (optional - can also use AWS CLI or IAM roles)
+AWS_ACCESS_KEY_ID=your_access_key_here
+AWS_SECRET_ACCESS_KEY=your_secret_key_here
+AWS_DEFAULT_REGION=us-east-2
