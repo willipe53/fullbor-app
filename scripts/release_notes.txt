@@ -1,12 +1,3 @@
-### **Complete Lambda Function Implementation**
-- ✅ **ClientGroupsHandler.py** - Full CRUD operations with complex relationship management
-- ✅ **EntitiesHandler.py** - Entity management with smart deletion and client group associations
-- ✅ **EntityTypesHandler.py** - Entity type management with category filtering
-- ✅ **InvitationsHandler.py** - Invitation system with authorization and filtering
-- ✅ **PositionKeeper.py** - Async process management with database locking
-- ✅ **TransactionStatusesHandler.py** - Read-only transaction status management
-- ✅ **TransactionTypesHandler.py** - Transaction type CRUD with user tracking
-- ✅ **TransactionsHandler.py** - Complex transaction management with portfolio-based authorization
-- ✅ **UsersHandler.py** - User management with client group associations and authorization
-
-
+- YAML-driven API test runner** (`tests/comprehensive-api-test.py`)
+- `tests/simple-client-groups-test.yaml` - Isolated client group CRUD tests
+- `tests/client-groups-script.yaml` - Comprehensive client group workflow tests

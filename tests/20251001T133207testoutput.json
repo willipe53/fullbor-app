@@ -1,0 +1,58 @@
+{
+  "summary": {
+    "total": 6,
+    "passed": 4,
+    "failed": 2,
+    "total_duration": 2.6063857078552246
+  },
+  "tests": [
+    {
+      "name": "Get initial client groups count",
+      "passed": true,
+      "duration": 0.5593059062957764,
+      "status_code": 200,
+      "response_size": 381,
+      "error_message": null
+    },
+    {
+      "name": "Create new client group (should associate with user)",
+      "passed": true,
+      "duration": 0.40602993965148926,
+      "status_code": 201,
+      "response_size": 72,
+      "error_message": null
+    },
+    {
+      "name": "Verify count increased (group should appear in user's list)",
+      "passed": false,
+      "duration": 0.4127058982849121,
+      "status_code": null,
+      "response_size": null,
+      "error_message": "[length(@)] failed to format template '{{initial_count + 1}}': \"Missing variable '1'\""
+    },
+    {
+      "name": "Get specific client group by name (should have access)",
+      "passed": true,
+      "duration": 0.41020989418029785,
+      "status_code": 200,
+      "response_size": 160,
+      "error_message": null
+    },
+    {
+      "name": "Delete client group by name",
+      "passed": true,
+      "duration": 0.41462206840515137,
+      "status_code": 204,
+      "response_size": 0,
+      "error_message": null
+    },
+    {
+      "name": "Verify count back to original",
+      "passed": false,
+      "duration": 0.40351200103759766,
+      "status_code": null,
+      "response_size": null,
+      "error_message": "[length(@)] expected equals '2', got 2"
+    }
+  ]
+}

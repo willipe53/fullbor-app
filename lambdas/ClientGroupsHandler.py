@@ -372,6 +372,14 @@ def handle_create_client_group(connection, body, current_user_id_db):
         """, (client_group_name, preferences_json, current_user_id_db))
 
         new_client_group_id = cursor.lastrowid
+
+        # Associate the creating user with the new client group
+        if current_user_id_db is not None:
+            cursor.execute("""
+                INSERT INTO client_group_users (client_group_id, user_id)
+                VALUES (%s, %s)
+            """, (new_client_group_id, current_user_id_db))
+
         connection.commit()
 
         return {"message": "Client group created successfully", "client_group_id": new_client_group_id}

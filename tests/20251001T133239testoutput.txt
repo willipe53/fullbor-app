@@ -1,0 +1,156 @@
+✅ Authentication successful for user: 81fb55e0-e0b1-704a-3aad-791c0788d612
+
+[1/6] Get initial client groups count
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/client-groups
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.497s
+   Headers: {'content-type': 'application/json', 'content-length': '381', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:40 GMT', 'x-amzn-trace-id': 'Root=1-68dd65b8-14b12a9c1d8a6f6467aaa2ce;Parent=33002e6ccf2abb7d;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': 'a4fc18bf-d950-4f90-8b79-832b3ae7e4c9', 'x-amz-apigw-id': 'RxzU1GttCYcETqg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '8gScaE99DLafNMM6y3esOdD29eLzJXQEVFZ7DhvIyiUYL9fF3Q4U4A=='}
+   Body: [
+  {
+    "client_group_name": "Byrde Family Foundation",
+    "preferences": {
+      "setting_1": "value1234",
+      "new_setting": "new_value"
+    },
+    "update_date": "2025-09-30T22:14:53Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  },
+  {
+    "client_group_name": "Test Client Group 20251001132723",
+    "preferences": {},
+    "update_date": "2025-10-01T17:27:28Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  }
+]
+  ✅ PASS
+
+[2/6] Create new client group (should associate with user)
+
+🔍 REQUEST DETAILS:
+   Method: POST
+   URL: https://api.fullbor.ai/v2/client-groups
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "client_group_name": "Test Group 20251001133239",
+  "description": "Test description"
+}
+
+📡 RESPONSE DETAILS:
+   Status: 201
+   Duration: 0.386s
+   Headers: {'content-type': 'application/json', 'content-length': '72', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:40 GMT', 'x-amzn-trace-id': 'Root=1-68dd65b8-78fe95a92c9edcb544be60e2;Parent=2ea442bf6a98f18d;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': '2d646188-96c0-49c0-983e-aae6513a1c48', 'x-amz-apigw-id': 'RxzU6EZvCYcEIDA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'abbdHYgKqFYRhUx0IhGZot63S0tr7CbkaTp23faI47J9NqimyPgQbw=='}
+   Body: {
+  "message": "Client group created successfully",
+  "client_group_id": 439
+}
+  ✅ PASS
+
+[3/6] Verify count increased (group should appear in user's list)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/client-groups
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.431s
+   Headers: {'content-type': 'application/json', 'content-length': '543', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:41 GMT', 'x-amzn-trace-id': 'Root=1-68dd65b9-576d9ce94ddaeb631f76458d;Parent=709b2433210c43e3;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': '65377aa3-7bef-4ce0-87f7-638be97dde15', 'x-amz-apigw-id': 'RxzU-GCtCYcEZPA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'QffInLNoga60-AkO3354jeBCZlM9YZ0CLZrxbY9PJriM8FOou4VTkw=='}
+   Body: [
+  {
+    "client_group_name": "Byrde Family Foundation",
+    "preferences": {
+      "setting_1": "value1234",
+      "new_setting": "new_value"
+    },
+    "update_date": "2025-09-30T22:14:53Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  },
+  {
+    "client_group_name": "Test Client Group 20251001132723",
+    "preferences": {},
+    "update_date": "2025-10-01T17:27:28Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  },
+  {
+    "client_group_name": "Test Group 20251001133239",
+    "preferences": {},
+    "update_date": "2025-10-01T17:32:40Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  }
+]
+  ✅ PASS
+
+[4/6] Get specific client group by name (should have access)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/client-groups/Test Group 20251001133239
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.509s
+   Headers: {'content-type': 'application/json', 'content-length': '160', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:41 GMT', 'x-amzn-trace-id': 'Root=1-68dd65b9-446d7e6d3729a7ef354c00e2;Parent=45688ddb7fb94de8;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': 'd89810ce-6409-4413-ab57-bcd7f45b9f44', 'x-amz-apigw-id': 'RxzVCGrGiYcElfA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'Tp3_7fo3J-yKZ6LOzoNNRpuLjwdCnNmqu9OhybyI523xCOWM0_4f_A=='}
+   Body: {
+  "client_group_name": "Test Group 20251001133239",
+  "preferences": {},
+  "update_date": "2025-10-01T17:32:40Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[5/6] Delete client group by name
+
+🔍 REQUEST DETAILS:
+   Method: DELETE
+   URL: https://api.fullbor.ai/v2/client-groups/Test Group 20251001133239
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 204
+   Duration: 0.409s
+   Headers: {'content-type': 'application/json', 'content-length': '0', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:42 GMT', 'x-amzn-trace-id': 'Root=1-68dd65b9-36b4e309582810262c770649;Parent=5198b2c55a5243fe;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': 'ba3f9e9f-61ec-4e5f-ba97-adb035ef7a22', 'x-amz-apigw-id': 'RxzVHEPQiYcEUnA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'pfB61qKCTlUxQ5PrEpjz9Lbk3UstmdsB5e317qnECZxRNw0qo7MTUA=='}
+   Body (raw): ...
+  ✅ PASS
+
+[6/6] Verify count back to original
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/client-groups
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.399s
+   Headers: {'content-type': 'application/json', 'content-length': '381', 'connection': 'keep-alive', 'date': 'Wed, 01 Oct 2025 17:32:42 GMT', 'x-amzn-trace-id': 'Root=1-68dd65ba-648468c3200e9dfa11e00952;Parent=4f7c37bf144092e5;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': 'd91a8e84-abf7-43b0-9301-9afde76c0832', 'x-amz-apigw-id': 'RxzVLG_tCYcEdOA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 76f877b8790c6441a8bdc32b2feafab8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'PQKt9AHAoorrI1dXbZQpbFvfdwkIPEIBrSSsY1fo5Ya3cyGoaeDhpw=='}
+   Body: [
+  {
+    "client_group_name": "Byrde Family Foundation",
+    "preferences": {
+      "setting_1": "value1234",
+      "new_setting": "new_value"
+    },
+    "update_date": "2025-09-30T22:14:53Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  },
+  {
+    "client_group_name": "Test Client Group 20251001132723",
+    "preferences": {},
+    "update_date": "2025-10-01T17:27:28Z",
+    "updated_by_user_name": "willipe53+test@gmail.com"
+  }
+]
+  ✅ PASS
+
+Summary: 6/6 passed in 2.64s
+
+📄 Results exported to: 20251001T133239testoutput.json
+📄 All output logged to: 20251001T133239testoutput.txt

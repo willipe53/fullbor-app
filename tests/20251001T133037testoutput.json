@@ -1,0 +1,58 @@
+{
+  "summary": {
+    "total": 6,
+    "passed": 4,
+    "failed": 2,
+    "total_duration": 2.5750365257263184
+  },
+  "tests": [
+    {
+      "name": "Get initial client groups count",
+      "passed": true,
+      "duration": 0.4585237503051758,
+      "status_code": 200,
+      "response_size": 381,
+      "error_message": null
+    },
+    {
+      "name": "Create new client group (should associate with user)",
+      "passed": true,
+      "duration": 0.38799214363098145,
+      "status_code": 201,
+      "response_size": 72,
+      "error_message": null
+    },
+    {
+      "name": "Verify count increased (group should appear in user's list)",
+      "passed": false,
+      "duration": 0.44391512870788574,
+      "status_code": null,
+      "response_size": null,
+      "error_message": "[length(@)] failed to evaluate expression 'initial_count + 1': \"Missing variable '1'\""
+    },
+    {
+      "name": "Get specific client group by name (should have access)",
+      "passed": false,
+      "duration": 0.4260387420654297,
+      "status_code": null,
+      "response_size": null,
+      "error_message": "[client_group_name] expected equals 'Test Group {{timestamp}}', got 'Test Group 20251001133037'"
+    },
+    {
+      "name": "Delete client group by name",
+      "passed": true,
+      "duration": 0.43285679817199707,
+      "status_code": 204,
+      "response_size": 0,
+      "error_message": null
+    },
+    {
+      "name": "Verify count back to original",
+      "passed": true,
+      "duration": 0.42570996284484863,
+      "status_code": 200,
+      "response_size": 381,
+      "error_message": null
+    }
+  ]
+}

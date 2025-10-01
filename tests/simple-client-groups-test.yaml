@@ -1,0 +1,80 @@
+# Simple Client Groups API Test
+# Tests basic CRUD operations with proper assertions
+#
+# BUG: ClientGroupsHandler creates groups but doesn't associate them with the user
+# in the client_group_users table, causing groups to not appear in user's list
+defaults:
+  headers:
+    Content-Type: "application/json"
+  timeout: 30
+
+tests:
+  - name: "Get initial client groups count"
+    request:
+      method: GET
+      url: "/client-groups"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+    extract:
+      initial_count: "length(@)"
+
+  - name: "Create new client group (should associate with user)"
+    request:
+      method: POST
+      url: "/client-groups"
+      json:
+        client_group_name: "Test Group {{timestamp}}"
+        description: "Test description"
+    expect:
+      status: 201
+      json:
+        - path: "message"
+          equals: "Client group created successfully"
+        - path: "client_group_id"
+          exists: true
+    extract:
+      new_group_id: "client_group_id"
+
+  - name: "Verify count increased (group should appear in user's list)"
+    request:
+      method: GET
+      url: "/client-groups"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+        - path: "length(@)"
+          equals: "{{initial_count + 1}}"
+
+  - name: "Get specific client group by name (should have access)"
+    request:
+      method: GET
+      url: "/client-groups/Test Group {{timestamp}}"
+    expect:
+      status: 200
+      json:
+        - path: "client_group_name"
+          equals: "Test Group {{timestamp}}"
+
+  - name: "Delete client group by name"
+    request:
+      method: DELETE
+      url: "/client-groups/Test Group {{timestamp}}"
+    expect:
+      status: 204
+
+  - name: "Verify count back to original"
+    request:
+      method: GET
+      url: "/client-groups"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+        - path: "length(@)"
+          equals: "{{initial_count}}"

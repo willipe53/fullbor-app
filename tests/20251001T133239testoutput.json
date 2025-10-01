@@ -1,0 +1,58 @@
+{
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "total_duration": 2.636850118637085
+  },
+  "tests": [
+    {
+      "name": "Get initial client groups count",
+      "passed": true,
+      "duration": 0.4995262622833252,
+      "status_code": 200,
+      "response_size": 381,
+      "error_message": null
+    },
+    {
+      "name": "Create new client group (should associate with user)",
+      "passed": true,
+      "duration": 0.38684511184692383,
+      "status_code": 201,
+      "response_size": 72,
+      "error_message": null
+    },
+    {
+      "name": "Verify count increased (group should appear in user's list)",
+      "passed": true,
+      "duration": 0.4317498207092285,
+      "status_code": 200,
+      "response_size": 543,
+      "error_message": null
+    },
+    {
+      "name": "Get specific client group by name (should have access)",
+      "passed": true,
+      "duration": 0.5093019008636475,
+      "status_code": 200,
+      "response_size": 160,
+      "error_message": null
+    },
+    {
+      "name": "Delete client group by name",
+      "passed": true,
+      "duration": 0.4096400737762451,
+      "status_code": 204,
+      "response_size": 0,
+      "error_message": null
+    },
+    {
+      "name": "Verify count back to original",
+      "passed": true,
+      "duration": 0.39978694915771484,
+      "status_code": 200,
+      "response_size": 381,
+      "error_message": null
+    }
+  ]
+}
