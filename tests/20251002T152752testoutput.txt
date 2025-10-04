@@ -1,2 +1,0 @@
-
-Summary: 34/34 passed in 14.74s
