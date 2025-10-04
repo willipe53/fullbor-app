@@ -34,12 +34,23 @@ const ClientGroupsTable: React.FC = () => {
   // Get current user's database ID
   const { data: currentUserData } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
+    queryFn: () => apiService.getUserBySub(userId!),
     enabled: !!userId,
   });
 
-  const currentUser =
-    currentUserData && currentUserData.length > 0 ? currentUserData[0] : null;
+  const currentUser = useMemo(() => {
+    if (!currentUserData) return null;
+
+    // Handle both single user object and array response
+    if (Array.isArray(currentUserData)) {
+      // Find the user with matching sub
+      const user = currentUserData.find((user) => user.sub === userId);
+      return user || null;
+    }
+
+    // Single user object
+    return currentUserData;
+  }, [currentUserData, userId]);
 
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
@@ -69,34 +80,47 @@ const ClientGroupsTable: React.FC = () => {
   const clientGroupsData = useMemo(() => {
     if (!rawClientGroupsData) return [];
 
-    // Check if data is already in object format
-    if (
-      Array.isArray(rawClientGroupsData) &&
-      rawClientGroupsData.length > 0 &&
-      typeof rawClientGroupsData[0] === "object"
-    ) {
-      return rawClientGroupsData;
-    }
+    // Handle paginated response
+    const groups = Array.isArray(rawClientGroupsData)
+      ? rawClientGroupsData
+      : rawClientGroupsData.data || [];
 
-    // Transform array format to object format if needed
-    if (Array.isArray(rawClientGroupsData)) {
-      return rawClientGroupsData.map((row: any) => {
-        if (Array.isArray(row) && row.length >= 3) {
-          return {
-            client_group_id: row[0],
-            name: row[1],
-            preferences:
-              typeof row[2] === "string"
-                ? JSON.parse(row[2] || "{}")
-                : row[2] || {},
-          };
-        }
-        return row;
-      });
-    }
+    console.log("ClientGroupsTable - raw data:", rawClientGroupsData);
+    console.log("ClientGroupsTable - extracted groups:", groups);
 
-    return rawClientGroupsData;
+    return groups;
   }, [rawClientGroupsData]);
+
+  // Fetch entity counts for all client groups
+  const { data: entityCountsData } = useQuery({
+    queryKey: ["entity-counts", currentUser?.user_id],
+    queryFn: async () => {
+      if (!currentUser?.user_id || !clientGroupsData.length) return {};
+
+      const counts: Record<number, number> = {};
+
+      // Fetch entity count for each client group
+      for (const group of clientGroupsData) {
+        try {
+          const response = await apiService.queryEntities({
+            client_group_id: group.client_group_id,
+            count: true,
+          });
+          counts[group.client_group_id] = response.count || 0;
+        } catch (error) {
+          console.error(
+            `Failed to fetch entity count for group ${group.client_group_id}:`,
+            error
+          );
+          counts[group.client_group_id] = 0;
+        }
+      }
+
+      return counts;
+    },
+    enabled: !!currentUser?.user_id && clientGroupsData.length > 0,
+    staleTime: 30 * 1000, // 30 seconds
+  });
 
   const formatPreferences = (preferences: any) => {
     if (!preferences) return "None";
@@ -160,7 +184,7 @@ const ClientGroupsTable: React.FC = () => {
         headerAlign: "left",
       },
       {
-        field: "name",
+        field: "client_group_name",
         headerName: "Name",
         width: 200,
         minWidth: 150,
@@ -192,26 +216,10 @@ const ClientGroupsTable: React.FC = () => {
         align: "left",
         headerAlign: "left",
         renderCell: (params: GridRenderCellParams) => {
-          // Use React Query to fetch entity count for this specific client group
-          const { data: entityCount } = useQuery({
-            queryKey: [
-              "entity-count",
-              params.row.client_group_id,
-              currentUser?.user_id,
-            ],
-            queryFn: async () => {
-              if (!currentUser?.user_id) return 0;
-              return await apiService.queryEntityCount({
-                user_id: currentUser.user_id,
-                client_group_id: params.row.client_group_id,
-              });
-            },
-            enabled: !!currentUser?.user_id && !!params.row.client_group_id,
-          });
-
+          const entityCount = entityCountsData?.[params.row.client_group_id];
           return (
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {entityCount ?? "—"}
+              {entityCount !== undefined ? entityCount : "—"}
             </Typography>
           );
         },
@@ -265,24 +273,9 @@ const ClientGroupsTable: React.FC = () => {
   const handleEntityEditorFinish = (selectedEntityIds: number[]) => {
     console.log("📝 Entity editor finished with entities:", selectedEntityIds);
 
-    // Invalidate the entity count cache to refresh the count display
-    if (entityEditorClientGroup) {
-      queryClient.invalidateQueries({
-        queryKey: [
-          "entity-count",
-          entityEditorClientGroup.client_group_id,
-          currentUser?.user_id,
-        ],
-      });
-      // Also invalidate the old client-group-entities cache for other components
-      queryClient.invalidateQueries({
-        queryKey: [
-          "client-group-entities",
-          entityEditorClientGroup.client_group_id,
-          currentUser?.user_id,
-        ],
-      });
-    }
+    // Invalidate client groups and entity counts cache to refresh the table
+    queryClient.invalidateQueries({ queryKey: ["client-groups"] });
+    queryClient.invalidateQueries({ queryKey: ["entity-counts"] });
 
     setShowEntityEditor(false);
     setEntityEditorClientGroup(null);

@@ -293,6 +293,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
                     connection, result[4]) if result[4] else None
 
                 return {
+                    "client_group_id": result[0],
                     "client_group_name": result[1],
                     "preferences": preferences,
                     "update_date": result[3].isoformat() + "Z" if result[3] else None,
@@ -456,6 +457,7 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
                 connection, result[4]) if result[4] else None
 
             data.append({
+                "client_group_id": result[0],
                 "client_group_name": result[1],
                 "preferences": preferences,
                 "update_date": result[3].isoformat() + "Z" if result[3] else None,

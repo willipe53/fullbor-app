@@ -43,6 +43,10 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
     width: "100%",
     maxWidth: "800px",
     margin: "0 auto",
+    height: "600px", // Fixed height for the form
+    display: "flex",
+    flexDirection: "column",
+    position: "relative", // Enable absolute positioning for header/footer
   };
 
   // Fetch entity types
@@ -275,14 +279,22 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   }, [selectedEntityType, attributes]);
 
   return (
-    <Paper sx={{ ...containerSx, p: 3 }}>
+    <Paper sx={containerSx}>
       {/* Header */}
       <Box
         sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 3,
+          p: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "background.paper",
+          zIndex: 1,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -303,233 +315,258 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
         </IconButton>
       </Box>
 
-      {/* Form Content */}
-      <Box component="form" onSubmit={handleSubmit}>
-        {/* Error Display */}
-        {errors.general && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {errors.general}
-          </Alert>
-        )}
-
-        {/* Entity Name */}
-        <TextField
-          fullWidth
-          label="Entity Name *"
-          value={name}
-          onChange={handleNameChange}
-          error={!!errors.name}
-          helperText={errors.name}
-          sx={{ mb: 3 }}
-          required
-        />
-
-        {/* Entity Type */}
-        <Autocomplete
-          options={
-            Array.isArray(entityTypesData)
-              ? entityTypesData
-              : entityTypesData?.data || []
-          }
-          getOptionLabel={(option) => option.entity_type_name || ""}
-          getOptionKey={(option) => option.entity_type_name}
-          value={selectedEntityType}
-          onChange={(_, newValue) => handleEntityTypeChange(newValue)}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Entity Type *"
-              error={!!errors.entityType}
-              helperText={errors.entityType}
-            />
+      {/* Scrollable Content */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "80px", // Height of header
+          left: 0,
+          right: 0,
+          bottom: "80px", // Height of footer
+          overflow: "auto",
+          p: 3,
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmit}>
+          {/* Error Display */}
+          {errors.general && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {errors.general}
+            </Alert>
           )}
-          sx={{ mb: 3 }}
-        />
 
-        {/* Dynamic Schema Fields */}
-        {selectedEntityType && schemaFields.length > 0 && (
-          <Paper
-            variant="outlined"
-            sx={{ p: 3, mb: 3, backgroundColor: "rgba(0, 0, 0, 0.02)" }}
-          >
-            {/* Header with title and mode toggle */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 3,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: "medium", color: "primary.main" }}
-              >
-                {selectedEntityType.entity_type_name} Properties
-              </Typography>
+          {/* Entity Name */}
+          <TextField
+            fullWidth
+            label="Entity Name *"
+            value={name}
+            onChange={handleNameChange}
+            error={!!errors.name}
+            helperText={errors.name}
+            sx={{ mb: 3 }}
+            required
+          />
 
-              <FormJsonToggle
-                value={attributesMode}
-                onChange={handleModeChange}
+          {/* Entity Type */}
+          <Autocomplete
+            options={
+              Array.isArray(entityTypesData)
+                ? entityTypesData
+                : entityTypesData?.data || []
+            }
+            getOptionLabel={(option) => option.entity_type_name || ""}
+            getOptionKey={(option) => option.entity_type_name}
+            value={selectedEntityType}
+            onChange={(_, newValue) => handleEntityTypeChange(newValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Entity Type *"
+                error={!!errors.entityType}
+                helperText={errors.entityType}
               />
-            </Box>
-
-            {/* Form fields mode */}
-            {attributesMode === "form" && (
-              <Grid container spacing={3}>
-                {schemaFields.map((field) => (
-                  <Grid item xs={12} sm={6} key={field.key}>
-                    <TextField
-                      fullWidth
-                      label={field.label || field.key}
-                      value={attributes[field.key] || ""}
-                      onChange={(e) =>
-                        handleAttributeChange(field.key, e.target.value)
-                      }
-                      type={field.type === "number" ? "number" : "text"}
-                      helperText={
-                        field.isCustom
-                          ? "Custom attribute (not defined in schema)"
-                          : field.description
-                      }
-                      color={field.isCustom ? "warning" : "primary"}
-                      variant={field.isCustom ? "outlined" : "outlined"}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
             )}
+            sx={{ mb: 3 }}
+          />
 
-            {/* JSON mode */}
-            {attributesMode === "json" && (
-              <Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    Edit attributes as JSON (Advanced)
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={formatJson}
-                    disabled={
-                      !jsonAttributes.trim() || isJsonFormatted() || !!jsonError
-                    }
-                    sx={{ textTransform: "none" }}
-                  >
-                    Format JSON
-                  </Button>
-                </Box>
-
-                {jsonError && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {jsonError}
-                  </Alert>
-                )}
-
-                <Box
-                  sx={{
-                    border: jsonError ? "2px solid #f44336" : "1px solid #ccc",
-                    borderRadius: 1,
-                    overflow: "hidden",
-                  }}
-                >
-                  <AceEditor
-                    mode="json"
-                    theme="github"
-                    value={jsonAttributes}
-                    onChange={handleJsonChange}
-                    name="json-attributes-editor"
-                    width="100%"
-                    height="300px"
-                    fontSize={14}
-                    showPrintMargin={false}
-                    showGutter={true}
-                    highlightActiveLine={true}
-                    setOptions={{
-                      enableBasicAutocompletion: false,
-                      enableLiveAutocompletion: false,
-                      enableSnippets: false,
-                      showLineNumbers: true,
-                      tabSize: 2,
-                      useWorker: false,
-                    }}
-                  />
-                </Box>
-
-                {errors.json && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    {errors.json}
-                  </Alert>
-                )}
-              </Box>
-            )}
-          </Paper>
-        )}
-
-        {/* Show message if no schema fields */}
-        {selectedEntityType && schemaFields.length === 0 && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            No additional properties defined for{" "}
-            {selectedEntityType.entity_type_name}
-          </Alert>
-        )}
-
-        {/* Action Buttons */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 2,
-            mt: 3,
-          }}
-        >
-          {/* Delete button - only show when editing */}
-          {editingEntity && (
-            <Button
+          {/* Dynamic Schema Fields */}
+          {selectedEntityType && schemaFields.length > 0 && (
+            <Paper
               variant="outlined"
-              color="error"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Are you sure you want to delete "${editingEntity.entity_name}"? This action cannot be undone.`
-                  )
-                ) {
-                  deleteMutation.mutate();
-                }
-              }}
-              disabled={mutation.isPending || deleteMutation.isPending}
+              sx={{ p: 3, mb: 3, backgroundColor: "rgba(0, 0, 0, 0.02)" }}
             >
-              {deleteMutation.isPending ? "Deleting..." : "DELETE"}
-            </Button>
+              {/* Header with title and mode toggle */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 3,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: "medium", color: "primary.main" }}
+                >
+                  {selectedEntityType.entity_type_name} Properties
+                </Typography>
+
+                <FormJsonToggle
+                  value={attributesMode}
+                  onChange={handleModeChange}
+                />
+              </Box>
+
+              {/* Form fields mode */}
+              {attributesMode === "form" && (
+                <Grid container spacing={3}>
+                  {schemaFields.map((field) => (
+                    <Grid size={{ xs: 12, sm: 6 }} key={field.key}>
+                      <TextField
+                        fullWidth
+                        label={field.label || field.key}
+                        value={attributes[field.key] || ""}
+                        onChange={(e) =>
+                          handleAttributeChange(field.key, e.target.value)
+                        }
+                        type={field.type === "number" ? "number" : "text"}
+                        helperText={
+                          field.isCustom
+                            ? "Custom attribute (not defined in schema)"
+                            : field.description
+                        }
+                        color={field.isCustom ? "warning" : "primary"}
+                        variant={field.isCustom ? "outlined" : "outlined"}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+
+              {/* JSON mode */}
+              {attributesMode === "json" && (
+                <Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Edit attributes as JSON (Advanced)
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={formatJson}
+                      disabled={
+                        !jsonAttributes.trim() ||
+                        isJsonFormatted() ||
+                        !!jsonError
+                      }
+                      sx={{ textTransform: "none" }}
+                    >
+                      Format JSON
+                    </Button>
+                  </Box>
+
+                  {jsonError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {jsonError}
+                    </Alert>
+                  )}
+
+                  <Box
+                    sx={{
+                      border: jsonError
+                        ? "2px solid #f44336"
+                        : "1px solid #ccc",
+                      borderRadius: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <AceEditor
+                      mode="json"
+                      theme="github"
+                      value={jsonAttributes}
+                      onChange={handleJsonChange}
+                      name="json-attributes-editor"
+                      width="100%"
+                      height="300px"
+                      fontSize={14}
+                      showPrintMargin={false}
+                      showGutter={true}
+                      highlightActiveLine={true}
+                      setOptions={{
+                        enableBasicAutocompletion: false,
+                        enableLiveAutocompletion: false,
+                        enableSnippets: false,
+                        showLineNumbers: true,
+                        tabSize: 2,
+                        useWorker: false,
+                      }}
+                    />
+                  </Box>
+
+                  {errors.json && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      {errors.json}
+                    </Alert>
+                  )}
+                </Box>
+              )}
+            </Paper>
           )}
 
-          <Box sx={{ display: "flex", gap: 2, ml: "auto" }}>
-            <Button
-              variant="outlined"
-              onClick={onClose}
-              disabled={mutation.isPending}
-            >
-              Cancel
-            </Button>
+          {/* Show message if no schema fields */}
+          {selectedEntityType && schemaFields.length === 0 && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              No additional properties defined for{" "}
+              {selectedEntityType.entity_type_name}
+            </Alert>
+          )}
+        </Box>
+      </Box>
 
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={!isDirty || !!jsonError || mutation.isPending}
-            >
-              {mutation.isPending
-                ? "Saving..."
-                : editingEntity?.entity_id
-                ? "Update Entity"
-                : "Create Entity"}
-            </Button>
-          </Box>
+      {/* Fixed Footer with Action Buttons */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "background.paper",
+          zIndex: 1,
+        }}
+      >
+        {/* Delete button - only show when editing */}
+        {editingEntity && (
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to delete "${editingEntity.entity_name}"? This action cannot be undone.`
+                )
+              ) {
+                deleteMutation.mutate();
+              }
+            }}
+            disabled={mutation.isPending || deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? "Deleting..." : "DELETE"}
+          </Button>
+        )}
+
+        <Box sx={{ display: "flex", gap: 2, ml: "auto" }}>
+          <Button
+            variant="outlined"
+            onClick={onClose}
+            disabled={mutation.isPending}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={!isDirty || !!jsonError || mutation.isPending}
+            onClick={handleSubmit}
+          >
+            {mutation.isPending
+              ? "Saving..."
+              : editingEntity?.entity_id
+              ? "Update Entity"
+              : "Create Entity"}
+          </Button>
         </Box>
       </Box>
     </Paper>

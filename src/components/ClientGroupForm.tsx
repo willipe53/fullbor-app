@@ -7,7 +7,10 @@ import {
   Alert,
   Chip,
   CircularProgress,
+  IconButton,
+  Paper,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
@@ -131,7 +134,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   // Initialize form with editing client group data
   useEffect(() => {
     if (editingClientGroup?.client_group_id) {
-      setName(editingClientGroup.name || "");
+      setName(editingClientGroup.client_group_name || "");
 
       // Use utility to safely parse preferences
       const { object: preferences, jsonString } = prepareJsonForForm(
@@ -160,7 +163,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           : [];
 
         setInitialFormState({
-          name: editingClientGroup.name || "",
+          name: editingClientGroup.client_group_name || "",
           dynamicFields: preferences,
           jsonPreferences: jsonString,
           selectedUsers: members,
@@ -353,7 +356,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       const trimmedName = name.trim();
       const isDuplicate = allClientGroups?.some(
         (group: any) =>
-          group.name.toLowerCase() === trimmedName.toLowerCase() &&
+          group.client_group_name.toLowerCase() === trimmedName.toLowerCase() &&
           group.client_group_id !== editingClientGroup?.client_group_id
       );
 
@@ -465,7 +468,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       const trimmedName = name.trim();
       const isDuplicate = allClientGroups?.some(
         (group: any) =>
-          group.name.toLowerCase() === trimmedName.toLowerCase() &&
+          group.client_group_name.toLowerCase() === trimmedName.toLowerCase() &&
           group.client_group_id !== editingClientGroup?.client_group_id
       );
 
@@ -529,40 +532,67 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
     }
   };
 
+  const containerSx = {
+    width: "100%",
+    maxWidth: "800px",
+    margin: "0 auto",
+    height: "600px", // Fixed height for the form
+    display: "flex",
+    flexDirection: "column",
+    position: "relative", // Enable absolute positioning for header/footer
+  };
+
   return (
-    <Box
-      sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}
-    >
-      {/* Header */}
+    <Paper sx={containerSx}>
+      {/* Fixed Header */}
       <Box
         sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
-          flexShrink: 0,
+          p: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "background.paper",
+          zIndex: 1,
         }}
       >
-        <Typography variant="h6">
-          {isCreate ? "Create Client Group" : "Edit Client Group"}
-        </Typography>
-        {!isCreate && (
-          <Chip
-            label={`ID: ${editingClientGroup.client_group_id}`}
-            size="small"
-            variant="outlined"
-            sx={{
-              backgroundColor: "rgba(25, 118, 210, 0.1)",
-              borderColor: "rgba(25, 118, 210, 0.5)",
-              color: "primary.main",
-              fontWeight: "500",
-            }}
-          />
-        )}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Typography variant="h5" component="h2">
+            {isCreate
+              ? "Create Client Group"
+              : editingClientGroup?.client_group_name || "Edit Client Group"}
+          </Typography>
+          {!isCreate && editingClientGroup?.client_group_id && (
+            <Chip
+              label={`ID: ${editingClientGroup.client_group_id}`}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+          )}
+        </Box>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
       </Box>
 
       {/* Scrollable Content */}
-      <Box sx={{ flex: 1, overflow: "auto", pb: 2 }}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "80px", // Height of header
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: "auto",
+          p: 3,
+        }}
+      >
         {errors.general && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {errors.general}
@@ -719,7 +749,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           {!isCreate && (
             <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
               <Typography variant="body1" color="text.secondary">
-                {editingClientGroup.name} contains{" "}
+                {editingClientGroup.client_group_name} contains{" "}
                 {currentGroupEntityCount || 0} entities.
               </Typography>
               <Button
@@ -732,7 +762,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
                   fontWeight: 600,
                 }}
               >
-                Change {editingClientGroup.name} Entities
+                Change {editingClientGroup.client_group_name} Entities
               </Button>
             </Box>
           )}
@@ -765,7 +795,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
               onClick={() => {
                 if (
                   window.confirm(
-                    `Are you sure you want to delete "${editingClientGroup.name}"? This action cannot be undone.`
+                    `Are you sure you want to delete "${editingClientGroup.client_group_name}"? This action cannot be undone.`
                   )
                 ) {
                   deleteMutation.mutate();
@@ -835,12 +865,12 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
             ) : isCreate ? (
               "Create Client Group"
             ) : (
-              `Update ${editingClientGroup.name}`
+              `Update ${editingClientGroup.client_group_name}`
             )}
           </Button>
         </Box>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

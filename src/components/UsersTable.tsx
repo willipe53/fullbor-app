@@ -33,12 +33,32 @@ const UsersTable: React.FC = () => {
   // Get current user's database ID
   const { data: currentUserData } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
+    queryFn: () => apiService.getUserBySub(userId!),
     enabled: !!userId,
   });
 
-  const currentUser =
-    currentUserData && currentUserData.length > 0 ? currentUserData[0] : null;
+  const currentUser = useMemo(() => {
+    if (!currentUserData) return null;
+
+    // Handle both single user object and array response
+    if (Array.isArray(currentUserData)) {
+      // Find the user with matching sub
+      const user = currentUserData.find((user) => user.sub === userId);
+      console.log("Found user in array:", user);
+      return user || null;
+    }
+
+    // Single user object
+    return currentUserData;
+  }, [currentUserData, userId]);
+
+  console.log("Current user for table:", {
+    userId,
+    currentUserData,
+    currentUser,
+    hasUserId: !!currentUser?.user_id,
+    hasPrimaryGroup: !!currentUser?.primary_client_group_id,
+  });
 
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
@@ -64,12 +84,20 @@ const UsersTable: React.FC = () => {
         requesting_user_id: currentUser!.user_id,
         client_group_id: currentUser!.primary_client_group_id,
       };
+      console.log("Fetching users with params:", queryParams);
       return await apiService.queryUsers(queryParams);
     },
     enabled: !!currentUser?.primary_client_group_id && !!currentUser?.user_id,
     staleTime: 30 * 1000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+  });
+
+  console.log("Users query state:", {
+    rawUsersData,
+    isLoading,
+    error,
+    enabled: !!currentUser?.primary_client_group_id && !!currentUser?.user_id,
   });
 
   // Fetch client groups to map IDs to names
@@ -83,8 +111,17 @@ const UsersTable: React.FC = () => {
   // Create client groups map for O(1) lookups
   const clientGroupsMap = useMemo(() => {
     if (!clientGroupsData) return new Map();
+
+    // Handle paginated response
+    const groups = Array.isArray(clientGroupsData)
+      ? clientGroupsData
+      : clientGroupsData.data || [];
+
     return new Map(
-      clientGroupsData.map((group: any) => [group.client_group_id, group.name])
+      groups.map((group: any) => [
+        group.client_group_id,
+        group.client_group_name,
+      ])
     );
   }, [clientGroupsData]);
 
@@ -195,23 +232,28 @@ const UsersTable: React.FC = () => {
         headerName: "Email",
         width: 250,
         minWidth: 200,
-        renderCell: (params: GridRenderCellParams) => (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2">{params.value}</Typography>
-            {currentUser && params.row.sub === currentUser.sub && (
-              <Chip
-                label="You"
-                size="small"
-                color="success"
-                sx={{
-                  height: 20,
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                }}
-              />
-            )}
-          </Box>
-        ),
+        renderCell: (params: GridRenderCellParams) => {
+          const isCurrentUser =
+            currentUser && params.row.sub === currentUser.sub;
+
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2">{params.value}</Typography>
+              {isCurrentUser && (
+                <Chip
+                  label="You"
+                  size="small"
+                  color="success"
+                  sx={{
+                    height: 20,
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                  }}
+                />
+              )}
+            </Box>
+          );
+        },
       },
       {
         field: "primary_client_group_id",

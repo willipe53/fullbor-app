@@ -115,6 +115,8 @@ components:
     ClientGroup:
       type: object
       properties:
+        client_group_id:
+          type: integer
         client_group_name:
           type: string
         preferences:

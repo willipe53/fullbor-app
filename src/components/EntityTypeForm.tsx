@@ -238,7 +238,16 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
   }, [editingEntityType]);
 
   const mutation = useMutation({
-    mutationFn: apiService.updateEntityType,
+    mutationFn: (data: any) => {
+      if (editingEntityType) {
+        return apiService.updateEntityType(
+          editingEntityType.entity_type_name,
+          data
+        );
+      } else {
+        return apiService.createEntityType(data);
+      }
+    },
     onSuccess: () => {
       if (!editingEntityType) {
         // Reset form only for create mode
@@ -320,12 +329,11 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
       // Parse JSON string to object for API
       const schemaObject = JSON.parse(attributesSchema);
 
-      const requestData: apiService.CreateEntityTypeRequest & {
+      const requestData: apiService.EntityType & {
         entity_type_id?: number;
       } = {
-        name,
+        entity_type_name: name,
         attributes_schema: schemaObject,
-        user_id: 1, // TODO: Get from context when available
         ...(shortLabel.trim() && { short_label: shortLabel.trim() }),
         ...(colorForDb.trim() && { label_color: colorForDb.trim() }),
         ...(entityCategory.trim() && {
