@@ -14,6 +14,7 @@
 # - Enhanced UX: progress bars, colored output, result export
 #
 # deps: pip install pyyaml httpx jmespath jsonschema rich tabulate boto3 python-dotenv
+# Note: boto3 and python-dotenv are REQUIRED for Cognito authentication
 #
 # Usage (run from tests/ directory):
 #   # Basic usage (shows test progress, auto-exports to timestamped JSON file)
@@ -54,13 +55,9 @@ import httpx
 import jmespath
 from jsonschema import validate as jsonschema_validate, Draft202012Validator
 
-# Optional imports for enhanced features
-try:
-    import boto3
-    from dotenv import load_dotenv
-    BOTO3_AVAILABLE = True
-except ImportError:
-    BOTO3_AVAILABLE = False
+# Required imports for Cognito authentication
+import boto3
+from dotenv import load_dotenv
 
 # Optional imports for enhanced features
 try:
@@ -90,10 +87,6 @@ def get_auth_token(username: Optional[str] = None, password: Optional[str] = Non
                    user_pool_id: Optional[str] = None, client_id: Optional[str] = None,
                    region: str = 'us-east-2') -> str:
     """Get JWT token from Cognito User Pool."""
-    if not BOTO3_AVAILABLE:
-        raise ImportError(
-            "boto3 and python-dotenv are required for authentication. Install with: pip install boto3 python-dotenv")
-
     try:
         # Load environment variables
         load_dotenv()
@@ -759,11 +752,6 @@ def run_tests_with_args(args, timestamp):
                 vars[name] = os.environ[name]
 
     # Handle authentication (always enabled)
-    if not BOTO3_AVAILABLE:
-        print("❌ Error: boto3 and python-dotenv are required for authentication.", file=sys.stderr)
-        print("   Install with: pip install boto3 python-dotenv", file=sys.stderr)
-        sys.exit(1)
-
     try:
         # Get authentication token
         token = get_auth_token(
@@ -801,6 +789,7 @@ def run_tests_with_args(args, timestamp):
     # Add authentication headers (always enabled)
     if 'token' in vars:
         auth_headers = {
+            # Authorization header required for Cognito User Pools authorizer
             'Authorization': 'Bearer {{token}}',
             'X-Current-User-Id': '{{current_user_id}}',
             'Content-Type': 'application/json'

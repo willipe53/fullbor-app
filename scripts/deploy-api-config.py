@@ -247,16 +247,103 @@ class APIGatewayDeployer:
             openapi_json = json.dumps(self.openapi_spec)
 
             # Import the specification
+            # Use 'merge' mode to preserve existing authorization settings
             response = self.apigateway_client.put_rest_api(
                 restApiId=api_id,
-                mode='overwrite',
+                mode='merge',
                 body=openapi_json.encode('utf-8')
             )
 
             logger.info("✅ OpenAPI specification imported successfully")
 
+            # Apply Cognito User Pools authorization to all methods
+            self._apply_cognito_authorization(api_id)
+
         except ClientError as e:
             logger.error(f"Failed to import OpenAPI specification: {e}")
+            raise
+
+    def _apply_cognito_authorization(self, api_id: str) -> None:
+        """Apply Cognito User Pools authorization to all methods."""
+        logger.info(
+            "Applying Cognito User Pools authorization to all methods...")
+
+        # Get or create the Cognito authorizer
+        authorizer_id = self._get_or_create_cognito_authorizer(api_id)
+
+        # Get all resources
+        resources = self.apigateway_client.get_resources(restApiId=api_id)
+
+        # HTTP methods to update
+        http_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+
+        updated_count = 0
+
+        for resource in resources['items']:
+            if 'resourceMethods' in resource:
+                resource_id = resource['id']
+                resource_path = resource['path']
+
+                for method in resource['resourceMethods'].keys():
+                    if method in http_methods:
+                        try:
+                            # Update the method to use Cognito authorization
+                            self.apigateway_client.update_method(
+                                restApiId=api_id,
+                                resourceId=resource_id,
+                                httpMethod=method,
+                                patchOperations=[
+                                    {
+                                        'op': 'replace',
+                                        'path': '/authorizationType',
+                                        'value': 'COGNITO_USER_POOLS'
+                                    },
+                                    {
+                                        'op': 'replace',
+                                        'path': '/authorizerId',
+                                        'value': authorizer_id
+                                    }
+                                ]
+                            )
+                            updated_count += 1
+
+                        except ClientError as e:
+                            logger.warning(
+                                f"Failed to update {method} {resource_path}: {e}")
+
+        logger.info(
+            f"✅ Applied Cognito authorization to {updated_count} methods")
+
+    def _get_or_create_cognito_authorizer(self, api_id: str) -> str:
+        """Get existing Cognito authorizer or create a new one."""
+        try:
+            # Check if authorizer already exists
+            authorizers = self.apigateway_client.get_authorizers(
+                restApiId=api_id)
+
+            for authorizer in authorizers['items']:
+                if authorizer['type'] == 'COGNITO_USER_POOLS':
+                    logger.info(
+                        f"Found existing Cognito authorizer: {authorizer['id']}")
+                    return authorizer['id']
+
+            # Create new authorizer if none exists
+            logger.info("Creating new Cognito User Pools authorizer...")
+            response = self.apigateway_client.create_authorizer(
+                restApiId=api_id,
+                name='CognitoUserPoolAuthorizer',
+                type='COGNITO_USER_POOLS',
+                providerARNs=[
+                    'arn:aws:cognito-idp:us-east-2:316490106381:userpool/us-east-2_IJ1C0mWXW'
+                ],
+                identitySource='method.request.header.Authorization'
+            )
+
+            logger.info(f"✅ Created Cognito authorizer: {response['id']}")
+            return response['id']
+
+        except ClientError as e:
+            logger.error(f"Failed to get or create Cognito authorizer: {e}")
             raise
 
     def _get_lambda_function_name(self, handler_name: str) -> str:

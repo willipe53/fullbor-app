@@ -25,13 +25,13 @@ import AuditTrail from "./AuditTrail";
 
 interface EntityType {
   entity_type_id: number;
-  name: string;
+  entity_type_name: string;
   attributes_schema: object | string;
   short_label?: string;
   label_color?: string;
   entity_category?: string;
   update_date?: string;
-  updated_user_id?: number;
+  updated_by_user_name?: string;
 }
 
 interface EntityTypeFormProps {
@@ -129,7 +129,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
   // Populate form when editing an entity type
   useEffect(() => {
     if (editingEntityType) {
-      setName(editingEntityType.name || "");
+      setName(editingEntityType.entity_type_name || "");
       setShortLabel(editingEntityType.short_label || "");
       setEntityCategory(editingEntityType.entity_category || "");
 
@@ -212,7 +212,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
         }
 
         setInitialFormState({
-          name: editingEntityType.name || "",
+          name: editingEntityType.entity_type_name || "",
           shortLabel: editingEntityType.short_label || "",
           labelColor: color,
           entityCategory: editingEntityType.entity_category || "",
@@ -281,7 +281,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
 
   const deleteMutation = useMutation({
     mutationFn: () =>
-      apiService.deleteRecord(editingEntityType!.entity_type_id, "Entity Type"),
+      apiService.deleteEntityType(editingEntityType!.entity_type_name),
     onSuccess: () => {
       // Show success notification
       setShowSuccessSnackbar(true);
@@ -436,7 +436,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
         <Alert severity="error" sx={{ mb: 2 }}>
           Error:{" "}
           {deleteMutation.error?.message ||
-            `Failed to delete entity type "${editingEntityType?.name}"`}
+            `Failed to delete entity type "${editingEntityType?.entity_type_name}"`}
         </Alert>
       )}
 
@@ -679,72 +679,76 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
             updateDate={editingEntityType?.update_date}
             updatedUserId={editingEntityType?.updated_user_id}
           />
+        </Box>
 
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mt: 2,
-              flexShrink: 0,
-            }}
-          >
-            {/* Delete button - only show when editing */}
-            {editingEntityType && (
+        {/* Fixed Footer with Action Buttons */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "background.paper",
+            flexShrink: 0,
+          }}
+        >
+          {/* Delete button - only show when editing */}
+          {editingEntityType && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Are you sure you want to delete "${editingEntityType.entity_type_name}"?\n\nThis action cannot be undone and may affect related entities.`
+                  )
+                ) {
+                  deleteMutation.mutate();
+                }
+              }}
+              disabled={mutation.isPending || deleteMutation.isPending}
+              sx={{ minWidth: "auto" }}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <CircularProgress size={16} sx={{ mr: 1 }} />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          )}
+
+          {/* Action buttons */}
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {editingEntityType && onClose && (
               <Button
                 variant="outlined"
-                color="error"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Are you sure you want to delete "${editingEntityType.name}"?\n\nThis action cannot be undone and may affect related entities.`
-                    )
-                  ) {
-                    deleteMutation.mutate();
-                  }
-                }}
+                onClick={onClose}
                 disabled={mutation.isPending || deleteMutation.isPending}
-                sx={{ minWidth: "auto" }}
               >
-                {deleteMutation.isPending ? (
-                  <>
-                    <CircularProgress size={16} sx={{ mr: 1 }} />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
+                Cancel
               </Button>
             )}
-
-            {/* Action buttons */}
-            <Box sx={{ display: "flex", gap: 2 }}>
-              {editingEntityType && onClose && (
-                <Button
-                  variant="outlined"
-                  onClick={onClose}
-                  disabled={mutation.isPending || deleteMutation.isPending}
-                >
-                  Cancel
-                </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!canSubmit || deleteMutation.isPending}
+            >
+              {mutation.isPending ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  {editingEntityType ? "Updating..." : "Creating..."}
+                </>
+              ) : editingEntityType?.entity_type_id ? (
+                `Update ${editingEntityType.entity_type_name}`
+              ) : (
+                "Create Entity Type"
               )}
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!canSubmit || deleteMutation.isPending}
-              >
-                {mutation.isPending ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    {editingEntityType ? "Updating..." : "Creating..."}
-                  </>
-                ) : editingEntityType?.entity_type_id ? (
-                  `Update ${editingEntityType.name}`
-                ) : (
-                  "Create Entity Type"
-                )}
-              </Button>
-            </Box>
+            </Button>
           </Box>
         </Box>
       </form>

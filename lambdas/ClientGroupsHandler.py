@@ -263,40 +263,113 @@ def handle_client_group_operations(connection, http_method, path, path_parameter
 def handle_get_operations(connection, path, path_parameters, query_parameters, user_client_groups):
     """Handle GET operations."""
     if 'client_group_name' in path_parameters:
-        # Get single client group by name: /client-groups/{client_group_name}
         client_group_name = unquote(path_parameters['client_group_name'])
 
-        # Check if user has access to this client group
-        client_group_id = get_client_group_id_by_name(
-            connection, client_group_name)
-        if not client_group_id or client_group_id not in user_client_groups:
-            return {"error": "Client group not found or access denied"}
+        # Check if this is a request for entities in the client group
+        if path.endswith('/entities'):
+            return handle_get_client_group_entities(connection, client_group_name, query_parameters, user_client_groups)
+        else:
+            # Get single client group by name: /client-groups/{client_group_name}
+            # Check if user has access to this client group
+            client_group_id = get_client_group_id_by_name(
+                connection, client_group_name)
+            if not client_group_id or client_group_id not in user_client_groups:
+                return {"error": "Client group not found or access denied"}
 
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT client_group_id, name, preferences, update_date, updated_user_id
-                FROM client_groups
-                WHERE client_group_id = %s
-            """, (client_group_id,))
-            result = cursor.fetchone()
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT client_group_id, name, preferences, update_date, updated_user_id
+                    FROM client_groups
+                    WHERE client_group_id = %s
+                """, (client_group_id,))
+                result = cursor.fetchone()
 
-            if not result:
-                return {"error": "Client group not found"}
+                if not result:
+                    return {"error": "Client group not found"}
 
-            # Map database fields to OpenAPI schema
-            preferences = json.loads(result[2]) if result[2] else {}
-            updated_by_user_name = get_user_name_by_id(
-                connection, result[4]) if result[4] else None
+                # Map database fields to OpenAPI schema
+                preferences = json.loads(result[2]) if result[2] else {}
+                updated_by_user_name = get_user_name_by_id(
+                    connection, result[4]) if result[4] else None
 
-            return {
-                "client_group_name": result[1],
-                "preferences": preferences,
-                "update_date": result[3].isoformat() + "Z" if result[3] else None,
-                "updated_by_user_name": updated_by_user_name
-            }
+                return {
+                    "client_group_name": result[1],
+                    "preferences": preferences,
+                    "update_date": result[3].isoformat() + "Z" if result[3] else None,
+                    "updated_by_user_name": updated_by_user_name
+                }
     else:
         # List all client groups: /client-groups
         return handle_list_client_groups(connection, query_parameters, user_client_groups)
+
+
+def handle_get_client_group_entities(connection, client_group_name, query_parameters, user_client_groups):
+    """Handle getting entities for a specific client group."""
+    # Check if user has access to this client group
+    client_group_id = get_client_group_id_by_name(
+        connection, client_group_name)
+    if not client_group_id or client_group_id not in user_client_groups:
+        return {"error": "Client group not found or access denied"}
+
+    # Get query parameters
+    count_only = query_parameters.get('count', 'false').lower() == 'true'
+    limit = int(query_parameters.get('limit', 100))
+    offset = int(query_parameters.get('offset', 0))
+
+    with connection.cursor() as cursor:
+        if count_only:
+            # Return only count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT e.entity_id)
+                FROM entities e
+                INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
+                WHERE cge.client_group_id = %s
+            """, (client_group_id,))
+            count = cursor.fetchone()[0]
+            return {"count": count}
+        else:
+            # Return entities with pagination
+            cursor.execute("""
+                SELECT e.entity_id, e.name, et.name as entity_type_name, et.entity_category,
+                       e.update_date, e.updated_user_id
+                FROM entities e
+                INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
+                INNER JOIN entity_types et ON e.entity_type_id = et.entity_type_id
+                WHERE cge.client_group_id = %s
+                ORDER BY e.name
+                LIMIT %s OFFSET %s
+            """, (client_group_id, limit, offset))
+            entities = cursor.fetchall()
+
+            # Get total count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT e.entity_id)
+                FROM entities e
+                INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
+                WHERE cge.client_group_id = %s
+            """, (client_group_id,))
+            total_count = cursor.fetchone()[0]
+
+            # Format entities
+            entity_list = []
+            for entity in entities:
+                updated_by_user_name = get_user_name_by_id(
+                    connection, entity[5]) if entity[5] else None
+                entity_list.append({
+                    "entity_id": entity[0],
+                    "entity_name": entity[1],
+                    "entity_type_name": entity[2],
+                    "entity_category": entity[3],
+                    "update_date": entity[4].isoformat() + "Z" if entity[4] else None,
+                    "updated_by_user_name": updated_by_user_name
+                })
+
+            return {
+                "data": entity_list,
+                "count": total_count,
+                "limit": limit,
+                "offset": offset
+            }
 
 
 def handle_list_client_groups(connection, query_parameters, user_client_groups):

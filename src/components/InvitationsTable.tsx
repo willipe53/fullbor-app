@@ -70,10 +70,16 @@ const InvitationsTable: React.FC = () => {
           const invitationsArray = invitations.data || invitations;
           if (Array.isArray(invitationsArray)) {
             allInvitations.push(
-              ...invitationsArray.map((inv) => ({ ...inv, group_name: group.client_group_name }))
+              ...invitationsArray.map((inv) => ({
+                ...inv,
+                group_name: group.client_group_name,
+              }))
             );
           } else if (invitationsArray) {
-            allInvitations.push({ ...invitationsArray, group_name: group.client_group_name });
+            allInvitations.push({
+              ...invitationsArray,
+              group_name: group.client_group_name,
+            });
           }
         } catch (error) {
           console.error(
@@ -99,12 +105,14 @@ const InvitationsTable: React.FC = () => {
       return apiService.queryClientGroupInvitations(
         primaryClientGroup?.client_group_name!,
         {}
-      });
+      );
     },
     staleTime: 30 * 1000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    enabled: !!currentUser?.primary_client_group_id && !!primaryClientGroup?.client_group_name,
+    enabled:
+      !!currentUser?.primary_client_group_id &&
+      !!primaryClientGroup?.client_group_name,
   });
 
   // Mutation to expire an invitation

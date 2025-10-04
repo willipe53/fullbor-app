@@ -64,8 +64,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const [filters, setFilters] = useState<
     Partial<apiService.QueryEntitiesRequest>
   >({});
-  const [nameFilter, setNameFilter] = useState("");
-  const [entityIdFilter, setEntityIdFilter] = useState("");
+  const [entityNameFilter, setEntityNameFilter] = useState("");
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
   const [editingEntity, setEditingEntity] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,28 +115,28 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     }
   }, [groupEntityIds, groupSelectionMode]);
 
-  // Transform array data to objects if needed
+  // Transform API response data to array format
   const entitiesData = React.useMemo(() => {
     if (!rawEntitiesData) return [];
 
-    // Check if data is already in object format
-    if (
-      Array.isArray(rawEntitiesData) &&
-      rawEntitiesData.length > 0 &&
-      typeof rawEntitiesData[0] === "object" &&
-      "entity_id" in rawEntitiesData[0]
-    ) {
-      return rawEntitiesData;
-    }
-
-    // Transform array format [id, name, type_id, parent_id, attributes] to object format
+    // Handle simple array format (when no pagination parameters are provided)
     if (Array.isArray(rawEntitiesData)) {
+      // Check if data is already in object format
+      if (
+        rawEntitiesData.length > 0 &&
+        typeof rawEntitiesData[0] === "object" &&
+        "entity_id" in rawEntitiesData[0]
+      ) {
+        return rawEntitiesData;
+      }
+
+      // Transform array format [id, name, type_name, attributes] to object format
       return rawEntitiesData.map((row: any) => {
         if (Array.isArray(row) && row.length >= 4) {
           return {
             entity_id: row[0],
-            name: row[1],
-            entity_type_id: row[2],
+            entity_name: row[1],
+            entity_type_name: row[2],
             attributes: row[3], // Don't parse here, let formatAttributes handle it
           };
         }
@@ -145,7 +144,26 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       });
     }
 
-    return rawEntitiesData;
+    // Handle paginated response format: { data: Entity[], count: number, limit: number, offset: number }
+    if (
+      rawEntitiesData &&
+      typeof rawEntitiesData === "object" &&
+      "data" in rawEntitiesData
+    ) {
+      return rawEntitiesData.data || [];
+    }
+
+    // Handle count-only response format: { count: number }
+    if (
+      rawEntitiesData &&
+      typeof rawEntitiesData === "object" &&
+      "count" in rawEntitiesData &&
+      !("data" in rawEntitiesData)
+    ) {
+      return []; // Return empty array for count-only responses
+    }
+
+    return [];
   }, [rawEntitiesData]);
 
   // Fetch entity types for filter dropdown
@@ -154,8 +172,55 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     queryFn: () => apiService.queryEntityTypes({}),
   });
 
-  // Use entity types data directly since it's an array
-  const entityTypesData = rawEntityTypesData || [];
+  // Transform entity types API response data to array format
+  const entityTypesData = React.useMemo(() => {
+    if (!rawEntityTypesData) return [];
+
+    // Handle paginated response format: { data: EntityType[], count: number, limit: number, offset: number }
+    if (
+      rawEntityTypesData &&
+      typeof rawEntityTypesData === "object" &&
+      "data" in rawEntityTypesData
+    ) {
+      return rawEntityTypesData.data || [];
+    }
+
+    // Handle count-only response format: { count: number }
+    if (
+      rawEntityTypesData &&
+      typeof rawEntityTypesData === "object" &&
+      "count" in rawEntityTypesData &&
+      !("data" in rawEntityTypesData)
+    ) {
+      return []; // Return empty array for count-only responses
+    }
+
+    // Handle legacy array format (fallback)
+    if (Array.isArray(rawEntityTypesData)) {
+      return rawEntityTypesData;
+    }
+
+    return [];
+  }, [rawEntityTypesData]);
+
+  // Create list of unique entity names for autocomplete
+  const uniqueEntityNames = React.useMemo(() => {
+    if (!entitiesData) return [];
+    const names = entitiesData
+      .map((entity) => entity.entity_name)
+      .filter(Boolean);
+    return [...new Set(names)].sort();
+  }, [entitiesData]);
+
+  // Apply client-side filtering for entity name
+  const filteredEntitiesData = React.useMemo(() => {
+    if (!entitiesData) return [];
+    if (!entityNameFilter) return entitiesData;
+
+    return entitiesData.filter((entity) =>
+      entity.entity_name.toLowerCase().includes(entityNameFilter.toLowerCase())
+    );
+  }, [entitiesData, entityNameFilter]);
 
   // Checkbox handlers for group selection mode
   const handleEntityToggle = React.useCallback(
@@ -176,9 +241,11 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   );
 
   const handleSelectAllVisible = React.useCallback(() => {
-    if (!groupSelectionMode || !entitiesData) return;
+    if (!groupSelectionMode || !filteredEntitiesData) return;
 
-    const visibleEntityIds = entitiesData.map((entity) => entity.entity_id);
+    const visibleEntityIds = filteredEntitiesData.map(
+      (entity) => entity.entity_id
+    );
     const allVisibleSelected = visibleEntityIds.every((id) =>
       selectedEntityIds.has(id)
     );
@@ -194,20 +261,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       }
       return newSet;
     });
-  }, [groupSelectionMode, entitiesData, selectedEntityIds]);
-
-  // Create list of unique entity names for autocomplete
-  const uniqueEntityNames = useMemo(() => {
-    if (!entitiesData) return [];
-
-    const names = entitiesData
-      .map((entity) => entity.name)
-      .filter((name) => name && name.trim()) // Remove empty/null names
-      .sort();
-
-    // Remove duplicates and return as array of strings
-    return [...new Set(names)];
-  }, [entitiesData]);
+  }, [groupSelectionMode, filteredEntitiesData, selectedEntityIds]);
 
   const formatAttributes = (attributes: any) => {
     if (!attributes) return "None";
@@ -273,7 +327,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
               filterable: false,
               renderHeader: () => {
                 const visibleEntityIds =
-                  entitiesData?.map((entity) => entity.entity_id) || [];
+                  filteredEntitiesData?.map((entity) => entity.entity_id) || [];
                 const allVisibleSelected =
                   visibleEntityIds.length > 0 &&
                   visibleEntityIds.every((id) => selectedEntityIds.has(id));
@@ -315,7 +369,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
         renderCell: (params: GridRenderCellParams) => {
           // Find the entity type for this entity to get its short_label and color
           const entityType = entityTypesData?.find(
-            (type) => type.entity_type_id === params.row.entity_type_id
+            (type) => type.entity_type_name === params.row.entity_type_name
           );
           const shortLabel = entityType?.short_label;
           const labelColor = entityType?.label_color;
@@ -343,7 +397,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
         },
       },
       {
-        field: "name",
+        field: "entity_name",
         headerName: "Name",
       },
       {
@@ -369,7 +423,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     ],
     [
       entityTypesData,
-      entitiesData,
+      filteredEntitiesData,
       groupSelectionMode,
       selectedEntityIds,
       handleSelectAllVisible,
@@ -410,17 +464,13 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
 
   const handleFilter = () => {
     const newFilters: Partial<apiService.QueryEntitiesRequest> = {};
-    if (entityIdFilter) newFilters.entity_id = parseInt(entityIdFilter);
-    if (nameFilter) newFilters.name = nameFilter;
-    if (entityTypeFilter)
-      newFilters.entity_type_id = parseInt(entityTypeFilter);
+    if (entityTypeFilter) newFilters.entity_type_name = entityTypeFilter;
     setFilters({ ...newFilters, user_id: currentUser!.user_id });
   };
 
   const clearFilters = () => {
     setFilters({ user_id: currentUser!.user_id });
-    setNameFilter("");
-    setEntityIdFilter("");
+    setEntityNameFilter("");
     setEntityTypeFilter("");
   };
 
@@ -594,29 +644,30 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
         </Typography>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
-            <TextField
-              label="Entity ID"
-              value={entityIdFilter}
-              onChange={(e) => setEntityIdFilter(e.target.value)}
-              size="small"
-              sx={{ minWidth: 120 }}
-            />
             <Autocomplete
-              freeSolo
               options={uniqueEntityNames}
-              value={nameFilter}
-              onInputChange={(_, newValue) => setNameFilter(newValue || "")}
+              value={entityNameFilter}
+              onChange={(_, newValue) => setEntityNameFilter(newValue || "")}
+              onInputChange={(_, newInputValue) =>
+                setEntityNameFilter(newInputValue)
+              }
+              freeSolo
+              size="small"
+              sx={{ minWidth: 200 }}
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Name"
-                  size="small"
-                  sx={{ minWidth: 200 }}
+                  label="Name (contains)"
+                  placeholder="Type to search..."
                 />
               )}
+              filterOptions={(options, { inputValue }) => {
+                if (!inputValue) return options;
+                return options.filter((option) =>
+                  option.toLowerCase().includes(inputValue.toLowerCase())
+                );
+              }}
             />
-          </Stack>
-          <Stack direction="row" spacing={2}>
             <TextField
               select
               label="Entity Type"
@@ -627,8 +678,11 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
             >
               <MenuItem value="">All Types</MenuItem>
               {(entityTypesData || []).map((type) => (
-                <MenuItem key={type.entity_type_id} value={type.entity_type_id}>
-                  {type.name}
+                <MenuItem
+                  key={type.entity_type_name}
+                  value={type.entity_type_name}
+                >
+                  {type.entity_type_name}
                 </MenuItem>
               ))}
             </TextField>
@@ -649,21 +703,28 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
 
       {/* Data Grid */}
       <Box sx={{ height: 600, width: "100%" }}>
-        {entitiesData.length === 0 && !isLoading ? (
+        {filteredEntitiesData.length === 0 && !isLoading ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              No entities found
+              {entityNameFilter || entityTypeFilter
+                ? "No entities match the current filters"
+                : "No entities found"}
               <br />
-              No entities exist for{" "}
-              {primaryClientGroup?.name || "this client group"}
-              <br />
-              Click "New" to create one for{" "}
-              {primaryClientGroup?.name || "this client group"}.
+              {!entityNameFilter && !entityTypeFilter && (
+                <>
+                  No entities exist for{" "}
+                  {primaryClientGroup?.client_group_name || "this client group"}
+                  <br />
+                  Click "New" to create one for{" "}
+                  {primaryClientGroup?.client_group_name || "this client group"}
+                  .
+                </>
+              )}
             </Typography>
           </Box>
         ) : (
           <DataGrid
-            rows={entitiesData || []}
+            rows={filteredEntitiesData || []}
             columns={columns}
             getRowId={(row) => row.entity_id}
             pagination

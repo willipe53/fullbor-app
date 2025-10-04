@@ -234,7 +234,9 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
     entity_type_name_filter = query_parameters.get('entity_type_name')
     client_group_name_filter = query_parameters.get('client_group_name')
     count_only = query_parameters.get('count', 'false').lower() == 'true'
-    limit = int(query_parameters.get('limit', 100))
+    # Only apply limit/offset if explicitly provided
+    limit = int(query_parameters.get('limit')
+                ) if query_parameters.get('limit') else None
     offset = int(query_parameters.get('offset', 0))
 
     # Build base query using only entities the current user has access to
@@ -277,20 +279,16 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                et.name as entity_type_name
         {base_query}
         ORDER BY e.name
-        LIMIT %s OFFSET %s
     """
-    params.extend([limit, offset])
+
+    # Add LIMIT and OFFSET only if limit is specified
+    if limit is not None:
+        query += " LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
 
     with connection.cursor() as cursor:
         cursor.execute(query, params)
         results = cursor.fetchall()
-
-        # Get total count for pagination
-        count_query = f"SELECT COUNT(*) as count {base_query}"
-        # Exclude limit and offset from count query
-        cursor.execute(count_query, params[:-2])
-        count_result = cursor.fetchone()
-        total_count = count_result[0]
 
         data = []
         for result in results:
@@ -300,6 +298,7 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                 connection, result[5]) if result[5] else None
 
             data.append({
+                "entity_id": result[0],  # Include entity_id for DataGrid
                 "entity_name": result[1],
                 "entity_type_name": result[6],
                 "attributes": attributes,
@@ -307,12 +306,24 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                 "updated_by_user_name": updated_by_user_name
             })
 
-        return {
-            "data": data,
-            "count": total_count,
-            "limit": limit,
-            "offset": offset
-        }
+        # Return format depends on whether pagination was applied
+        if limit is not None:
+            # Get total count for pagination
+            count_query = f"SELECT COUNT(*) as count {base_query}"
+            # Exclude limit and offset from count query
+            cursor.execute(count_query, params[:-2])
+            count_result = cursor.fetchone()
+            total_count = count_result[0]
+
+            return {
+                "data": data,
+                "count": total_count,
+                "limit": limit,
+                "offset": offset
+            }
+        else:
+            # No pagination - return simple array
+            return data
 
 
 def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids):
@@ -598,14 +609,14 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
                     WHERE entity_id = %s AND client_group_id IN ({})
                 """.format(','.join(['%s'] * len(user_client_groups))),
                     [target_entity_id] + user_client_groups)
+            connection.commit()
             return {"message": "Entity affiliations removed from accessible client groups"}
         else:
             # Entity is only affiliated with user's client groups - safe to delete the entity
             cursor.execute(
                 "DELETE FROM entities WHERE entity_id = %s", (target_entity_id,))
+            connection.commit()
             return {"message": "Entity deleted successfully"}
-
-        connection.commit()
 
 
 def lambda_handler(event, context):

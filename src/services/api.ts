@@ -117,8 +117,19 @@ const apiCall = async <T>(
     throw new Error(`API call failed: ${response.status} ${errorText}`);
   }
 
-  const result = await response.json();
-  return result;
+  // Handle empty responses (common for DELETE operations)
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  try {
+    const result = JSON.parse(text);
+    return result;
+  } catch (error) {
+    console.error("Failed to parse JSON response:", text);
+    throw new Error(`Invalid JSON response: ${text}`);
+  }
 };
 
 // Entity Types - Updated to match FullBor API spec
@@ -134,6 +145,7 @@ export interface EntityType {
 
 // Entities - Updated to match FullBor API spec
 export interface Entity {
+  entity_id: number;
   entity_name: string;
   entity_type_name: string;
   attributes?: any;
@@ -155,6 +167,7 @@ export interface UpdateEntityRequest {
 
 export interface QueryEntitiesRequest {
   entity_type_name?: string;
+  entity_category?: string;
   client_group_name?: string;
   count?: boolean;
   limit?: number;
@@ -168,7 +181,8 @@ export type QueryEntitiesResponse =
       limit: number;
       offset: number;
     }
-  | { count: number };
+  | { count: number }
+  | Entity[]; // Simple array when no pagination parameters are provided
 
 // Entity Types API functions - Updated for FullBor API
 export interface QueryEntityTypesRequest {
@@ -176,7 +190,14 @@ export interface QueryEntityTypesRequest {
   count?: boolean;
 }
 
-export type QueryEntityTypesResponse = EntityType[] | { count: number };
+export type QueryEntityTypesResponse =
+  | {
+      data: EntityType[];
+      count: number;
+      limit: number;
+      offset: number;
+    }
+  | { count: number };
 
 export const queryEntityTypes = async (
   data: QueryEntityTypesRequest = {}

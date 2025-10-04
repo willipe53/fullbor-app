@@ -16,6 +16,70 @@ info:
     All get endpoints return a count of the total number of results and a limit and offset
     that can be used to paginate the results.
 
+    OVERVIEW
+    --------
+    The API has 42 endpoints across 9 main resource areas:
+
+    CLIENT GROUPS (8 endpoints):
+    - GET    /client-groups
+    - GET    /client-groups/{client_group_name}
+    - POST   /client-groups
+    - PUT    /client-groups/{client_group_name}
+    - DELETE /client-groups/{client_group_name}
+    - PUT    /client-groups/{client_group_name}/entities:set
+    - PUT    /client-groups/{client_group_name}/users:set
+    - GET    /client-groups/{client_group_name}/entities
+
+    ENTITIES (5 endpoints):
+    - GET    /entities
+    - GET    /entities/{entity_name}
+    - POST   /entities
+    - PUT    /entities/{entity_name}
+    - DELETE /entities/{entity_name}
+
+    ENTITY TYPES (5 endpoints):
+    - GET    /entity-types
+    - GET    /entity-types/{entity_type_name}
+    - POST   /entity-types
+    - PUT    /entity-types/{entity_type_name}
+    - DELETE /entity-types/{entity_type_name}
+
+    TRANSACTIONS (5 endpoints):
+    - GET    /transactions
+    - GET    /transactions/{transaction_id}
+    - POST   /transactions
+    - PUT    /transactions/{transaction_id}
+    - DELETE /transactions/{transaction_id}
+
+    TRANSACTION TYPES (5 endpoints):
+    - GET    /transaction-types
+    - GET    /transaction-types/{transaction_type_name}
+    - POST   /transaction-types
+    - PUT    /transaction-types/{transaction_type_name}
+    - DELETE /transaction-types/{transaction_type_name}
+
+    TRANSACTION STATUSES (1 endpoint):
+    - GET    /transaction-statuses
+
+    POSITION KEEPER (2 endpoints):
+    - POST   /position-keeper/start
+    - POST   /position-keeper/stop
+
+    USERS (5 endpoints):
+    - GET    /users
+    - GET    /users/{sub}
+    - POST   /users
+    - PUT    /users/{sub}
+    - DELETE /users/{sub}
+
+    INVITATIONS (6 endpoints):
+    - GET    /invitations
+    - GET    /invitations/{invitation_id}
+    - POST   /invitations
+    - PUT    /invitations/{invitation_id}
+    - DELETE /invitations/{invitation_id}
+    - POST   /invitations/redeem/{code}
+
     '
 servers:
   - url: https://api.fullbor.ai/v2
@@ -31,15 +95,14 @@ tags:
   - name: Invitations
 components:
   securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://auth.fullbor.ai/oauth2/authorize
-          tokenUrl: https://auth.fullbor.ai/oauth2/token
-          scopes:
-            read: Read access
-            write: Write access
+    CognitoUserPools:
+      type: apiKey
+      in: header
+      name: Authorization
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - arn:aws:cognito-idp:us-east-2:316490106381:userpool/us-east-2_IJ1C0mWXW
   parameters:
     CurrentUserIdHeader:
       name: X-Current-User-Id
@@ -101,6 +164,9 @@ components:
     EntityType:
       type: object
       properties:
+        entity_type_id:
+          type: integer
+          description: Internal database ID
         entity_type_name:
           type: string
         attributes_schema:
@@ -125,6 +191,7 @@ components:
           type: string
           nullable: true
       required:
+        - entity_type_id
         - entity_type_name
     Transaction:
       type: object
@@ -305,9 +372,10 @@ components:
           minimum: 0
           default: 0
 security:
-  - OAuth2:
-      - read
-      - write
+  - CognitoUserPools:
+      - openid
+      - email
+      - profile
 paths:
   /client-groups:
     parameters:
@@ -342,7 +410,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
         - in: query
           name: offset
           schema:
@@ -755,7 +822,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -852,7 +918,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
         - in: query
           name: offset
           schema:
@@ -1096,7 +1161,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -1420,7 +1484,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
         - in: query
           name: offset
           schema:
@@ -1651,7 +1714,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -1971,7 +2033,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -2023,7 +2084,7 @@ paths:
                     count: 4
                     limit: 100
                     offset: 0
-        "400": &id028
+        "400":
           description: Bad request
           content:
             application/json:
@@ -2032,7 +2093,7 @@ paths:
                 properties:
                   error:
                     type: string
-        "401": &id029
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -2041,7 +2102,7 @@ paths:
                 properties:
                   error:
                     type: string
-        "403": &id030
+        "403":
           description: Forbidden
           content:
             application/json:
@@ -2186,7 +2247,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -2471,7 +2531,6 @@ paths:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
           description: Maximum number of results to return
         - in: query
           name: offset
@@ -2596,7 +2655,7 @@ paths:
                     client_group_name: "Byrde Family Foundation"
                     email_sent_to: "user@example.com"
                     updated_by_user_name: "peter@endowment.org"
-        "400": &id043
+        "400":
           description: Bad request
           content:
             application/json:
@@ -2605,7 +2664,7 @@ paths:
                 properties:
                   error:
                     type: string
-        "401": &id044
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -2614,7 +2673,7 @@ paths:
                 properties:
                   error:
                     type: string
-        "403": &id045
+        "403":
           description: Forbidden
           content:
             application/json:

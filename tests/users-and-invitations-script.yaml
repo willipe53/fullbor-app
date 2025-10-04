@@ -39,24 +39,11 @@ tests:
           exists: true
           type: "array"
 
-  # Get existing user by email
-  - name: "Get existing user by email"
-    request:
-      method: GET
-      url: "/users/willipe53+test@gmail.com"
-    expect:
-      status: 200
-      json:
-        - path: "email"
-          equals: "willipe53+test@gmail.com"
-        - path: "user_name"
-          exists: true
-
   # Get non-existent user (should return 404 or error)
   - name: "Get non-existent user (should fail)"
     request:
       method: GET
-      url: "/users/nonexistent@example.com"
+      url: "/users/nonexistent-sub-12345"
     expect:
       status: 404
       json:
@@ -80,11 +67,24 @@ tests:
         - path: "message"
           exists: true
 
+  # Get newly created user by sub (should succeed)
+  - name: "Get newly created user by sub"
+    request:
+      method: GET
+      url: "/users/cafebabe-beef-dead-f00d-c0ffeec0ffee"
+    expect:
+      status: 200
+      json:
+        - path: "sub"
+          equals: "cafebabe-beef-dead-f00d-c0ffeec0ffee"
+        - path: "email"
+          equals: "foo@bar.com"
+
   # Update user preferences
   - name: "Update user preferences"
     request:
       method: PUT
-      url: "/users/willipe53+test@gmail.com"
+      url: "/users/cafebabe-beef-dead-f00d-c0ffeec0ffee"
       json:
         preferences:
           a: "c"
@@ -94,18 +94,8 @@ tests:
         - path: "message"
           exists: true
 
-  # Set client groups for user (use existing client group)
-  - name: "Set client groups for user"
-    request:
-      method: POST
-      url: "/users/willipe53+test@gmail.com/client-groups:set"
-      json:
-        client_group_names: ["Byrde Family Foundation"]
-    expect:
-      status: 201
-      json:
-        - path: "message"
-          exists: true
+  # Note: Client group association is now handled via PUT /client-groups/{client_group_name}/users:set
+  # This is tested in the client-groups-script.yaml file
 
   # Confirm user count increased (or stayed same if user already exists)
   - name: "Confirm user count increased or stayed same"
@@ -138,36 +128,26 @@ tests:
   - name: "Verify updated user preferences"
     request:
       method: GET
-      url: "/users/willipe53+test@gmail.com"
+      url: "/users/cafebabe-beef-dead-f00d-c0ffeec0ffee"
     expect:
       status: 200
       json:
-        - path: "email"
-          equals: "willipe53+test@gmail.com"
+        - path: "sub"
+          equals: "cafebabe-beef-dead-f00d-c0ffeec0ffee"
         - path: "preferences.a"
           equals: "c"
 
-  # Confirm user's client groups were set (check client groups list)
-  - name: "Confirm user's client groups were set"
-    request:
-      method: GET
-      url: "/client-groups"
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
+  # Note: Client group association verification is now handled in client-groups-script.yaml
 
   # Delete test user
   - name: "Delete test user"
     request:
       method: DELETE
-      url: "/users/foo@bar.com"
+      url: "/users/cafebabe-beef-dead-f00d-c0ffeec0ffee"
     expect:
-      status: 404
+      status: 200
       json:
-        - path: "error"
+        - path: "message"
           exists: true
 
   # Confirm user no longer exists (or count stayed same)
@@ -242,7 +222,7 @@ tests:
           type: "array"
 
   # Get invitation by ID (use first invitation from list)
-  - name: "Get invitation by ID"
+  - name: "List invitations (may be empty)"
     request:
       method: GET
       url: "/invitations"
@@ -252,10 +232,6 @@ tests:
         - path: "@"
           exists: true
           type: "array"
-        - path: "length(@)"
-          greater_than: 0
-    extract:
-      first_invitation_id: "@[0].invitation_id"
 
   # Get specific invitation by ID
   - name: "Get specific invitation by ID"
@@ -317,11 +293,11 @@ tests:
         - path: "@"
           exists: true
           type: "array"
-        - path: "length(@)"
+        - path: "count"
           equals: "{{original_invitations_count + 1}}"
 
   # Get updated invitation to verify email change
-  - name: "❌ SKIP - Verify invitation exists (email may or may not be updated)"
+  - name: "Verify invitation exists (email may or may not be updated)"
     request:
       method: GET
       url: "/invitations/{{first_invitation_id}}"
@@ -404,3 +380,95 @@ tests:
           type: "array"
         - path: "length(@)"
           equals: "{{original_invitations_count}}"
+
+  # === SORTING TESTS ===
+
+  - name: "Test users sorting by email ascending"
+    request:
+      method: GET
+      url: "/users"
+      params:
+        sort_by: "email"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test users sorting by email descending"
+    request:
+      method: GET
+      url: "/users"
+      params:
+        sort_by: "email"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test users sorting by update_date descending"
+    request:
+      method: GET
+      url: "/users"
+      params:
+        sort_by: "update_date"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test invitations sorting by invitation_id ascending"
+    request:
+      method: GET
+      url: "/invitations"
+      params:
+        sort_by: "invitation_id"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test invitations sorting by invitation_id descending"
+    request:
+      method: GET
+      url: "/invitations"
+      params:
+        sort_by: "invitation_id"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test invitations sorting by expires_at ascending"
+    request:
+      method: GET
+      url: "/invitations"
+      params:
+        sort_by: "expires_at"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"

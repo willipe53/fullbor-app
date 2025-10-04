@@ -67,12 +67,12 @@ tests:
   # Step 5a: Clear all entities for the client group first
   - name: "Clear entities for client group (remove all)"
     request:
-      method: POST
+      method: PUT
       url: "/client-groups/Byrde Family Foundation/entities:set"
       json:
         entity_ids: []
     expect:
-      status: 201
+      status: 200
       json:
         - path: "message"
           exists: true
@@ -80,12 +80,40 @@ tests:
   # Step 5b: Set entities for the client group (using entity IDs 1,2,4,5,6)
   - name: "Set entities for client group"
     request:
-      method: POST
+      method: PUT
       url: "/client-groups/Byrde Family Foundation/entities:set"
       json:
         entity_ids: [1, 2, 4, 5, 6]
     expect:
-      status: 201
+      status: 200
+      json:
+        - path: "message"
+          exists: true
+
+  # Step 5c: Get entities for the client group (verify the entities were set)
+  - name: "Get entities for client group"
+    request:
+      method: GET
+      url: "/client-groups/Byrde Family Foundation/entities"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "count"
+          exists: true
+          type: "integer"
+
+  # Step 5d: Set users for the client group (using existing user sub)
+  - name: "Set users for client group"
+    request:
+      method: PUT
+      url: "/client-groups/Byrde Family Foundation/users:set"
+      json:
+        sub_values: ["11111111-2222-3333-4444-555555555555"]
+    expect:
+      status: 200
       json:
         - path: "message"
           exists: true
@@ -201,3 +229,65 @@ tests:
           equals: 1
         - path: "length(data)"
           less_than_or_equal: 1
+
+  # === SORTING TESTS ===
+
+  - name: "Test sorting by client_group_name ascending"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        sort_by: "client_group_name"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test sorting by client_group_name descending"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        sort_by: "client_group_name"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test sorting by update_date ascending"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        sort_by: "update_date"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test sorting by update_date descending"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        sort_by: "update_date"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"

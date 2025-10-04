@@ -329,7 +329,93 @@ def lambda_handler(event, context):
 
         elif http_method == 'POST':
             # Handle POST operations
-            if '/client-groups:set' in path:
+            if path == '/users' or path.endswith('/users'):
+                # Create new user: POST /users
+                try:
+                    request_data = json.loads(body) if body else {}
+                except json.JSONDecodeError:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "Invalid JSON in request body"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Validate required fields
+                sub = request_data.get('sub')
+                email = request_data.get('email')
+                if not sub or not email:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "sub and email are required"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Extract optional fields
+                preferences = request_data.get('preferences', {})
+                preferences_json = json.dumps(preferences) if preferences else None
+                primary_client_group_id = request_data.get('primary_client_group_id')
+
+                with connection.cursor() as cursor:
+                    # Check if user already exists
+                    cursor.execute("SELECT user_id FROM users WHERE sub = %s", (sub,))
+                    existing = cursor.fetchone()
+
+                    if existing:
+                        # Update existing user
+                        cursor.execute("""
+                            UPDATE users 
+                            SET email = %s, preferences = %s, primary_client_group_id = %s, update_date = NOW()
+                            WHERE user_id = %s
+                        """, (email, preferences_json, primary_client_group_id, existing[0]))
+
+                        # Update primary client group relationship if needed
+                        if primary_client_group_id:
+                            cursor.execute("""
+                                INSERT IGNORE INTO client_group_users (client_group_id, user_id)
+                                VALUES (%s, %s)
+                            """, (primary_client_group_id, existing[0]))
+
+                        # Ensure primary client group consistency
+                        if not ensure_primary_client_group_consistency(connection, existing[0], primary_client_group_id):
+                            connection.rollback()
+                            return {
+                                "statusCode": 500,
+                                "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
+                                "headers": {"Content-Type": "application/json"}
+                            }
+
+                        connection.commit()
+                        response = {"message": "User updated successfully"}
+                    else:
+                        # Insert new user
+                        cursor.execute("""
+                            INSERT INTO users (sub, email, preferences, primary_client_group_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, (sub, email, preferences_json, primary_client_group_id))
+
+                        new_user_id = cursor.lastrowid
+
+                        # Add primary client group relationship if specified
+                        if primary_client_group_id:
+                            cursor.execute("""
+                                INSERT INTO client_group_users (client_group_id, user_id)
+                                VALUES (%s, %s)
+                            """, (primary_client_group_id, new_user_id))
+
+                        # Ensure primary client group consistency
+                        if primary_client_group_id:
+                            if not ensure_primary_client_group_consistency(connection, new_user_id, primary_client_group_id):
+                                connection.rollback()
+                                return {
+                                    "statusCode": 500,
+                                    "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
+                                    "headers": {"Content-Type": "application/json"}
+                                }
+
+                        connection.commit()
+                        response = {"message": "User created successfully"}
+
+            elif '/client-groups:set' in path:
                 # Set client groups for user: /users/{user_name}/client-groups:set
                 user_name = unquote(path_parameters['user_name'])
 
@@ -407,109 +493,6 @@ def lambda_handler(event, context):
                     connection.commit()
                     response = {
                         "message": "Client groups updated successfully"}
-            else:
-                # Create new user: /users
-                try:
-                    request_data = json.loads(body) if body else {}
-                except json.JSONDecodeError:
-                    return {
-                        "statusCode": 400,
-                        "body": json.dumps({"error": "Invalid JSON in request body"}),
-                        "headers": {"Content-Type": "application/json"}
-                    }
-
-                # Validate required fields
-                email = request_data.get('email')
-                sub = request_data.get('sub')
-                if not email or not sub:
-                    return {
-                        "statusCode": 400,
-                        "body": json.dumps({"error": "email and sub are required"}),
-                        "headers": {"Content-Type": "application/json"}
-                    }
-
-                # Get user ID for tracking
-                user_id = get_user_id_from_sub(connection, current_user_id)
-
-                # Extract fields from request
-                preferences = request_data.get('preferences', {})
-                preferences_json = json.dumps(
-                    preferences) if preferences else None
-                primary_client_group_name = request_data.get(
-                    'primary_client_group_name')
-
-                # Get primary_client_group_id if primary_client_group_name is provided
-                primary_client_group_id = None
-                if primary_client_group_name:
-                    primary_client_group_id = get_client_group_id_by_name(
-                        connection, primary_client_group_name)
-                    if not primary_client_group_id:
-                        return {
-                            "statusCode": 400,
-                            "body": json.dumps({"error": f"Primary client group '{primary_client_group_name}' not found"}),
-                            "headers": {"Content-Type": "application/json"}
-                        }
-
-                with connection.cursor() as cursor:
-                    # Check if user already exists
-                    cursor.execute(
-                        "SELECT user_id FROM users WHERE email = %s OR sub = %s", (email, sub))
-                    existing = cursor.fetchone()
-
-                    if existing:
-                        # Update existing user
-                        cursor.execute("""
-                            UPDATE users 
-                            SET preferences = %s, primary_client_group_id = %s, update_date = NOW()
-                            WHERE user_id = %s
-                        """, (preferences_json, primary_client_group_id, existing[0]))
-
-                        # Update primary client group relationship if needed
-                        if primary_client_group_id:
-                            cursor.execute("""
-                                INSERT IGNORE INTO client_group_users (client_group_id, user_id)
-                                VALUES (%s, %s)
-                            """, (primary_client_group_id, existing[0]))
-
-                        # Ensure primary client group consistency
-                        if not ensure_primary_client_group_consistency(connection, target_user_id, primary_client_group_id):
-                            connection.rollback()
-                            return {
-                                "statusCode": 500,
-                                "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
-                                "headers": {"Content-Type": "application/json"}
-                            }
-
-                        connection.commit()
-                        response = {"message": "User updated successfully"}
-                    else:
-                        # Insert new user
-                        cursor.execute("""
-                            INSERT INTO users (sub, email, preferences, primary_client_group_id)
-                            VALUES (%s, %s, %s, %s)
-                        """, (sub, email, preferences_json, primary_client_group_id))
-
-                        new_user_id = cursor.lastrowid
-
-                        # Add primary client group relationship if specified
-                        if primary_client_group_id:
-                            cursor.execute("""
-                                INSERT INTO client_group_users (client_group_id, user_id)
-                                VALUES (%s, %s)
-                            """, (primary_client_group_id, new_user_id))
-
-                        # Ensure primary client group consistency
-                        if primary_client_group_id:
-                            if not ensure_primary_client_group_consistency(connection, new_user_id, primary_client_group_id):
-                                connection.rollback()
-                                return {
-                                    "statusCode": 500,
-                                    "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
-                                    "headers": {"Content-Type": "application/json"}
-                                }
-
-                        connection.commit()
-                        response = {"message": "User created successfully"}
 
         elif http_method == 'PUT':
             # Handle PUT operations: /users/{sub} (update)

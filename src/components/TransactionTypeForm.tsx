@@ -173,9 +173,8 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
 
   const deleteMutation = useMutation({
     mutationFn: () =>
-      apiService.deleteRecord(
-        editingTransactionType!.transaction_type_id,
-        "Transaction Type"
+      apiService.deleteTransactionType(
+        editingTransactionType!.transaction_type_name
       ),
     onSuccess: () => {
       // Show success notification
@@ -430,71 +429,75 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
               updateDate={editingTransactionType?.update_date}
               updatedUserId={editingTransactionType?.updated_user_id}
             />
+          </Box>
 
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 2,
-                flexShrink: 0,
-              }}
-            >
-              {/* Delete button - only show when editing */}
-              {editingTransactionType && (
+          {/* Fixed Footer with Action Buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 2,
+              borderTop: "1px solid",
+              borderColor: "divider",
+              backgroundColor: "background.paper",
+              flexShrink: 0,
+            }}
+          >
+            {/* Delete button - only show when editing */}
+            {editingTransactionType && (
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Are you sure you want to delete "${editingTransactionType.name}"?\n\nThis action cannot be undone and may affect related transactions.`
+                    )
+                  ) {
+                    deleteMutation.mutate();
+                  }
+                }}
+                disabled={mutation.isPending || deleteMutation.isPending}
+                sx={{ minWidth: "auto" }}
+              >
+                {deleteMutation.isPending ? (
+                  <>
+                    <CircularProgress size={16} sx={{ mr: 1 }} />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            )}
+
+            <Box sx={{ display: "flex", gap: 2 }}>
+              {editingTransactionType && onClose && (
                 <Button
                   variant="outlined"
-                  color="error"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Are you sure you want to delete "${editingTransactionType.name}"?\n\nThis action cannot be undone and may affect related transactions.`
-                      )
-                    ) {
-                      deleteMutation.mutate();
-                    }
-                  }}
+                  onClick={onClose}
                   disabled={mutation.isPending || deleteMutation.isPending}
-                  sx={{ minWidth: "auto" }}
                 >
-                  {deleteMutation.isPending ? (
-                    <>
-                      <CircularProgress size={16} sx={{ mr: 1 }} />
-                      Deleting...
-                    </>
-                  ) : (
-                    "Delete"
-                  )}
+                  Cancel
                 </Button>
               )}
-
-              <Box sx={{ display: "flex", gap: 2 }}>
-                {editingTransactionType && onClose && (
-                  <Button
-                    variant="outlined"
-                    onClick={onClose}
-                    disabled={mutation.isPending || deleteMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={!canSubmit || deleteMutation.isPending}
+              >
+                {mutation.isPending ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    {editingTransactionType ? "Updating..." : "Creating..."}
+                  </>
+                ) : editingTransactionType?.transaction_type_id ? (
+                  `Update ${editingTransactionType.name}`
+                ) : (
+                  "Create Transaction Type"
                 )}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={!canSubmit || deleteMutation.isPending}
-                >
-                  {mutation.isPending ? (
-                    <>
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                      {editingTransactionType ? "Updating..." : "Creating..."}
-                    </>
-                  ) : editingTransactionType?.transaction_type_id ? (
-                    `Update ${editingTransactionType.name}`
-                  ) : (
-                    "Create Transaction Type"
-                  )}
-                </Button>
-              </Box>
+              </Button>
             </Box>
           </Box>
         </form>

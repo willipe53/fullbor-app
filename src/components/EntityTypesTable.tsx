@@ -23,10 +23,13 @@ import EntityTypeForm from "./EntityTypeForm";
 // Temporary local interface definition to bypass import issue
 interface EntityType {
   entity_type_id: number;
-  name: string;
+  entity_type_name: string;
   short_label?: string;
   label_color?: string;
   attributes_schema: any;
+  entity_category?: string;
+  update_date?: string;
+  updated_by_user_name?: string;
 }
 
 const EntityTypesTable: React.FC = () => {
@@ -58,8 +61,32 @@ const EntityTypesTable: React.FC = () => {
     },
   });
 
-  // Use the data directly since it's already an array of EntityType
-  const data = rawData || [];
+  // Transform API response data to array format
+  const data = useMemo(() => {
+    if (!rawData) return [];
+
+    // Handle simple array format (when no pagination parameters are provided)
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    // Handle paginated response format: { data: EntityType[], count: number, limit: number, offset: number }
+    if (rawData && typeof rawData === "object" && "data" in rawData) {
+      return rawData.data || [];
+    }
+
+    // Handle count-only response format: { count: number }
+    if (
+      rawData &&
+      typeof rawData === "object" &&
+      "count" in rawData &&
+      !("data" in rawData)
+    ) {
+      return []; // Return empty array for count-only responses
+    }
+
+    return [];
+  }, [rawData]);
 
   // Get current user for primary client group (simplified approach)
   const { data: currentUser } = useQuery({
@@ -157,7 +184,7 @@ const EntityTypesTable: React.FC = () => {
         },
       },
       {
-        field: "name",
+        field: "entity_type_name",
         headerName: "Name",
       },
       {
@@ -282,10 +309,10 @@ const EntityTypesTable: React.FC = () => {
               No entity types found
               <br />
               No entity types exist for{" "}
-              {primaryClientGroup?.name || "this client group"}
+              {primaryClientGroup?.client_group_name || "this client group"}
               <br />
               Click "New" to create one for{" "}
-              {primaryClientGroup?.name || "this client group"}.
+              {primaryClientGroup?.client_group_name || "this client group"}.
             </Typography>
           </Box>
         ) : (

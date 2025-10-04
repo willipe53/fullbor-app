@@ -142,7 +142,7 @@ def lambda_handler(event, context):
                         if entity_category_filter:
                             # Filter by entity_category
                             cursor.execute("""
-                                SELECT name, attributes_schema, short_label, label_color, 
+                                SELECT entity_type_id, name, attributes_schema, short_label, label_color, 
                                        entity_category, update_date, updated_user_id
                                 FROM entity_types
                                 WHERE entity_category = %s
@@ -151,7 +151,7 @@ def lambda_handler(event, context):
                         else:
                             # Get all entity types
                             cursor.execute("""
-                                SELECT name, attributes_schema, short_label, label_color, 
+                                SELECT entity_type_id, name, attributes_schema, short_label, label_color, 
                                        entity_category, update_date, updated_user_id
                                 FROM entity_types
                                 ORDER BY name
@@ -163,16 +163,17 @@ def lambda_handler(event, context):
                         for result in results:
                             # Map database fields to OpenAPI schema
                             attributes_schema = json.loads(
-                                result[1]) if result[1] else {}
+                                result[2]) if result[2] else {}
 
                             response.append({
-                                "entity_type_name": result[0],
+                                "entity_type_id": result[0],
+                                "entity_type_name": result[1],
                                 "attributes_schema": attributes_schema,
-                                "short_label": result[2],
-                                "label_color": result[3],
-                                "entity_category": result[4],
-                                "update_date": result[5].isoformat() + "Z" if result[5] else None,
-                                "updated_by_user_name": str(result[6]) if result[6] else None
+                                "short_label": result[3],
+                                "label_color": result[4],
+                                "entity_category": result[5],
+                                "update_date": result[6].isoformat() + "Z" if result[6] else None,
+                                "updated_by_user_name": str(result[7]) if result[7] else None
                             })
 
         elif http_method == 'POST':

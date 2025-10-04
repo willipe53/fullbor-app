@@ -133,6 +133,8 @@ Install required packages:
 pip install pyyaml httpx jmespath jsonschema rich tabulate boto3 python-dotenv
 ```
 
+**Note:** `boto3` and `python-dotenv` are **REQUIRED** for Cognito authentication. The test runner will not work without these packages.
+
 ## Test Scripts
 
 ### client-groups-script.yaml

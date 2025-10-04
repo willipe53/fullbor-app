@@ -53,13 +53,13 @@ tests:
 
   - name: "Associate required entities with client group 19"
     request:
-      method: POST
+      method: PUT
       url: "/client-groups/Byrde Family Foundation/entities:set"
       json:
         entity_names:
           ["Peter Piper Portfolio", "Manager Expenses", "Harry Hedge Fund"]
     expect:
-      status: 201
+      status: 200
       json:
         - path: "message"
           exists: true
@@ -468,3 +468,95 @@ tests:
         - path: "count"
           exists: true
           type: "integer"
+
+  # === SORTING TESTS ===
+
+  - name: "Test transactions sorting by transaction_id ascending"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        sort_by: "transaction_id"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test transactions sorting by transaction_id descending"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        sort_by: "transaction_id"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test transactions sorting by portfolio_entity_name ascending"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        sort_by: "portfolio_entity_name"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test transactions sorting by update_date descending"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        sort_by: "update_date"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test transaction types sorting by transaction_type_name ascending"
+    request:
+      method: GET
+      url: "/transaction-types"
+      params:
+        sort_by: "transaction_type_name"
+        sort_order: "asc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test transaction types sorting by update_date descending"
+    request:
+      method: GET
+      url: "/transaction-types"
+      params:
+        sort_by: "update_date"
+        sort_order: "desc"
+        limit: 10
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"

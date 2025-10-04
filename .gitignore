@@ -32,3 +32,10 @@ dist-ssr
 __pycache__/
 *.pyc
 *.backup
+
+# Test output files
+tests/*testoutput*.json
+tests/*testoutput*.txt
+tests/*all-tests-output*.txt
+tests/*all-tests-output*.json
+tests/coverage_report.txt

@@ -254,9 +254,8 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
         "🗑️ Starting delete for client group:",
         editingClientGroup.client_group_id
       );
-      const result = await apiService.deleteRecord(
-        editingClientGroup.client_group_id,
-        "Client Group"
+      const result = await apiService.deleteClientGroup(
+        editingClientGroup.client_group_name
       );
       console.log("🗑️ Delete API result:", result);
       return result;
@@ -531,7 +530,9 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box
+      sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}
+    >
       {/* Header */}
       <Box
         sx={{
@@ -539,6 +540,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          flexShrink: 0,
         }}
       >
         <Typography variant="h6">
@@ -559,183 +561,202 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
         )}
       </Box>
 
-      {errors.general && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {errors.general}
-        </Alert>
-      )}
-
-      {mutation.isSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Client group {isCreate ? "created" : "updated"} successfully!
-        </Alert>
-      )}
-
-      {makePrimaryMutation.error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to make primary:{" "}
-          {makePrimaryMutation.error instanceof Error
-            ? makePrimaryMutation.error.message
-            : "Unknown error"}
-        </Alert>
-      )}
-
-      {makePrimaryMutation.isSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Client group set as primary successfully!
-        </Alert>
-      )}
-
-      <Box component="form" onSubmit={handleSubmit}>
-        {/* Name */}
-        <TextField
-          fullWidth
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          error={!!errors.name}
-          helperText={errors.name}
-          disabled={mutation.isPending}
-          sx={{ mb: 3 }}
-          required
-        />
-
-        {/* Preferences Section */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6">Preferences</Typography>
-            <FormJsonToggle
-              value={preferencesMode}
-              onChange={(_, newMode) => {
-                if (newMode !== null) {
-                  setPreferencesMode(newMode);
-                }
-              }}
-              disabled={mutation.isPending}
-            />
-          </Box>
-
-          {preferencesMode === "form" ? (
-            <Box>
-              {Object.entries(dynamicFields).map(([key, value], index) => {
-                const stableKey = fieldKeys[index] || `field_${index}`;
-                return (
-                  <Box key={stableKey} sx={{ display: "flex", gap: 1, mb: 2 }}>
-                    <TextField
-                      label="Setting Name"
-                      value={key}
-                      onChange={(e) => {
-                        handleFieldKeyChange(key, e.target.value, stableKey);
-                      }}
-                      size="small"
-                      sx={{ flex: 1 }}
-                    />
-                    <TextField
-                      label="Value"
-                      value={value}
-                      onChange={(e) =>
-                        handlePreferencesFieldChange(key, e.target.value)
-                      }
-                      size="small"
-                      sx={{ flex: 2 }}
-                    />
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => removePreferenceField(key, stableKey)}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                );
-              })}
-              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-                <Button variant="outlined" onClick={addPreferenceField}>
-                  Add Preference
-                </Button>
-              </Box>
-            </Box>
-          ) : (
-            <Box>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                value={jsonPreferences}
-                onChange={(e) => handleJsonChange(e.target.value)}
-                error={!!jsonError}
-                helperText={jsonError}
-                placeholder="Enter JSON preferences..."
-                sx={{
-                  "& .MuiInputBase-input": {
-                    fontFamily: "monospace",
-                    fontSize: "0.875rem",
-                  },
-                }}
-              />
-              {errors.json && (
-                <Typography color="error" variant="caption" sx={{ mt: 1 }}>
-                  {errors.json}
-                </Typography>
-              )}
-            </Box>
-          )}
-        </Box>
-
-        {/* Membership - only for existing groups */}
-        {!isCreate && allUsersData && (
-          <TransferList
-            title="Membership"
-            leftTitle="Available Users"
-            rightTitle="Group Members"
-            availableItems={allUsersData.map((user: any) => ({
-              id: user.user_id,
-              label: user.email,
-            }))}
-            selectedItems={selectedUsers}
-            onSelectionChange={setSelectedUsers}
-            disabled={mutation.isPending}
-          />
+      {/* Scrollable Content */}
+      <Box sx={{ flex: 1, overflow: "auto", pb: 2 }}>
+        {errors.general && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errors.general}
+          </Alert>
         )}
 
-        {/* Entity management - only for existing groups */}
-        {!isCreate && (
-          <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography variant="body1" color="text.secondary">
-              {editingClientGroup.name} contains {currentGroupEntityCount || 0}{" "}
-              entities.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={handleAddEntities}
+        {mutation.isSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Client group {isCreate ? "created" : "updated"} successfully!
+          </Alert>
+        )}
+
+        {makePrimaryMutation.error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Failed to make primary:{" "}
+            {makePrimaryMutation.error instanceof Error
+              ? makePrimaryMutation.error.message
+              : "Unknown error"}
+          </Alert>
+        )}
+
+        {makePrimaryMutation.isSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Client group set as primary successfully!
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit}>
+          {/* Name */}
+          <TextField
+            fullWidth
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={!!errors.name}
+            helperText={errors.name}
+            disabled={mutation.isPending}
+            sx={{ mb: 3 }}
+            required
+          />
+
+          {/* Preferences Section */}
+          <Box sx={{ mb: 3 }}>
+            <Box
               sx={{
-                borderRadius: "8px",
-                textTransform: "none",
-                fontWeight: 600,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
               }}
             >
-              Change {editingClientGroup.name} Entities
-            </Button>
+              <Typography variant="h6">Preferences</Typography>
+              <FormJsonToggle
+                value={preferencesMode}
+                onChange={(_, newMode) => {
+                  if (newMode !== null) {
+                    setPreferencesMode(newMode);
+                  }
+                }}
+                disabled={mutation.isPending}
+              />
+            </Box>
+
+            {preferencesMode === "form" ? (
+              <Box>
+                {Object.entries(dynamicFields).map(([key, value], index) => {
+                  const stableKey = fieldKeys[index] || `field_${index}`;
+                  return (
+                    <Box
+                      key={stableKey}
+                      sx={{ display: "flex", gap: 1, mb: 2 }}
+                    >
+                      <TextField
+                        label="Setting Name"
+                        value={key}
+                        onChange={(e) => {
+                          handleFieldKeyChange(key, e.target.value, stableKey);
+                        }}
+                        size="small"
+                        sx={{ flex: 1 }}
+                      />
+                      <TextField
+                        label="Value"
+                        value={value}
+                        onChange={(e) =>
+                          handlePreferencesFieldChange(key, e.target.value)
+                        }
+                        size="small"
+                        sx={{ flex: 2 }}
+                      />
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => removePreferenceField(key, stableKey)}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  );
+                })}
+                <Box
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}
+                >
+                  <Button variant="outlined" onClick={addPreferenceField}>
+                    Add Preference
+                  </Button>
+                </Box>
+              </Box>
+            ) : (
+              <Box>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={8}
+                  value={jsonPreferences}
+                  onChange={(e) => handleJsonChange(e.target.value)}
+                  error={!!jsonError}
+                  helperText={jsonError}
+                  placeholder="Enter JSON preferences..."
+                  sx={{
+                    "& .MuiInputBase-input": {
+                      fontFamily: "monospace",
+                      fontSize: "0.875rem",
+                    },
+                  }}
+                />
+                {errors.json && (
+                  <Typography color="error" variant="caption" sx={{ mt: 1 }}>
+                    {errors.json}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
-        )}
 
-        {/* Audit Trail */}
-        <AuditTrail
-          updateDate={editingClientGroup.update_date}
-          updatedUserId={editingClientGroup.updated_user_id}
-        />
+          {/* Membership - only for existing groups */}
+          {!isCreate && allUsersData && (
+            <TransferList
+              title="Membership"
+              leftTitle="Available Users"
+              rightTitle="Group Members"
+              availableItems={allUsersData.map((user: any) => ({
+                id: user.user_id,
+                label: user.email,
+              }))}
+              selectedItems={selectedUsers}
+              onSelectionChange={setSelectedUsers}
+              disabled={mutation.isPending}
+            />
+          )}
 
-        {/* Submit Button */}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+          {/* Entity management - only for existing groups */}
+          {!isCreate && (
+            <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography variant="body1" color="text.secondary">
+                {editingClientGroup.name} contains{" "}
+                {currentGroupEntityCount || 0} entities.
+              </Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleAddEntities}
+                sx={{
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Change {editingClientGroup.name} Entities
+              </Button>
+            </Box>
+          )}
+
+          {/* Audit Trail */}
+          <AuditTrail
+            updateDate={editingClientGroup.update_date}
+            updatedUserId={editingClientGroup.updated_user_id}
+          />
+        </Box>
+
+        {/* Fixed Footer with Action Buttons */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 2,
+            p: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "background.paper",
+            flexShrink: 0,
+          }}
+        >
           {/* Delete Button - only show for existing groups */}
           {!isCreate && (
             <Button

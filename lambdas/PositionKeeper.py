@@ -129,30 +129,16 @@ def lambda_handler(event, context):
     current_user_id = event.get('headers', {}).get(
         'X-Current-User-Id', 'system')
 
-    # Parse request body
-    request_data = {}
-    if event.get('body'):
-        try:
-            request_data = json.loads(event['body'])
-        except json.JSONDecodeError:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"error": "Invalid JSON in request body"}),
-                "headers": {"Content-Type": "application/json"}
-            }
-
-    command = request_data.get('command')
-    if not command:
+    # Determine command from the URL path
+    path = event.get('path', '')
+    if path.endswith('/start'):
+        command = 'start'
+    elif path.endswith('/stop'):
+        command = 'stop'
+    else:
         return {
             "statusCode": 400,
-            "body": json.dumps({"error": "Missing required field: command"}),
-            "headers": {"Content-Type": "application/json"}
-        }
-
-    if command not in ['start', 'stop']:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": "Command must be 'start' or 'stop'"}),
+            "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start or /position-keeper/stop"}),
             "headers": {"Content-Type": "application/json"}
         }
 
@@ -202,10 +188,7 @@ def lambda_handler(event, context):
             release_lock(connection, LOCK_ID)
 
             response = {
-                "command": "start",
-                "status": "completed",
-                "message": "Position Keeper process completed successfully",
-                "timestamp": datetime.utcnow().isoformat() + "Z"
+                "message": "Position Keeper process completed successfully"
             }
 
         elif command == 'stop':
@@ -221,23 +204,17 @@ def lambda_handler(event, context):
                 release_lock(connection, LOCK_ID)
 
                 response = {
-                    "command": "stop",
-                    "status": "stopped",
-                    "message": f"Position Keeper stopped. {stop_result.get('message', '')}",
-                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                    "message": f"Position Keeper stopped. {stop_result.get('message', '')}"
                 }
             else:
                 response = {
-                    "command": "stop",
-                    "status": "not_running",
-                    "message": "Position Keeper was not running",
-                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                    "message": "Position Keeper was not running"
                 }
 
         connection.close()
 
         return {
-            "statusCode": 200,
+            "statusCode": 201,
             "body": json.dumps(response),
             "headers": {"Content-Type": "application/json"}
         }

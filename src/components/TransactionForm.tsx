@@ -1335,323 +1335,352 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     return (
       <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <Box sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
-          <Typography variant="h5" gutterBottom>
+        <Box
+          sx={{
+            p: 3,
+            maxWidth: 600,
+            mx: "auto",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <Typography variant="h5" gutterBottom sx={{ flexShrink: 0 }}>
             {editingTransaction ? "Edit Transaction" : "Create Transaction"}
           </Typography>
 
-          <Stepper activeStep={currentStep} sx={{ mb: 3 }}>
-            <Step>
-              <StepLabel>Portfolio</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Instrument</StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>Type</StepLabel>
-            </Step>
-            {isContraRequired && (
+          {/* Scrollable Content */}
+          <Box sx={{ flex: 1, overflow: "auto", pb: 2 }}>
+            <Stepper activeStep={currentStep} sx={{ mb: 3 }}>
               <Step>
-                <StepLabel>Contra</StepLabel>
+                <StepLabel>Portfolio</StepLabel>
               </Step>
-            )}
-            <Step>
-              <StepLabel>Properties</StepLabel>
-            </Step>
-          </Stepper>
+              <Step>
+                <StepLabel>Instrument</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Type</StepLabel>
+              </Step>
+              {isContraRequired && (
+                <Step>
+                  <StepLabel>Contra</StepLabel>
+                </Step>
+              )}
+              <Step>
+                <StepLabel>Properties</StepLabel>
+              </Step>
+            </Stepper>
 
-          {/* Step 1: Portfolio Selection */}
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                1. Select Portfolio
-              </Typography>
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Autocomplete
-                  options={portfolioEntities || []}
-                  getOptionLabel={(option) => option.name}
-                  value={
-                    portfolioEntities?.find(
-                      (e) =>
-                        e.entity_id.toString() === formData.portfolio_entity_id
-                    ) || null
-                  }
-                  onChange={(_, newValue) =>
-                    handleInputChange(
-                      "portfolio_entity_id",
-                      newValue?.entity_id.toString() || ""
-                    )
-                  }
-                  loading={portfolioCategoryLoading}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Portfolio *"
-                      required
-                      fullWidth
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {portfolioCategoryLoading ? (
-                              <CircularProgress color="inherit" size={20} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                  disabled={isLoading}
-                  sx={{ flex: 1 }}
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<Add />}
-                  onClick={() => setShowPortfolioModal(true)}
-                  disabled={isLoading}
-                  sx={{ minWidth: "auto", px: 2 }}
-                >
-                  Add New
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          {/* Step 2: Instrument Selection */}
-          {formData.portfolio_entity_id && (
+            {/* Step 1: Portfolio Selection */}
             <Card sx={{ mb: 2 }}>
               <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-                >
-                  <Typography variant="h6">2. Select Instrument</Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={isInvestorTransaction}
-                        onChange={(e) => {
-                          setIsInvestorTransaction(e.target.checked);
-                          if (e.target.checked) {
-                            // Clear instrument selection when toggling to investor transaction
-                            setFormData((prev) => ({
-                              ...prev,
-                              instrument_entity_id: "",
-                              transaction_type_id: "",
-                              contra_entity_id: "",
-                              properties: {},
-                            }));
-                            setCurrentStep(1);
-                          }
-                        }}
-                        color="primary"
-                      />
+                <Typography variant="h6" gutterBottom>
+                  1. Select Portfolio
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="flex-start">
+                  <Autocomplete
+                    options={portfolioEntities || []}
+                    getOptionLabel={(option) => option.name}
+                    value={
+                      portfolioEntities?.find(
+                        (e) =>
+                          e.entity_id.toString() ===
+                          formData.portfolio_entity_id
+                      ) || null
                     }
-                    label="Investor Transaction"
-                    sx={{ ml: 2 }}
+                    onChange={(_, newValue) =>
+                      handleInputChange(
+                        "portfolio_entity_id",
+                        newValue?.entity_id.toString() || ""
+                      )
+                    }
+                    loading={portfolioCategoryLoading}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Portfolio *"
+                        required
+                        fullWidth
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {portfolioCategoryLoading ? (
+                                <CircularProgress color="inherit" size={20} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
+                    disabled={isLoading}
+                    sx={{ flex: 1 }}
                   />
-                </Box>
-                {!isInvestorTransaction && (
-                  <Stack direction="row" spacing={2} alignItems="flex-start">
-                    <Autocomplete
-                      options={instrumentEntities || []}
-                      getOptionLabel={(option) => {
-                        const entityType = entityTypes?.find(
-                          (et) => et.entity_type_id === option.entity_type_id
-                        );
-                        return entityType
-                          ? `${option.name} (${entityType.name})`
-                          : option.name;
-                      }}
-                      value={
-                        instrumentEntities?.find(
-                          (e) =>
-                            e.entity_id.toString() ===
-                            formData.instrument_entity_id
-                        ) || null
-                      }
-                      onChange={(_, newValue) =>
-                        handleInputChange(
-                          "instrument_entity_id",
-                          newValue?.entity_id.toString() || ""
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Instrument *"
-                          required
-                          fullWidth
-                        />
-                      )}
-                      disabled={isLoading}
-                      sx={{ flex: 1 }}
-                    />
-                    <Button
-                      variant="outlined"
-                      startIcon={<Add />}
-                      onClick={() => setShowInstrumentModal(true)}
-                      disabled={isLoading}
-                      sx={{ minWidth: "auto", px: 2 }}
-                    >
-                      Add New
-                    </Button>
-                  </Stack>
-                )}
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={() => setShowPortfolioModal(true)}
+                    disabled={isLoading}
+                    sx={{ minWidth: "auto", px: 2 }}
+                  >
+                    Add New
+                  </Button>
+                </Stack>
               </CardContent>
             </Card>
-          )}
 
-          {/* Step 3: Transaction Type Selection */}
-          {(formData.instrument_entity_id || isInvestorTransaction) && (
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  3. Select Transaction Type
-                </Typography>
-                <Autocomplete
-                  options={validTransactionTypes || []}
-                  getOptionLabel={(option) => option.name}
-                  value={
-                    validTransactionTypes?.find(
-                      (tt) =>
-                        tt.transaction_type_id.toString() ===
-                        formData.transaction_type_id
-                    ) || null
-                  }
-                  onChange={(_, newValue) =>
-                    handleInputChange(
-                      "transaction_type_id",
-                      newValue?.transaction_type_id.toString() || ""
-                    )
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Transaction Type *"
-                      required
-                      fullWidth
-                    />
-                  )}
-                  disabled={isLoading}
-                />
-                {validTransactionTypes.length === 0 && (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    No valid transaction types found for the selected
-                    instrument.
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 4: Contra Selection */}
-          {formData.transaction_type_id && isContraRequired && (
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  4. Select Contra
-                </Typography>
-
-                {/* Show simplified UI when contra is auto-set to portfolio */}
-                {isContraAutoSetToPortfolio && !showContraSelection ? (
-                  <Box>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      Currency amount will be reduced in{" "}
-                      <strong>{selectedPortfolio?.name}</strong>.
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setShowContraSelection(true)}
-                      disabled={isLoading}
-                    >
-                      Change Contra
-                    </Button>
-                  </Box>
-                ) : (
-                  /* Show full contra selection UI */
-                  <Stack direction="row" spacing={2} alignItems="flex-start">
-                    <Autocomplete
-                      options={validCounterparties || []}
-                      getOptionLabel={(option) => option.name}
-                      value={
-                        validCounterparties?.find(
-                          (e) =>
-                            e.entity_id.toString() === formData.contra_entity_id
-                        ) || null
-                      }
-                      onChange={(_, newValue) =>
-                        handleInputChange(
-                          "contra_entity_id",
-                          newValue?.entity_id.toString() || ""
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="contra *"
-                          required
-                          fullWidth
-                        />
-                      )}
-                      disabled={isLoading}
-                      sx={{ flex: 1 }}
-                    />
-                    <Button
-                      variant="outlined"
-                      startIcon={<Add />}
-                      onClick={() => setShowcontraModal(true)}
-                      disabled={isLoading}
-                      sx={{ minWidth: "auto", px: 2 }}
-                    >
-                      Add New
-                    </Button>
-                  </Stack>
-                )}
-
-                {validCounterparties.length === 0 &&
-                  !isContraAutoSetToPortfolio && (
-                    <Alert severity="info" sx={{ mt: 1 }}>
-                      No valid counterparties found for the selected instrument
-                      and transaction type.
-                    </Alert>
-                  )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 5: Dynamic Properties */}
-          {formData.transaction_type_id &&
-            transactionSchema &&
-            (formData.contra_entity_id || !isContraRequired) && (
+            {/* Step 2: Instrument Selection */}
+            {formData.portfolio_entity_id && (
               <Card sx={{ mb: 2 }}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    {isContraRequired
-                      ? "5. Transaction Properties"
-                      : "4. Transaction Properties"}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {transactionSchema.description}
-                  </Typography>
                   <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
                   >
-                    {Object.entries(transactionSchema.properties || {}).map(
-                      ([propertyName, propertySchema]) =>
-                        renderPropertyField(propertyName, propertySchema)
-                    )}
+                    <Typography variant="h6">2. Select Instrument</Typography>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={isInvestorTransaction}
+                          onChange={(e) => {
+                            setIsInvestorTransaction(e.target.checked);
+                            if (e.target.checked) {
+                              // Clear instrument selection when toggling to investor transaction
+                              setFormData((prev) => ({
+                                ...prev,
+                                instrument_entity_id: "",
+                                transaction_type_id: "",
+                                contra_entity_id: "",
+                                properties: {},
+                              }));
+                              setCurrentStep(1);
+                            }
+                          }}
+                          color="primary"
+                        />
+                      }
+                      label="Investor Transaction"
+                      sx={{ ml: 2 }}
+                    />
                   </Box>
+                  {!isInvestorTransaction && (
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Autocomplete
+                        options={instrumentEntities || []}
+                        getOptionLabel={(option) => {
+                          const entityType = entityTypes?.find(
+                            (et) => et.entity_type_id === option.entity_type_id
+                          );
+                          return entityType
+                            ? `${option.name} (${entityType.name})`
+                            : option.name;
+                        }}
+                        value={
+                          instrumentEntities?.find(
+                            (e) =>
+                              e.entity_id.toString() ===
+                              formData.instrument_entity_id
+                          ) || null
+                        }
+                        onChange={(_, newValue) =>
+                          handleInputChange(
+                            "instrument_entity_id",
+                            newValue?.entity_id.toString() || ""
+                          )
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Instrument *"
+                            required
+                            fullWidth
+                          />
+                        )}
+                        disabled={isLoading}
+                        sx={{ flex: 1 }}
+                      />
+                      <Button
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={() => setShowInstrumentModal(true)}
+                        disabled={isLoading}
+                        sx={{ minWidth: "auto", px: 2 }}
+                      >
+                        Add New
+                      </Button>
+                    </Stack>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-          {/* Action Buttons */}
-          <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+            {/* Step 3: Transaction Type Selection */}
+            {(formData.instrument_entity_id || isInvestorTransaction) && (
+              <Card sx={{ mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    3. Select Transaction Type
+                  </Typography>
+                  <Autocomplete
+                    options={validTransactionTypes || []}
+                    getOptionLabel={(option) => option.name}
+                    value={
+                      validTransactionTypes?.find(
+                        (tt) =>
+                          tt.transaction_type_id.toString() ===
+                          formData.transaction_type_id
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      handleInputChange(
+                        "transaction_type_id",
+                        newValue?.transaction_type_id.toString() || ""
+                      )
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Transaction Type *"
+                        required
+                        fullWidth
+                      />
+                    )}
+                    disabled={isLoading}
+                  />
+                  {validTransactionTypes.length === 0 && (
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      No valid transaction types found for the selected
+                      instrument.
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 4: Contra Selection */}
+            {formData.transaction_type_id && isContraRequired && (
+              <Card sx={{ mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    4. Select Contra
+                  </Typography>
+
+                  {/* Show simplified UI when contra is auto-set to portfolio */}
+                  {isContraAutoSetToPortfolio && !showContraSelection ? (
+                    <Box>
+                      <Typography variant="body1" sx={{ mb: 2 }}>
+                        Currency amount will be reduced in{" "}
+                        <strong>{selectedPortfolio?.name}</strong>.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        onClick={() => setShowContraSelection(true)}
+                        disabled={isLoading}
+                      >
+                        Change Contra
+                      </Button>
+                    </Box>
+                  ) : (
+                    /* Show full contra selection UI */
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Autocomplete
+                        options={validCounterparties || []}
+                        getOptionLabel={(option) => option.name}
+                        value={
+                          validCounterparties?.find(
+                            (e) =>
+                              e.entity_id.toString() ===
+                              formData.contra_entity_id
+                          ) || null
+                        }
+                        onChange={(_, newValue) =>
+                          handleInputChange(
+                            "contra_entity_id",
+                            newValue?.entity_id.toString() || ""
+                          )
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="contra *"
+                            required
+                            fullWidth
+                          />
+                        )}
+                        disabled={isLoading}
+                        sx={{ flex: 1 }}
+                      />
+                      <Button
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={() => setShowcontraModal(true)}
+                        disabled={isLoading}
+                        sx={{ minWidth: "auto", px: 2 }}
+                      >
+                        Add New
+                      </Button>
+                    </Stack>
+                  )}
+
+                  {validCounterparties.length === 0 &&
+                    !isContraAutoSetToPortfolio && (
+                      <Alert severity="info" sx={{ mt: 1 }}>
+                        No valid counterparties found for the selected
+                        instrument and transaction type.
+                      </Alert>
+                    )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 5: Dynamic Properties */}
+            {formData.transaction_type_id &&
+              transactionSchema &&
+              (formData.contra_entity_id || !isContraRequired) && (
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {isContraRequired
+                        ? "5. Transaction Properties"
+                        : "4. Transaction Properties"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      {transactionSchema.description}
+                    </Typography>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      {Object.entries(transactionSchema.properties || {}).map(
+                        ([propertyName, propertySchema]) =>
+                          renderPropertyField(propertyName, propertySchema)
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+          </Box>
+
+          {/* Fixed Footer with Action Buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              p: 2,
+              borderTop: "1px solid",
+              borderColor: "divider",
+              backgroundColor: "background.paper",
+              flexShrink: 0,
+            }}
+          >
             {onClose && (
               <Button
                 variant="outlined"
