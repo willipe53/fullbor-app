@@ -47,6 +47,7 @@ def lambda_handler(event, context):
 
     # Determine operation based on HTTP method
     http_method = event.get('httpMethod', 'GET')
+    query_parameters = event.get('queryStringParameters') or {}
 
     try:
         # Get database connection
@@ -54,20 +55,30 @@ def lambda_handler(event, context):
 
         if http_method == 'GET':
             # Handle GET operations - list transaction statuses
-            with connection.cursor() as cursor:
-                # List all transaction statuses
-                cursor.execute(
-                    "SELECT name, update_date, updated_user_id FROM transaction_statuses ORDER BY name"
-                )
-                results = cursor.fetchall()
+            count_only = query_parameters.get(
+                'count', 'false').lower() == 'true'
 
-                response = []
-                for result in results:
-                    response.append({
-                        "transaction_status_name": result[0],
-                        "update_date": result[1].isoformat() + "Z" if result[1] else None,
-                        "updated_by_user_name": str(result[2]) if result[2] else None
-                    })
+            with connection.cursor() as cursor:
+                if count_only:
+                    # Return count only
+                    cursor.execute(
+                        "SELECT COUNT(*) as count FROM transaction_statuses")
+                    result = cursor.fetchone()
+                    response = {"count": result[0]}
+                else:
+                    # List all transaction statuses
+                    cursor.execute(
+                        "SELECT name, update_date, updated_user_id FROM transaction_statuses ORDER BY name"
+                    )
+                    results = cursor.fetchall()
+
+                    response = []
+                    for result in results:
+                        response.append({
+                            "transaction_status_name": result[0],
+                            "update_date": result[1].isoformat() + "Z" if result[1] else None,
+                            "updated_by_user_name": str(result[2]) if result[2] else None
+                        })
         else:
             # Handle unsupported methods
             return {

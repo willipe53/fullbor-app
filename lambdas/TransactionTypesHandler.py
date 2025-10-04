@@ -72,6 +72,7 @@ def lambda_handler(event, context):
     http_method = event.get('httpMethod', 'GET')
     path = event.get('path', '')
     path_parameters = event.get('pathParameters') or {}
+    query_parameters = event.get('queryStringParameters') or {}
     body = event.get('body', '{}')
 
     connection = None
@@ -112,25 +113,37 @@ def lambda_handler(event, context):
                     }
             else:
                 # List all transaction types: /transaction-types
+                count_only = query_parameters.get(
+                    'count', 'false').lower() == 'true'
+
                 with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT name, properties, update_date, updated_user_id
-                        FROM transaction_types
-                        ORDER BY name
-                    """)
-                    results = cursor.fetchall()
+                    if count_only:
+                        # Return count only
+                        cursor.execute(
+                            "SELECT COUNT(*) as count FROM transaction_types")
+                        result = cursor.fetchone()
+                        response = {"count": result[0]}
+                    else:
+                        # Return transaction types data
+                        cursor.execute("""
+                            SELECT name, properties, update_date, updated_user_id
+                            FROM transaction_types
+                            ORDER BY name
+                        """)
+                        results = cursor.fetchall()
 
-                    response = []
-                    for result in results:
-                        # Map database fields to OpenAPI schema
-                        properties = json.loads(result[1]) if result[1] else {}
+                        response = []
+                        for result in results:
+                            # Map database fields to OpenAPI schema
+                            properties = json.loads(
+                                result[1]) if result[1] else {}
 
-                        response.append({
-                            "transaction_type_name": result[0],
-                            "properties": properties,
-                            "update_date": result[2].isoformat() + "Z" if result[2] else None,
-                            "updated_by_user_name": str(result[3]) if result[3] else None
-                        })
+                            response.append({
+                                "transaction_type_name": result[0],
+                                "properties": properties,
+                                "update_date": result[2].isoformat() + "Z" if result[2] else None,
+                                "updated_by_user_name": str(result[3]) if result[3] else None
+                            })
 
         elif http_method == 'POST':
             # Handle POST operations: /transaction-types (create or upsert)

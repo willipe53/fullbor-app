@@ -1,0 +1,107 @@
+# Position Keeper API Test Script
+# Tests the lock mechanism and basic start/stop functionality
+# Run with: ./comprehensive-api-test.py position-keeper-script.yaml
+# (Authentication and base URL are enabled by default)
+
+defaults:
+  headers:
+    Content-Type: "application/json"
+  timeout: 30
+
+tests:
+  # === LOCK MECHANISM TESTS ===
+
+  # Step 1: Start the position keeper (completes immediately)
+  - name: "Start position keeper (first attempt)"
+    request:
+      method: POST
+      url: "/position-keeper"
+      json:
+        command: "start"
+    expect:
+      status: 200
+      json:
+        - path: "command"
+          equals: "start"
+        - path: "status"
+          equals: "completed"
+        - path: "message"
+          exists: true
+        - path: "timestamp"
+          exists: true
+
+  # Step 2: Try to start again (should also complete immediately)
+  - name: "Start position keeper again (should complete immediately)"
+    request:
+      method: POST
+      url: "/position-keeper"
+      json:
+        command: "start"
+    expect:
+      status: 200
+      json:
+        - path: "command"
+          equals: "start"
+        - path: "status"
+          equals: "completed"
+        - path: "message"
+          exists: true
+        - path: "timestamp"
+          exists: true
+
+  # Step 3: Stop the position keeper (may not be running)
+  - name: "Stop position keeper"
+    request:
+      method: POST
+      url: "/position-keeper"
+      json:
+        command: "stop"
+    expect:
+      status: 200
+      json:
+        - path: "command"
+          equals: "stop"
+        - path: "status"
+          equals: "not_running"
+        - path: "message"
+          exists: true
+        - path: "timestamp"
+          exists: true
+
+  # Step 4: Start again (should work)
+  - name: "Start position keeper again (should work)"
+    request:
+      method: POST
+      url: "/position-keeper"
+      json:
+        command: "start"
+    expect:
+      status: 200
+      json:
+        - path: "command"
+          equals: "start"
+        - path: "status"
+          equals: "completed"
+        - path: "message"
+          exists: true
+        - path: "timestamp"
+          exists: true
+
+  # Clean up: Stop the position keeper
+  - name: "Final cleanup - Stop position keeper"
+    request:
+      method: POST
+      url: "/position-keeper"
+      json:
+        command: "stop"
+    expect:
+      status: 200
+      json:
+        - path: "command"
+          equals: "stop"
+        - path: "status"
+          equals: "not_running"
+        - path: "message"
+          exists: true
+        - path: "timestamp"
+          exists: true

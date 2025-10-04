@@ -1,13 +1,20 @@
 openapi: 3.0.3
 info:
   title: FullBor API
-  version: 2.0.0
+  version: 1.0.0
+  x-logo:
+    url: https://docs.fullbor.ai/boar34black_small.png
+    altText: Fullbor.ai
   description:
     'FullBor v2 API (API Gateway + Lambda). All endpoints require the current
-    user context via `X-Current-User-Id` header. For referential fields (client group,
+    user context via `X-Current-User-Id` header which constrains the data that the user
+    can access. For referential fields (client group,
     entity type, transaction type/status, entities, etc.) the API expects and returns
     **string names** rather than integer IDs. Association "set" endpoints optionally
     accept ID arrays in addition to name arrays for convenience.
+
+    All get endpoints return a count of the total number of results and a limit and offset
+    that can be used to paginate the results.
 
     '
 servers:
@@ -24,14 +31,15 @@ tags:
   - name: Invitations
 components:
   securitySchemes:
-    CognitoUserPoolAuthorizer:
-      type: apiKey
-      in: header
-      name: Authorization
-      x-amazon-apigateway-authorizer:
-        type: cognito_user_pools
-        providerARNs:
-          - arn:aws:cognito-idp:us-east-2:316490106381:userpool/us-east-2_IJ1C0mWXW
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.fullbor.ai/oauth2/authorize
+          tokenUrl: https://auth.fullbor.ai/oauth2/token
+          scopes:
+            read: Read access
+            write: Write access
   parameters:
     CurrentUserIdHeader:
       name: X-Current-User-Id
@@ -49,6 +57,14 @@ components:
         preferences:
           type: object
           additionalProperties: true
+        entities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Entity"
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
         update_date:
           type: string
           format: date-time
@@ -61,6 +77,9 @@ components:
     Entity:
       type: object
       properties:
+        entity_id:
+          type: integer
+          description: Internal database ID
         entity_name:
           type: string
         entity_type_name:
@@ -76,6 +95,7 @@ components:
           type: string
           nullable: true
       required:
+        - entity_id
         - entity_name
         - entity_type_name
     EntityType:
@@ -172,29 +192,30 @@ components:
     User:
       type: object
       properties:
-        user_name:
-          type: string
-          description: Display name or friendly name
-        email:
-          type: string
-          format: email
+        user_id:
+          type: integer
+          description: Internal database ID
         sub:
           type: string
           description: IdP subject (Cognito sub)
+        email:
+          type: string
+          format: email
         preferences:
           type: object
           additionalProperties: true
-        primary_client_group_name:
-          type: string
+          nullable: true
+        primary_client_group_id:
+          type: integer
           nullable: true
         update_date:
           type: string
           format: date-time
           nullable: true
       required:
-        - user_name
-        - email
+        - user_id
         - sub
+        - email
     Invitation:
       type: object
       properties:
@@ -241,7 +262,7 @@ components:
     ClientGroupUsersSetRequest:
       type: object
       properties:
-        user_names:
+        sub_values:
           type: array
           items:
             type: string
@@ -249,29 +270,18 @@ components:
           type: array
           items:
             type: integer
-      description: Provide either `user_names` (preferred) or `user_ids`.
+        user_names:
+          type: array
+          items:
+            type: string
+      description: Provide either `sub_values` (preferred), `user_names` (email addresses), or `user_ids`.
       anyOf:
+        - required:
+            - sub_values
         - required:
             - user_names
         - required:
             - user_ids
-    UserClientGroupsSetRequest:
-      type: object
-      properties:
-        client_group_names:
-          type: array
-          items:
-            type: string
-        client_group_ids:
-          type: array
-          items:
-            type: integer
-      description: Provide either `client_group_names` (preferred) or `client_group_ids`.
-      anyOf:
-        - required:
-            - client_group_names
-        - required:
-            - client_group_ids
     TransactionsQuery:
       type: object
       properties:
@@ -295,7 +305,9 @@ components:
           minimum: 0
           default: 0
 security:
-  - CognitoUserPoolAuthorizer: []
+  - OAuth2:
+      - read
+      - write
 paths:
   /client-groups:
     parameters:
@@ -303,22 +315,77 @@ paths:
     get:
       tags:
         - ClientGroups
-      summary: List Client Groups (optionally filter by entity)
+      summary: List Client Groups or get count
+      description: |
+        Query client groups with optional filters. Supports:
+        - Get client groups for a specific user: ?email=user@example.com
+        - Get count only: ?count=true
+        - Get count for specific user: ?email=user@example.com&count=true
+
+        Security: Users can only access client groups they have permission to see.
       parameters:
         - in: query
-          name: entity_name
+          name: email
           schema:
             type: string
-          description: Return client groups that include this Entity.
+            format: email
+          description: Return client groups that include a specific user (by email)
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
-          description: Client groups
+          description: Client groups or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ClientGroup"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ClientGroup"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                user_client_groups:
+                  summary: User's Client Groups
+                  value:
+                    data:
+                      - client_group_name: "Byrde Family Foundation"
+                        preferences:
+                          setting_1: "value1234"
+                          new_setting: "new_value"
+                        update_date: "2025-09-30T22:14:53Z"
+                        updated_by_user_name: "peter@fullbor.ai"
+                    count: 1
+                    limit: 100
+                    offset: 0
         "400":
           description: Bad request
           content:
@@ -349,13 +416,19 @@ paths:
     post:
       tags:
         - ClientGroups
-      summary: Create or upsert a Client Group
+      summary: Create a Client Group
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/ClientGroup"
+            examples:
+              create_client_group:
+                summary: Create New Client Group
+                value:
+                  client_group_name: "Test Client Group"
+                  description: "Created by API test script"
       responses:
         "201":
           description: Created
@@ -405,6 +478,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientGroup"
+              examples:
+                client_group_by_name:
+                  summary: Client Group by Name
+                  value:
+                    client_group_name: "Byrde Family Foundation"
+                    preferences: {}
+                    update_date: "2025-09-30T22:14:53Z"
+                    updated_by_user_name: "peter@fullbor.ai"
         "400": &id001
           description: Bad request
           content:
@@ -442,6 +523,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ClientGroup"
+            examples:
+              update_client_group:
+                summary: Update Client Group
+                value:
+                  client_group_name: "Test Client Group"
+                  description: "Updated test client group description"
+                  is_active: true
       responses:
         "200":
           description: Updated
@@ -457,11 +545,62 @@ paths:
         - ClientGroups
       summary: Delete a Client Group
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id001
-        "401": *id002
-        "403": *id003
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Client group deleted successfully
+                  value:
+                    message: "Client group deleted successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                not_found:
+                  summary: Client group not found
+                  value:
+                    error: "Client group not found"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "Client group not found or access denied"
   /client-groups/{client_group_name}/entities:set:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
@@ -470,19 +609,42 @@ paths:
         required: true
         schema:
           type: string
-    post:
+    put:
       tags:
         - ClientGroups
       summary: Set Entities that are valid for a Client Group
+      description: |
+        Sets the complete list of entities for a client group (replaces all, doesn't add/remove individual entities).
+        Accepts entity_names or entity_ids.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/ClientGroupEntitiesSetRequest"
+            examples:
+              set_entities_by_names:
+                summary: Set Entities by Names
+                value:
+                  entity_names: ["Entity 1", "Entity 2", "Entity 3"]
+              set_entities_by_ids:
+                summary: Set Entities by IDs
+                value:
+                  entity_ids: [1, 2, 3, 4, 5]
+              clear_entities:
+                summary: Clear All Entities (Empty Array)
+                value:
+                  entity_names: []
       responses:
-        "201":
+        "200":
           description: Associations updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         "400":
           description: Bad request
           content:
@@ -518,7 +680,7 @@ paths:
         required: true
         schema:
           type: string
-    post:
+    put:
       tags:
         - ClientGroups
       summary: Set Users that are valid for a Client Group
@@ -529,8 +691,102 @@ paths:
             schema:
               $ref: "#/components/schemas/ClientGroupUsersSetRequest"
       responses:
-        "201":
+        "200":
           description: Associations updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /client-groups/{client_group_name}/entities:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - ClientGroups
+      summary: List Entities that are valid for a Client Group
+      description: |
+        Returns all entities that belong to the specified client group.
+        Security: Users can only access entities from client groups they have permission to view.
+      parameters:
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
+      responses:
+        "200":
+          description: Entities in client group
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Entity"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
         "400":
           description: Bad request
           content:
@@ -564,32 +820,68 @@ paths:
     get:
       tags:
         - Entities
-      summary: List Entities (filter by user, entity type, or client group)
+      summary: List Entities (filter by entity type, entity_category, or client group)
+      description: |
+        Returns entities that the authenticated user has access to through their client groups.
+        SECURITY: Users can only see entities they have access to - user_name parameter removed for security.
       parameters:
-        - in: query
-          name: user_name
-          schema:
-            type: string
-          description:
-            Return Entities visible to the specified user (distinct from
-            header current_user_id)
         - in: query
           name: entity_type_name
           schema:
             type: string
+          description: Filter entities by entity type name
+        - in: query
+          name: entity_category
+          schema:
+            type: string
+          description: Filter entities by entity category (Person, Instrument, Currency, Holding, etc.)
         - in: query
           name: client_group_name
           schema:
             type: string
+          description: Filter entities by client group name
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
-          description: Entities
+          description: Entities or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Entity"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Entity"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
         "400": &id004
           description: Bad request
           content:
@@ -620,13 +912,22 @@ paths:
     post:
       tags:
         - Entities
-      summary: Create or upsert an Entity
+      summary: Create an Entity
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/Entity"
+            examples:
+              create_entity:
+                summary: Create New Entity
+                value:
+                  entity_name: "Test Entity"
+                  entity_type_name: "Investor"
+                  attributes:
+                    test_attribute: "original_value"
+                    created_via: "api_test"
       responses:
         "201":
           description: Created
@@ -714,11 +1015,62 @@ paths:
         - Entities
       summary: Delete an Entity
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id007
-        "401": *id008
-        "403": *id009
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Entity deleted successfully
+                  value:
+                    message: "Entity deleted successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                not_found:
+                  summary: Entity not found
+                  value:
+                    error: "Entity not found"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "Entity not found or access denied"
   /entity-types:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
@@ -731,16 +1083,114 @@ paths:
           name: entity_category
           schema:
             type: string
-          description: Filter entity types by category (e.g., "Investment", "Trading", "Security", "Currency", "Instrument")
+          description: "Filter entity types by category. Valid categories: Person, Instrument, Currency, Holding, Capital Account, Income Account, Expense Account, Private Equity Commitment Contra"
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
       responses:
         "200":
-          description: Entity types
+          description: Entity types or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/EntityType"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EntityType"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                all_entity_types:
+                  summary: All Entity Types
+                  value:
+                    data:
+                      - entity_type_name: "Investor"
+                        entity_category: "Person"
+                        short_label: "INV"
+                        label_color: "0066CC"
+                        attributes_schema:
+                          first_name: "string"
+                          last_name: "string"
+                          email: "string"
+                      - entity_type_name: "Stock"
+                        entity_category: "Instrument"
+                        short_label: "STK"
+                        label_color: "00AA00"
+                        attributes_schema:
+                          ticker: "string"
+                          exchange: "string"
+                          sector: "string"
+                      - entity_type_name: "USD"
+                        entity_category: "Currency"
+                        short_label: "USD"
+                        label_color: "FF6600"
+                        attributes_schema:
+                          symbol: "string"
+                          decimal_places: "integer"
+                instrument_entity_types:
+                  summary: Filtered by entity_category=Instrument
+                  value:
+                    data:
+                      - entity_type_name: "Stock"
+                        entity_category: "Instrument"
+                        short_label: "STK"
+                        label_color: "00AA00"
+                        attributes_schema:
+                          ticker: "string"
+                          exchange: "string"
+                          sector: "string"
+                      - entity_type_name: "Bond"
+                        entity_category: "Instrument"
+                        short_label: "BND"
+                        label_color: "9900CC"
+                        attributes_schema:
+                          cusip: "string"
+                          maturity_date: "date"
+                          coupon_rate: "number"
+                      - entity_type_name: "Option"
+                        entity_category: "Instrument"
+                        short_label: "OPT"
+                        label_color: "CC0000"
+                        attributes_schema:
+                          underlying: "string"
+                          strike_price: "number"
+                          expiration_date: "date"
+                    count: 3
+                    limit: 100
+                    offset: 0
+                count_only:
+                  summary: Count only (count=true)
+                  value:
+                    count: 12
         "400": &id010
           description: Bad request
           content:
@@ -771,13 +1221,22 @@ paths:
     post:
       tags:
         - EntityTypes
-      summary: Create or upsert an Entity Type
+      summary: Create an Entity Type
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/EntityType"
+            examples:
+              create_entity_type:
+                summary: Create New Entity Type
+                value:
+                  entity_type_name: "Test Entity Type"
+                  entity_category: "Person"
+                  attributes:
+                    test_attr: "original_value"
+                    created_via: "api_test"
       responses:
         "201":
           description: Created
@@ -865,11 +1324,62 @@ paths:
         - EntityTypes
       summary: Delete an Entity Type
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id013
-        "401": *id014
-        "403": *id015
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Entity type deleted successfully
+                  value:
+                    message: "Entity type deleted successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                not_found:
+                  summary: Entity type not found
+                  value:
+                    error: "Entity type not found"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "User has no client group affiliations or access denied"
   /transactions:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
@@ -923,18 +1433,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
+                oneOf:
+                  - type: array
                     items:
                       $ref: "#/components/schemas/Transaction"
-                  count:
-                    type: integer
-                  limit:
-                    type: integer
-                  offset:
-                    type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
         "400": &id016
           description: Bad request
           content:
@@ -972,9 +1478,28 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/Transaction"
+            examples:
+              create_transaction:
+                summary: Create Management Fee Transaction
+                value:
+                  portfolio_entity_name: "Peter Piper Portfolio"
+                  contra_entity_name: "Manager Expenses"
+                  instrument_entity_name: "Harry Hedge Fund"
+                  transaction_type_name: "Management fees"
+                  properties:
+                    amount: 1000000
+                    post_date: "2025-10-31"
+                    currency_code: "Swedish Krona"
       responses:
         "201":
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         "400": *id016
         "401": *id017
         "403": *id018
@@ -1052,27 +1577,192 @@ paths:
         - Transactions
       summary: Delete Transaction
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id019
-        "401": *id020
-        "403": *id021
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Transaction deleted successfully
+                  value:
+                    message: "Transaction deleted successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                not_found:
+                  summary: Transaction not found
+                  value:
+                    error: "Transaction not found or access denied"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "User has no client group affiliations or access denied"
   /transaction-types:
-    parameters:
-      - $ref: "#/components/parameters/CurrentUserIdHeader"
     get:
       tags:
         - TransactionTypes
       summary: List Transaction Types
+      parameters:
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
       responses:
         "200":
-          description: Transaction types
+          description: Transaction types or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TransactionType"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TransactionType"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                buy_and_sell:
+                  summary: Buy and Sell Transaction Types
+                  value:
+                    data:
+                      - transaction_type_name: "Buy"
+                        properties:
+                          type: "object"
+                          title: "Buy"
+                          $schema: "http://json-schema.org/draft-07/schema#"
+                          required:
+                            - "trade_date"
+                            - "settle_date"
+                            - "amount"
+                            - "price"
+                            - "settle_currency"
+                          properties:
+                            price:
+                              type: "number"
+                            amount:
+                              type: "number"
+                            trade_date:
+                              type: "string"
+                              format: "date"
+                            settle_date:
+                              type: "string"
+                              format: "date"
+                            settle_currency:
+                              type: "string"
+                              x-enum-api:
+                                ["get_entities", "entity_category", "Currency"]
+                          description: "Buy marketable security"
+                          current_position: "trade_date"
+                          forecast_position: "settle_date"
+                          valid_instruments: ["FI", "FU", "EQ", "ETF", "CCY"]
+                          valid_contra_groups: ["IA", "EA", "P"]
+                          position_keeping_actions:
+                            - "contra amount*price settle_currency down"
+                            - "portfolio amount instrument up"
+                        update_date: "2025-09-28T20:30:17Z"
+                        updated_by_user_name: "10"
+                      - transaction_type_name: "Sell"
+                        properties:
+                          type: "object"
+                          title: "Sell"
+                          $schema: "http://json-schema.org/draft-07/schema#"
+                          required:
+                            - "trade_date"
+                            - "settle_date"
+                            - "amount"
+                            - "price"
+                            - "settle_currency"
+                          properties:
+                            price:
+                              type: "number"
+                            amount:
+                              type: "number"
+                            trade_date:
+                              type: "string"
+                              format: "date"
+                            settle_date:
+                              type: "string"
+                              format: "date"
+                            settle_currency:
+                              type: "string"
+                              x-enum-api:
+                                ["get_entities", "entity_category", "Currency"]
+                          description: "Sell marketable security"
+                          current_position: "trade_date"
+                          forecast_position: "settle_date"
+                          valid_instruments: ["FI", "FU", "EQ", "ETF", "CCY"]
+                          valid_contra_groups: ["IA", "EA", "P"]
+                          position_keeping_actions:
+                            - "contra amount*price settle_currency up"
+                            - "portfolio amount instrument down"
+                        update_date: "2025-09-27T17:26:43Z"
+                        updated_by_user_name: "10"
+                    count: 2
+                    limit: 100
+                    offset: 0
         "400": &id022
           description: Bad request
           content:
@@ -1103,13 +1793,21 @@ paths:
     post:
       tags:
         - TransactionTypes
-      summary: Create or upsert a Transaction Type
+      summary: Create a Transaction Type
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/TransactionType"
+            examples:
+              create_transaction_type:
+                summary: Create New Transaction Type
+                value:
+                  transaction_type_name: "Test Transaction Type"
+                  properties:
+                    test_property: "original_value"
+                    created_via: "api_test"
       responses:
         "201":
           description: Created
@@ -1197,11 +1895,62 @@ paths:
         - TransactionTypes
       summary: Delete a Transaction Type
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id025
-        "401": *id026
-        "403": *id027
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Transaction type deleted successfully
+                  value:
+                    message: "Transaction type deleted successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                not_found:
+                  summary: Transaction type not found
+                  value:
+                    error: "Transaction type not found"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "User has no client group affiliations or access denied"
   /transaction-statuses:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
@@ -1209,15 +1958,71 @@ paths:
       tags:
         - TransactionStatuses
       summary: List Transaction Statuses
+      parameters:
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
       responses:
         "200":
-          description: Transaction statuses
+          description: Transaction statuses or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TransactionStatus"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TransactionStatus"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                all_statuses:
+                  summary: All Transaction Statuses
+                  value:
+                    data:
+                      - transaction_status_name: "INCOMPLETE"
+                        update_date: "2025-09-26T19:19:26Z"
+                        updated_by_user_name: "10"
+                      - transaction_status_name: "PROCESSED"
+                        update_date: "2025-09-26T19:19:31Z"
+                        updated_by_user_name: "10"
+                      - transaction_status_name: "QUEUED"
+                        update_date: "2025-09-26T19:19:29Z"
+                        updated_by_user_name: "10"
+                      - transaction_status_name: "UNKNOWN"
+                        update_date: "2025-09-28T15:18:41Z"
+                        updated_by_user_name: "10"
+                    count: 4
+                    limit: 100
+                    offset: 0
         "400": &id028
           description: Bad request
           content:
@@ -1245,31 +2050,25 @@ paths:
                 properties:
                   error:
                     type: string
-  /position-keeper:
+  /position-keeper/start:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
     post:
       tags:
         - PositionKeeper
-      summary: Control the Position Keeper process
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                command:
-                  type: string
-                  enum:
-                    - start
-                    - stop
-                  description: Command to execute (start or stop the Position Keeper)
-              required:
-                - command
+      summary: Start the Position Keeper process
       responses:
+        "201":
+          description: Position Keeper started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         "400":
-          description: Bad request - invalid command or parameters
+          description: Bad request - invalid parameters
           content:
             application/json:
               schema:
@@ -1277,11 +2076,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Error message
         "409":
-          description:
-            Conflict - Position Keeper is already running or lock acquisition
-            failed
+          description: Conflict - Position Keeper is already running
           content:
             application/json:
               schema:
@@ -1289,10 +2085,6 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Error message
-                  status:
-                    type: string
-                    description: Current status of the Position Keeper
         "401":
           description: Unauthorized
           content:
@@ -1311,46 +2103,142 @@ paths:
                 properties:
                   error:
                     type: string
+  /position-keeper/stop:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    post:
+      tags:
+        - PositionKeeper
+      summary: Stop the Position Keeper process
+      responses:
         "201":
-          description: Command executed successfully
+          description: Position Keeper stopped successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  command:
-                    type: string
-                    description: The command that was executed
-                  status:
-                    type: string
-                    description: Status of the command execution
                   message:
                     type: string
-                    description: Additional information about the execution
-                  timestamp:
+        "400":
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
-                    format: date-time
-                    description: When the command was executed
-                required:
-                  - command
-                  - status
-                  - timestamp
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   /users:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
     get:
       tags:
         - Users
-      summary: List users
+      summary: List users or get count
+      description: |
+        Query users by different filters. Supports:
+        - Get specific user by email: ?email=user@example.com
+        - Get users in a specific client group: ?client_group_name=group-name
+        - Get count only: ?count=true
+        - Get count in client group: ?client_group_name=group-name&count=true
+
+        Security: Users can only access users they have permission to see based on their client groups.
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          description: Find user by email address
+        - in: query
+          name: client_group_name
+          schema:
+            type: string
+          description: Filter users by client group name
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
       responses:
         "200":
-          description: Users
+          description: Users or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                sample_users:
+                  summary: Sample Users
+                  value:
+                    data:
+                      - user_id: 234
+                        sub: "cafebabe-beef-dead-f00d-c0ffeec0ffee"
+                        email: "mark@fullbor.ai"
+                        preferences:
+                          coffee: "black"
+                        primary_client_group_id: 19
+                        update_date: "2025-09-28T21:29:26Z"
+                      - user_id: 8
+                        sub: "11111111-2222-3333-4444-555555555555"
+                        email: "peter@fullbor.ai"
+                        preferences: {}
+                        primary_client_group_id: 19
+                        update_date: "2025-09-28T20:30:41Z"
+                    count: 2
+                    limit: 100
+                    offset: 0
         "400": &id034
           description: Bad request
           content:
@@ -1381,13 +2269,22 @@ paths:
     post:
       tags:
         - Users
-      summary: Create or upsert a user
+      summary: Create a user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/User"
+            examples:
+              create_user:
+                summary: Create New User
+                value:
+                  sub: "cafebabe-beef-dead-f00d-c0ffeec0ffee"
+                  email: "foo@bar.com"
+                  preferences:
+                    a: "b"
+                  primary_client_group_id: 19
       responses:
         "201":
           description: Created
@@ -1401,18 +2298,19 @@ paths:
         "400": *id034
         "401": *id035
         "403": *id036
-  /users/{user_name}:
+  /users/{sub}:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
       - in: path
-        name: user_name
+        name: sub
         required: true
         schema:
           type: string
+          description: Cognito user ID (sub)
     get:
       tags:
         - Users
-      summary: Get user by name
+      summary: Get user by Cognito sub
       responses:
         "200":
           description: User
@@ -1420,6 +2318,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+              examples:
+                user_by_sub:
+                  summary: User by Cognito Sub
+                  value:
+                    user_id: 234
+                    sub: "cafebabe-beef-dead-f00d-c0ffeec0ffee"
+                    email: "mark@fullbor.ai"
+                    preferences:
+                      coffee: "black"
+                    primary_client_group_id: 19
+                    update_date: "2025-09-28T21:29:26Z"
         "400": &id037
           description: Bad request
           content:
@@ -1457,6 +2366,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/User"
+            examples:
+              update_user:
+                summary: Update User Preferences
+                value:
+                  preferences:
+                    a: "c"
       responses:
         "200":
           description: Updated
@@ -1475,30 +2390,20 @@ paths:
         - Users
       summary: Delete user
       responses:
-        "204":
+        "200":
           description: Deleted
-        "400": *id037
-        "401": *id038
-        "403": *id039
-  /users/{user_name}/client-groups:set:
-    parameters:
-      - $ref: "#/components/parameters/CurrentUserIdHeader"
-      - in: path
-        name: user_name
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - Users
-      summary: Set Client Groups for a User
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserClientGroupsSetRequest"
-      responses:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: User deleted successfully
+                  value:
+                    message: "User deleted successfully"
         "400":
           description: Bad request
           content:
@@ -1508,6 +2413,11 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                not_found:
+                  summary: User not found
+                  value:
+                    error: "User not found or access denied"
         "401":
           description: Unauthorized
           content:
@@ -1517,6 +2427,11 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
         "403":
           description: Forbidden
           content:
@@ -1526,41 +2441,82 @@ paths:
                 properties:
                   error:
                     type: string
-        "201":
-          description: Associations updated
-          content:
-            application/json:
-              schema:
-                type: object
-                description: Response for /users/{user_name}/client-groups:set POST
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "User has no client group affiliations or access denied"
   /invitations:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
     get:
       tags:
         - Invitations
-      summary: List invitations (optionally by client group)
+      summary: List invitations for the current user
       parameters:
         - in: query
-          name: client_group_name
+          name: redeemed
           schema:
-            type: string
-          description: Filter invitations by client group name
+            type: boolean
+          description: Filter invitations by redemption status. Use 'true' for redeemed invitations, 'false' for unredeemed invitations.
         - in: query
-          name: filter
+          name: count
           schema:
-            type: string
-            enum: [unexpired]
-          description: Filter invitations by expiration status. Use 'unexpired' to only return invitations that haven't expired yet.
+            type: boolean
+            default: false
+          description: If true, returns only a count
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of results to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of results to skip for pagination
       responses:
         "200":
-          description: Invitations
+          description: Invitations or count
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Invitation"
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Invitation"
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+              examples:
+                user_invitations:
+                  summary: User's Invitations
+                  value:
+                    data:
+                      - invitation_id: 91
+                        code: "6f3c3ede9f0511f0"
+                        expires_at: "2025-12-31T23:59:59Z"
+                        client_group_name: "Byrde Family Foundation"
+                        email_sent_to: "test@example.com"
+                        updated_by_user_name: "81"
+                    count: 1
+                    limit: 100
+                    offset: 0
         "400": &id040
           description: Bad request
           content:
@@ -1598,6 +2554,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/Invitation"
+            examples:
+              create_invitation:
+                summary: Create New Invitation
+                value:
+                  client_group_name: "Byrde Family Foundation"
+                  email_sent_to: "test@example.com"
+                  expires_at: "2025-12-31T23:59:59Z"
       responses:
         "201":
           description: Created
@@ -1623,6 +2586,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Invitation"
+              examples:
+                invitation_by_id:
+                  summary: Invitation by ID
+                  value:
+                    invitation_id: 91
+                    code: "6f3c3ede9f0511f0"
+                    expires_at: "2025-12-31T23:59:59Z"
+                    client_group_name: "Byrde Family Foundation"
+                    email_sent_to: "user@example.com"
+                    updated_by_user_name: "peter@endowment.org"
         "400": &id043
           description: Bad request
           content:
@@ -1655,32 +2628,20 @@ paths:
         - Invitations
       summary: Delete an invitation
       responses:
-        "204":
-          description: Deleted
-        "400": *id043
-        "401": *id044
-        "403": *id045
-  /client-groups/{client_group_name}/invitations:
-    parameters:
-      - $ref: "#/components/parameters/CurrentUserIdHeader"
-      - in: path
-        name: client_group_name
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - Invitations
-      summary: List all invitations for a Client Group
-      responses:
         "200":
-          description: Invitations
+          description: Deleted
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Invitation"
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Invitation deleted successfully
+                  value:
+                    message: "Invitation deleted successfully"
         "400":
           description: Bad request
           content:
@@ -1690,6 +2651,11 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                not_found:
+                  summary: Invitation not found
+                  value:
+                    error: "Invitation not found or access denied"
         "401":
           description: Unauthorized
           content:
@@ -1699,6 +2665,11 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
         "403":
           description: Forbidden
           content:
@@ -1708,6 +2679,11 @@ paths:
                 properties:
                   error:
                     type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "User has no client group affiliations or access denied"
   /invitations/redeem/{code}:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
 Quick API testing script using boto3 and Cognito authentication.
-Usage: ./test-api.py <api_url>
-Example: ./test-api.py https://api.fullbor.ai/v2/transaction-statuses
+Usage: ./test-api.py <METHOD> <api_url> [request_body]
+Examples: 
+  ./test-api.py GET https://api.fullbor.ai/v2/transaction-statuses
+  ./test-api.py DELETE https://api.fullbor.ai/v2/entities/1
+  ./test-api.py POST https://api.fullbor.ai/v2/entity-types/Investor '{"entity_category": "Person"}'
+  ./test-api.py PUT https://api.fullbor.ai/v2/users/test-user '{"preferences": {"theme": "dark"}}'
 """
 
 import sys
@@ -66,8 +70,8 @@ def get_user_id_from_token(token):
         return None
 
 
-def test_api_endpoint(url):
-    """Test the given API endpoint."""
+def test_api_endpoint(method, url, request_body=None):
+    """Test the given API endpoint with the specified method and optional body."""
     try:
         # Get authentication token
         token = get_auth_token()
@@ -78,18 +82,6 @@ def test_api_endpoint(url):
             print("❌ Could not extract user ID from token")
             sys.exit(1)
 
-        # Parse URL to determine method
-        parsed_url = urlparse(url)
-        path = parsed_url.path
-
-        # Determine HTTP method based on path
-        if 'position-keeper' in path:
-            method = 'POST'
-            data = {"command": "start"}
-        else:
-            method = 'GET'
-            data = None
-
         # Prepare headers
         headers = {
             'Authorization': f'Bearer {token}',
@@ -97,17 +89,38 @@ def test_api_endpoint(url):
             'Content-Type': 'application/json'
         }
 
+        # Parse request body if provided
+        data = None
+        if request_body:
+            try:
+                data = json.loads(request_body)
+            except json.JSONDecodeError as e:
+                print(f"❌ Error parsing JSON request body: {e}")
+                sys.exit(1)
+
         # Make the request
-        print(f"🔍 Testing {method} {url}")
+        print(f"🔍 Testing {method.upper()} {url}")
         print(
             f"📋 Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'}, indent=2)}")
 
-        if method == 'POST' and data:
+        if data:
             print(f"📤 Request Body: {json.dumps(data, indent=2)}")
+
+        # Execute the appropriate HTTP method
+        if method.upper() == 'GET':
+            response = requests.get(url, headers=headers, timeout=30)
+        elif method.upper() == 'POST':
             response = requests.post(
                 url, headers=headers, json=data, timeout=30)
+        elif method.upper() == 'PUT':
+            response = requests.put(
+                url, headers=headers, json=data, timeout=30)
+        elif method.upper() == 'DELETE':
+            response = requests.delete(url, headers=headers, timeout=30)
         else:
-            response = requests.get(url, headers=headers, timeout=30)
+            print(f"❌ Unsupported HTTP method: {method}")
+            print("Supported methods: GET, POST, PUT, DELETE")
+            sys.exit(1)
 
         # Print results
         print(f"\n📊 Response Status: {response.status_code}")
@@ -147,19 +160,53 @@ def test_api_endpoint(url):
 
 def main():
     """Main function."""
-    if len(sys.argv) != 2:
-        print("Usage: ./test-api.py <api_url>")
-        print("Example: ./test-api.py https://api.fullbor.ai/v2/transaction-statuses")
+    if len(sys.argv) < 3:
+        print("❌ Error: Missing required arguments")
+        print("Usage: ./test-api.py <METHOD> <api_url> [request_body]")
+        print("Examples:")
+        print("  ./test-api.py GET https://api.fullbor.ai/v2/transaction-statuses")
+        print("  ./test-api.py DELETE https://api.fullbor.ai/v2/entities/1")
+        print(
+            "  ./test-api.py POST https://api.fullbor.ai/v2/entity-types/Investor '{\"entity_category\": \"Person\"}'")
+        print(
+            "  ./test-api.py PUT https://api.fullbor.ai/v2/users/test-user '{\"preferences\": {\"theme\": \"dark\"}}'")
+        print()
+        print("You provided:")
+        for i, arg in enumerate(sys.argv):
+            print(f"  sys.argv[{i}]: '{arg}'")
         sys.exit(1)
 
-    url = sys.argv[1]
+    if len(sys.argv) > 4:
+        print("❌ Error: Too many arguments")
+        print("Usage: ./test-api.py <METHOD> <api_url> [request_body]")
+        print()
+        print("You provided:")
+        for i, arg in enumerate(sys.argv):
+            print(f"  sys.argv[{i}]: '{arg}'")
+        sys.exit(1)
+
+    method = sys.argv[1].upper()
+    url = sys.argv[2]
+    request_body = sys.argv[3] if len(sys.argv) == 4 else None
+
+    # Validate method
+    if method not in ['GET', 'POST', 'PUT', 'DELETE']:
+        print(f"❌ Error: Unsupported HTTP method '{method}'")
+        print("Supported methods: GET, POST, PUT, DELETE")
+        sys.exit(1)
 
     # Validate URL
     if not url.startswith(('http://', 'https://')):
         print("❌ Error: URL must start with http:// or https://")
         sys.exit(1)
 
-    test_api_endpoint(url)
+    # Validate request body for methods that typically need it
+    if method in ['POST', 'PUT'] and not request_body:
+        print(
+            f"⚠️  Warning: {method} requests typically include a request body")
+        print("Continuing without body...")
+
+    test_api_endpoint(method, url, request_body)
 
 
 if __name__ == "__main__":

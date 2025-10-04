@@ -5,6 +5,30 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+# Data consistency functions (inline to avoid import issues)
+
+
+def validate_client_group_deletion(connection, client_group_id):
+    """Validate if a client group can be safely deleted."""
+    try:
+        with connection.cursor() as cursor:
+            # Check if any users have this as their primary client group
+            cursor.execute(
+                "SELECT COUNT(*) FROM users WHERE primary_client_group_id = %s",
+                (client_group_id,)
+            )
+            primary_count = cursor.fetchone()[0]
+
+            error_messages = []
+            if primary_count > 0:
+                error_messages.append(
+                    f"Cannot delete client group: {primary_count} user(s) have this as their primary client group")
+
+            return len(error_messages) == 0, error_messages
+
+    except Exception as e:
+        print(f"Error validating client group deletion: {e}")
+        return False, [f"Database error: {str(e)}"]
 
 
 def get_db_connection():
@@ -276,21 +300,30 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
 
 
 def handle_list_client_groups(connection, query_parameters, user_client_groups):
-    """Handle listing client groups with optional filters."""
+    """Handle listing client groups with optional filters and pagination."""
     # Apply query filters
     entity_name_filter = query_parameters.get('entity_name')
+    count_only = query_parameters.get('count', 'false').lower() == 'true'
+    limit = int(query_parameters.get('limit', 100))
+    offset = int(query_parameters.get('offset', 0))
 
     # Build base query
     if user_client_groups:
         base_query = """
-            SELECT DISTINCT cg.client_group_id, cg.name, cg.preferences, cg.update_date, cg.updated_user_id
             FROM client_groups cg
             WHERE cg.client_group_id IN ({})
         """.format(','.join(['%s'] * len(user_client_groups)))
         params = user_client_groups.copy()
     else:
         # User has no client groups - return empty result
-        return []
+        if count_only:
+            return {"count": 0}
+        return {
+            "data": [],
+            "count": 0,
+            "limit": limit,
+            "offset": offset
+        }
 
     # Add entity filter
     if entity_name_filter:
@@ -305,13 +338,42 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
             params.append(entity_id_filter)
         else:
             # Entity not found - return empty result
-            return []
+            if count_only:
+                return {"count": 0}
+            return {
+                "data": [],
+                "count": 0,
+                "limit": limit,
+                "offset": offset
+            }
 
-    base_query += " ORDER BY cg.name"
+    if count_only:
+        # Return count only
+        count_query = f"SELECT COUNT(*) as count {base_query}"
+        with connection.cursor() as cursor:
+            cursor.execute(count_query, params)
+            result = cursor.fetchone()
+            return {"count": result[0]}
+
+    # Get client groups with pagination
+    query = f"""
+        SELECT DISTINCT cg.client_group_id, cg.name, cg.preferences, cg.update_date, cg.updated_user_id
+        {base_query}
+        ORDER BY cg.name
+        LIMIT %s OFFSET %s
+    """
+    params.extend([limit, offset])
 
     with connection.cursor() as cursor:
-        cursor.execute(base_query, params)
+        cursor.execute(query, params)
         results = cursor.fetchall()
+
+        # Get total count for pagination
+        count_query = f"SELECT COUNT(*) as count {base_query}"
+        # Exclude limit and offset from count query
+        cursor.execute(count_query, params[:-2])
+        count_result = cursor.fetchone()
+        total_count = count_result[0]
 
         data = []
         for result in results:
@@ -327,7 +389,12 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
                 "updated_by_user_name": updated_by_user_name
             })
 
-        return data
+        return {
+            "data": data,
+            "count": total_count,
+            "limit": limit,
+            "offset": offset
+        }
 
 
 def handle_post_operations(connection, path, path_parameters, body, current_user_id, current_user_id_db, user_client_groups):
@@ -456,6 +523,16 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id_
     if not client_group_id or client_group_id not in user_client_groups:
         return {"error": "Client group not found or access denied"}
 
+    # Validate that client group can be safely deleted
+    can_delete, error_messages = validate_client_group_deletion(
+        connection, client_group_id)
+    if not can_delete:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": "; ".join(error_messages)}),
+            "headers": {"Content-Type": "application/json"}
+        }
+
     with connection.cursor() as cursor:
         # Delete client group (cascade will handle related records)
         cursor.execute(
@@ -502,9 +579,9 @@ def handle_set_entities(connection, path_parameters, body, current_user_id_db, u
         # Insert new entity associations
         for entity_id in entity_ids:
             cursor.execute("""
-                INSERT INTO client_group_entities (client_group_id, entity_id)
-                VALUES (%s, %s)
-            """, (client_group_id, entity_id))
+                INSERT INTO client_group_entities (client_group_id, entity_id, updated_user_id)
+                VALUES (%s, %s, %s)
+            """, (client_group_id, entity_id, current_user_id_db))
 
         connection.commit()
         return {"message": "Entity associations updated successfully"}

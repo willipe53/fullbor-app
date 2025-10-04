@@ -5,6 +5,42 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+# Data consistency functions (inline to avoid import issues)
+
+
+def ensure_primary_client_group_consistency(connection, user_id, primary_client_group_id):
+    """Ensure that if a user has a primary_client_group_id, there's a corresponding row in client_group_users table."""
+    try:
+        with connection.cursor() as cursor:
+            if primary_client_group_id:
+                # Check if the client group exists
+                cursor.execute(
+                    "SELECT client_group_id FROM client_groups WHERE client_group_id = %s",
+                    (primary_client_group_id,)
+                )
+                if not cursor.fetchone():
+                    # Client group doesn't exist, set primary_client_group_id to NULL
+                    cursor.execute(
+                        "UPDATE users SET primary_client_group_id = NULL WHERE user_id = %s",
+                        (user_id,)
+                    )
+                    return False
+
+                # Ensure there's a row in client_group_users
+                cursor.execute(
+                    "SELECT 1 FROM client_group_users WHERE client_group_id = %s AND user_id = %s",
+                    (primary_client_group_id, user_id)
+                )
+                if not cursor.fetchone():
+                    # Add the missing relationship
+                    cursor.execute(
+                        "INSERT INTO client_group_users (client_group_id, user_id) VALUES (%s, %s)",
+                        (primary_client_group_id, user_id)
+                    )
+            return True
+    except Exception as e:
+        print(f"Error ensuring primary client group consistency: {e}")
+        return False
 
 
 def get_db_connection():
@@ -176,20 +212,18 @@ def lambda_handler(event, context):
                     "body": json.dumps({"error": "Method not allowed. Use POST for setting client groups."}),
                     "headers": {"Content-Type": "application/json"}
                 }
-            elif 'user_name' in path_parameters:
-                # Get single user by name: /users/{user_name}
-                user_name = unquote(path_parameters['user_name'])
+            elif 'sub' in path_parameters:
+                # Get single user by sub: /users/{sub}
+                sub = unquote(path_parameters['sub'])
 
                 with connection.cursor() as cursor:
-                    # Try to find user by email (assuming user_name is email)
+                    # Find user by sub (Cognito user ID)
                     cursor.execute("""
-                        SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date,
-                               cg.name as primary_client_group_name
+                        SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date
                         FROM users u
-                        LEFT JOIN client_groups cg ON u.primary_client_group_id = cg.client_group_id
-                        WHERE u.email = %s AND u.user_id IN ({})
+                        WHERE u.sub = %s AND u.user_id IN ({})
                     """.format(','.join(['%s'] * len(valid_user_ids))),
-                        [user_name] + valid_user_ids)
+                        [sub] + valid_user_ids)
                     result = cursor.fetchone()
 
                     if not result:
@@ -203,42 +237,95 @@ def lambda_handler(event, context):
                     preferences = json.loads(result[3]) if result[3] else {}
 
                     response = {
-                        "user_name": result[2],  # email as user_name
-                        "email": result[2],
+                        "user_id": result[0],
                         "sub": result[1],
+                        "email": result[2],
                         "preferences": preferences,
-                        "primary_client_group_name": result[6],
+                        "primary_client_group_id": result[4],
                         "update_date": result[5].isoformat() + "Z" if result[5] else None
                     }
             else:
-                # List all users: /users
+                # List users with optional filters: /users?email=...&client_group_name=...&count=true
+                count_only = query_parameters.get(
+                    'count', 'false').lower() == 'true'
+                email_filter = query_parameters.get('email')
+                client_group_name_filter = query_parameters.get(
+                    'client_group_name')
+
                 with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date,
-                               cg.name as primary_client_group_name
-                        FROM users u
-                        LEFT JOIN client_groups cg ON u.primary_client_group_id = cg.client_group_id
-                        WHERE u.user_id IN ({})
-                        ORDER BY u.email
-                    """.format(','.join(['%s'] * len(valid_user_ids))),
-                        valid_user_ids)
+                    if count_only:
+                        # Return count only
+                        if client_group_name_filter:
+                            cursor.execute("""
+                                SELECT COUNT(*) as count
+                                FROM users u
+                                INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
+                                INNER JOIN client_groups cg ON cgu.client_group_id = cg.client_group_id
+                                WHERE u.user_id IN ({}) AND cg.name = %s
+                            """.format(','.join(['%s'] * len(valid_user_ids))),
+                                valid_user_ids + [client_group_name_filter])
+                        elif email_filter:
+                            cursor.execute("""
+                                SELECT COUNT(*) as count
+                                FROM users u
+                                WHERE u.user_id IN ({}) AND u.email = %s
+                            """.format(','.join(['%s'] * len(valid_user_ids))),
+                                valid_user_ids + [email_filter])
+                        else:
+                            cursor.execute("""
+                                SELECT COUNT(*) as count
+                                FROM users u
+                                WHERE u.user_id IN ({})
+                            """.format(','.join(['%s'] * len(valid_user_ids))),
+                                valid_user_ids)
+                        result = cursor.fetchone()
+                        response = {"count": result[0]}
+                    else:
+                        # Return users data with filters
+                        where_conditions = ["u.user_id IN ({})".format(
+                            ','.join(['%s'] * len(valid_user_ids)))]
+                        query_params = list(valid_user_ids)
 
-                    results = cursor.fetchall()
+                        if email_filter:
+                            where_conditions.append("u.email = %s")
+                            query_params.append(email_filter)
 
-                    response = []
-                    for result in results:
-                        # Map database fields to OpenAPI schema
-                        preferences = json.loads(
-                            result[3]) if result[3] else {}
+                        if client_group_name_filter:
+                            where_conditions.append("cg.name = %s")
+                            # Join with client groups for filtering
+                            join_clause = """
+                                INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
+                                INNER JOIN client_groups cg ON cgu.client_group_id = cg.client_group_id
+                            """
+                        else:
+                            join_clause = """
+                                LEFT JOIN client_groups cg ON u.primary_client_group_id = cg.client_group_id
+                            """
 
-                        response.append({
-                            "user_name": result[2],  # email as user_name
-                            "email": result[2],
-                            "sub": result[1],
-                            "preferences": preferences,
-                            "primary_client_group_name": result[6],
-                            "update_date": result[5].isoformat() + "Z" if result[5] else None
-                        })
+                        cursor.execute(f"""
+                            SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date
+                            FROM users u
+                            {join_clause}
+                            WHERE {' AND '.join(where_conditions)}
+                            ORDER BY u.email
+                        """, query_params)
+
+                        results = cursor.fetchall()
+
+                        response = []
+                        for result in results:
+                            # Map database fields to OpenAPI schema
+                            preferences = json.loads(
+                                result[3]) if result[3] else {}
+
+                            response.append({
+                                "user_id": result[0],
+                                "sub": result[1],
+                                "email": result[2],
+                                "preferences": preferences,
+                                "primary_client_group_id": result[4],
+                                "update_date": result[5].isoformat() + "Z" if result[5] else None
+                            })
 
         elif http_method == 'POST':
             # Handle POST operations
@@ -384,6 +471,15 @@ def lambda_handler(event, context):
                                 VALUES (%s, %s)
                             """, (primary_client_group_id, existing[0]))
 
+                        # Ensure primary client group consistency
+                        if not ensure_primary_client_group_consistency(connection, target_user_id, primary_client_group_id):
+                            connection.rollback()
+                            return {
+                                "statusCode": 500,
+                                "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
+                                "headers": {"Content-Type": "application/json"}
+                            }
+
                         connection.commit()
                         response = {"message": "User updated successfully"}
                     else:
@@ -402,15 +498,25 @@ def lambda_handler(event, context):
                                 VALUES (%s, %s)
                             """, (primary_client_group_id, new_user_id))
 
+                        # Ensure primary client group consistency
+                        if primary_client_group_id:
+                            if not ensure_primary_client_group_consistency(connection, new_user_id, primary_client_group_id):
+                                connection.rollback()
+                                return {
+                                    "statusCode": 500,
+                                    "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
+                                    "headers": {"Content-Type": "application/json"}
+                                }
+
                         connection.commit()
                         response = {"message": "User created successfully"}
 
         elif http_method == 'PUT':
-            # Handle PUT operations: /users/{user_name} (update)
-            if 'user_name' not in path_parameters:
+            # Handle PUT operations: /users/{sub} (update)
+            if 'sub' not in path_parameters:
                 return {
                     "statusCode": 400,
-                    "body": json.dumps({"error": "user_name is required in path"}),
+                    "body": json.dumps({"error": "sub is required in path"}),
                     "headers": {"Content-Type": "application/json"}
                 }
 
@@ -423,7 +529,7 @@ def lambda_handler(event, context):
                     "headers": {"Content-Type": "application/json"}
                 }
 
-            user_name = unquote(path_parameters['user_name'])
+            sub = unquote(path_parameters['sub'])
 
             # Get user ID for tracking
             user_id = get_user_id_from_sub(connection, current_user_id)
@@ -450,9 +556,9 @@ def lambda_handler(event, context):
                 # Check if user exists and current user can modify it
                 cursor.execute("""
                     SELECT user_id FROM users 
-                    WHERE email = %s AND user_id IN ({})
+                    WHERE sub = %s AND user_id IN ({})
                 """.format(','.join(['%s'] * len(valid_user_ids))),
-                    [user_name] + valid_user_ids)
+                    [sub] + valid_user_ids)
                 existing = cursor.fetchone()
 
                 if not existing:
@@ -478,27 +584,36 @@ def lambda_handler(event, context):
                         VALUES (%s, %s)
                     """, (primary_client_group_id, target_user_id))
 
+                # Ensure primary client group consistency
+                if not ensure_primary_client_group_consistency(connection, target_user_id, primary_client_group_id):
+                    connection.rollback()
+                    return {
+                        "statusCode": 500,
+                        "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
                 connection.commit()
                 response = {"message": "User updated successfully"}
 
         elif http_method == 'DELETE':
-            # Handle DELETE operations: /users/{user_name}
-            if 'user_name' not in path_parameters:
+            # Handle DELETE operations: /users/{sub}
+            if 'sub' not in path_parameters:
                 return {
                     "statusCode": 400,
-                    "body": json.dumps({"error": "user_name is required in path"}),
+                    "body": json.dumps({"error": "sub is required in path"}),
                     "headers": {"Content-Type": "application/json"}
                 }
 
-            user_name = unquote(path_parameters['user_name'])
+            sub = unquote(path_parameters['sub'])
 
             with connection.cursor() as cursor:
                 # Check if user exists and current user can modify it
                 cursor.execute("""
                     SELECT user_id FROM users 
-                    WHERE email = %s AND user_id IN ({})
+                    WHERE sub = %s AND user_id IN ({})
                 """.format(','.join(['%s'] * len(valid_user_ids))),
-                    [user_name] + valid_user_ids)
+                    [sub] + valid_user_ids)
                 existing = cursor.fetchone()
 
                 if not existing:

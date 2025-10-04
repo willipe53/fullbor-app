@@ -1,0 +1,470 @@
+# Transactions and Transaction Types API Test Script
+# Tests the complete lifecycle of transaction operations and transaction type management
+# Run with: ./comprehensive-api-test.py transactions-and-types-script.yaml
+# (Authentication and base URL are enabled by default)
+
+defaults:
+  headers:
+    Content-Type: "application/json"
+  timeout: 30
+
+tests:
+  # === PREREQUISITE ENTITY CHECKS ===
+  # Verify required entities exist before running transaction tests
+
+  - name: "Verify Peter Piper Portfolio entity exists (prerequisite check)"
+    request:
+      method: GET
+      url: "/entities/Peter Piper Portfolio"
+    expect:
+      status: 200
+      json:
+        - path: "entity_name"
+          equals: "Peter Piper Portfolio"
+        - path: "entity_type_name"
+          exists: true
+
+  - name: "Verify Harry Hedge Fund entity exists (prerequisite check)"
+    request:
+      method: GET
+      url: "/entities/Harry Hedge Fund"
+    expect:
+      status: 200
+      json:
+        - path: "entity_name"
+          equals: "Harry Hedge Fund"
+        - path: "entity_type_name"
+          exists: true
+
+  - name: "Verify Manager Expenses entity exists (prerequisite check)"
+    request:
+      method: GET
+      url: "/entities/Manager Expenses"
+    expect:
+      status: 200
+      json:
+        - path: "entity_name"
+          equals: "Manager Expenses"
+        - path: "entity_type_name"
+          exists: true
+
+  # === ENTITY ASSOCIATION SETUP ===
+  # Ensure required entities are associated with client group 19 for user access
+
+  - name: "Associate required entities with client group 19"
+    request:
+      method: POST
+      url: "/client-groups/Byrde Family Foundation/entities:set"
+      json:
+        entity_names:
+          ["Peter Piper Portfolio", "Manager Expenses", "Harry Hedge Fund"]
+    expect:
+      status: 201
+      json:
+        - path: "message"
+          exists: true
+
+  # === TRANSACTION TESTS ===
+
+  - name: "Count original transactions"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        count: true
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          exists: true
+          type: "integer"
+    extract:
+      original_transaction_count: "count"
+
+  - name: "Create new transaction - Management fees"
+    request:
+      method: POST
+      url: "/transactions"
+      json:
+        transaction_type_name: "Management fees"
+        portfolio_entity_name: "Peter Piper Portfolio"
+        contra_entity_name: "Manager Expenses"
+        instrument_entity_name: "Harry Hedge Fund"
+        transaction_status_name: "QUEUED"
+        properties:
+          amount: 1000.00
+          fee_period: "monthly"
+          created_via: "api_test"
+    expect:
+      status: 201
+      json:
+        - path: "message"
+          equals: "Transaction created successfully"
+        - path: "transaction_id"
+          exists: true
+    extract:
+      created_transaction_id: "transaction_id"
+
+  - name: "Verify transaction count increased"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        count: true
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          equals: "{{original_transaction_count + 1}}"
+
+  # === FILTER TESTS ===
+  # Test that filters are working and return the new transaction
+
+  - name: "Filter transactions by portfolio entity (should include new transaction)"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        portfolio_entity_name: "Peter Piper Portfolio"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          greater_than: 0
+
+  - name: "Filter transactions by contra entity (should include new transaction)"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        contra_entity_name: "Manager Expenses"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          greater_than: 0
+
+  - name: "Filter transactions by instrument entity (should include new transaction)"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        instrument_entity_name: "Harry Hedge Fund"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          greater_than: 0
+
+  - name: "Filter transactions by status QUEUED (should include new transaction)"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        transaction_status_name: "QUEUED"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          greater_than: 0
+
+  - name: "Filter transactions by type Management fees (should include new transaction)"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        transaction_type_name: "Management fees"
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          greater_than: 0
+
+  - name: "Get specific transaction by ID"
+    request:
+      method: GET
+      url: "/transactions/{{created_transaction_id}}"
+    expect:
+      status: 200
+      json:
+        - path: "transaction_id"
+          equals: "{{created_transaction_id}}"
+        - path: "transaction_type_name"
+          equals: "Management fees"
+        - path: "portfolio_entity_name"
+          equals: "Peter Piper Portfolio"
+
+  # === PAGINATION TESTS ===
+
+  - name: "Test pagination - limit=1"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        limit: 1
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "length(data)"
+          less_than_or_equal: 1
+
+  - name: "Test pagination - offset=0"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        offset: 0
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  - name: "Test pagination - offset=1"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        offset: 1
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+
+  # === TRANSACTION UPDATE ===
+
+  - name: "Update transaction properties"
+    request:
+      method: PUT
+      url: "/transactions/{{created_transaction_id}}"
+      json:
+        properties:
+          amount: 1500.00
+          fee_period: "quarterly"
+          created_via: "api_test"
+          updated: true
+    expect:
+      status: 200
+      json:
+        - path: "message"
+          equals: "Transaction updated successfully"
+
+  - name: "Verify transaction was updated"
+    request:
+      method: GET
+      url: "/transactions/{{created_transaction_id}}"
+    expect:
+      status: 200
+      json:
+        - path: "transaction_id"
+          equals: "{{created_transaction_id}}"
+        - path: "properties.amount"
+          equals: 1500.00
+
+  # === TRANSACTION DELETION ===
+
+  - name: "Delete transaction"
+    request:
+      method: DELETE
+      url: "/transactions/{{created_transaction_id}}"
+    expect:
+      status: 204
+
+  - name: "Verify transaction no longer exists (cleanup verification)"
+    request:
+      method: GET
+      url: "/transactions/{{created_transaction_id}}"
+    expect:
+      status: 200
+      json:
+        - path: "error"
+          exists: true
+
+  - name: "Verify transaction count back to original"
+    request:
+      method: GET
+      url: "/transactions"
+      params:
+        count: true
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          equals: "{{original_transaction_count}}"
+
+  # === TRANSACTION TYPES TESTS ===
+
+  - name: "List all transaction types"
+    request:
+      method: GET
+      url: "/transaction-types"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+          type: "array"
+        - path: "@"
+          min_length: 1
+
+  - name: "Get transaction type 'Buy' by name"
+    request:
+      method: GET
+      url: "/transaction-types/Buy"
+    expect:
+      status: 200
+      json:
+        - path: "transaction_type_name"
+          equals: "Buy"
+
+  - name: "Get transaction type 'Sell' by name"
+    request:
+      method: GET
+      url: "/transaction-types/Sell"
+    expect:
+      status: 200
+      json:
+        - path: "transaction_type_name"
+          equals: "Sell"
+
+  - name: "Get non-existent transaction type (should fail)"
+    request:
+      method: GET
+      url: "/transaction-types/NonExistent Type"
+    expect:
+      status: 404
+      json:
+        - path: "error"
+          exists: true
+
+  - name: "Create test transaction type"
+    request:
+      method: POST
+      url: "/transaction-types"
+      json:
+        transaction_type_name: "Test Transaction Type {{timestamp}}"
+        properties:
+          test_property: "original_value"
+          created_via: "api_test"
+    expect:
+      status: 201
+      json:
+        - path: "message"
+          equals: "Transaction type created successfully"
+
+  - name: "Update test transaction type"
+    request:
+      method: PUT
+      url: "/transaction-types/Test Transaction Type {{timestamp}}"
+      json:
+        properties:
+          test_property: "updated_value"
+          created_via: "api_test"
+          updated: true
+    expect:
+      status: 200
+      json:
+        - path: "message"
+          equals: "Transaction type updated successfully"
+
+  - name: "Verify transaction type was updated"
+    request:
+      method: GET
+      url: "/transaction-types/Test Transaction Type {{timestamp}}"
+    expect:
+      status: 200
+      json:
+        - path: "transaction_type_name"
+          equals: "Test Transaction Type {{timestamp}}"
+
+  - name: "Delete test transaction type"
+    request:
+      method: DELETE
+      url: "/transaction-types/Test Transaction Type {{timestamp}}"
+    expect:
+      status: 204
+
+  - name: "Verify transaction type no longer exists (cleanup verification)"
+    request:
+      method: GET
+      url: "/transaction-types/Test Transaction Type {{timestamp}}"
+    expect:
+      status: 404
+      json:
+        - path: "error"
+          exists: true
+
+  - name: "List transaction types (verify test type removed)"
+    request:
+      method: GET
+      url: "/transaction-types"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+          type: "array"
+
+  # === TRANSACTION STATUSES TESTS ===
+
+  - name: "List all transaction statuses"
+    request:
+      method: GET
+      url: "/transaction-statuses"
+    expect:
+      status: 200
+      json:
+        - path: "@"
+          exists: true
+          type: "array"
+        - path: "@"
+          min_length: 1
+
+  # === COUNT FUNCTIONALITY TESTS ===
+
+  - name: "Test transaction types count"
+    request:
+      method: GET
+      url: "/transaction-types"
+      params:
+        count: true
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          exists: true
+          type: "integer"
+
+  - name: "Test transaction statuses count"
+    request:
+      method: GET
+      url: "/transaction-statuses"
+      params:
+        count: true
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          exists: true
+          type: "integer"

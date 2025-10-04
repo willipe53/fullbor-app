@@ -115,7 +115,8 @@ def get_valid_entity_ids_for_current_user(connection, current_user_id):
             """.format(','.join(['%s'] * len(user_client_groups))),
                 user_client_groups)
             results = cursor.fetchall()
-            return [row[0] for row in results]
+            entity_ids = [row[0] for row in results]
+            return entity_ids
     except Exception as e:
         print(f"Error getting valid entity IDs: {e}")
         return []
@@ -190,7 +191,7 @@ def handle_entity_operations(connection, http_method, path, path_parameters, que
 
 def handle_get_operations(connection, path, path_parameters, query_parameters, valid_entity_ids):
     """Handle GET operations."""
-    if '/entities:set' in path:
+    if '/entities:set' in path and path.startswith('/entities/'):
         return {"error": "Method not allowed. Use POST for setting entities."}
     elif 'entity_name' in path_parameters:
         # Get single entity by name: /entities/{entity_name}
@@ -228,19 +229,18 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
 
 
 def handle_list_entities(connection, query_parameters, valid_entity_ids):
-    """Handle listing entities with optional filters."""
-    # Apply query filters
-    user_name_filter = query_parameters.get('user_name')
+    """Handle listing entities with optional filters and pagination."""
+    # Apply query filters (removed user_name_filter for security - users should only see entities they have access to)
     entity_type_name_filter = query_parameters.get('entity_type_name')
     client_group_name_filter = query_parameters.get('client_group_name')
+    count_only = query_parameters.get('count', 'false').lower() == 'true'
+    limit = int(query_parameters.get('limit', 100))
+    offset = int(query_parameters.get('offset', 0))
 
-    # Build base query
-    query = """
-        SELECT DISTINCT e.entity_id, e.name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
-               et.name as entity_type_name
+    # Build base query using only entities the current user has access to
+    base_query = """
         FROM entities e
         JOIN entity_types et ON e.entity_type_id = et.entity_type_id
-        JOIN client_group_entities cge ON e.entity_id = cge.entity_id
         WHERE e.entity_id IN ({})
     """.format(','.join(['%s'] * len(valid_entity_ids)))
 
@@ -248,43 +248,58 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
 
     # Add filters
     if entity_type_name_filter:
-        query += " AND et.name = %s"
+        base_query += " AND et.name = %s"
         params.append(entity_type_name_filter)
 
     if client_group_name_filter:
-        query += " AND cge.client_group_id = (SELECT client_group_id FROM client_groups WHERE name = %s)"
+        base_query += """ AND e.entity_id IN (
+            SELECT cge.entity_id 
+            FROM client_group_entities cge 
+            JOIN client_groups cg ON cge.client_group_id = cg.client_group_id 
+            WHERE cg.name = %s
+        )"""
         params.append(client_group_name_filter)
 
-    if user_name_filter:
-        # Get user_id for the specified user
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT user_id FROM users WHERE email = %s", (user_name_filter,))
-            user_result = cursor.fetchone()
-            if user_result:
-                user_id = user_result[0]
-                # Get client groups for this user
-                user_client_groups = get_user_client_groups(
-                    connection, user_id)
-                if user_client_groups:
-                    query += " AND cge.client_group_id IN ({})".format(
-                        ','.join(['%s'] * len(user_client_groups)))
-                    params.extend(user_client_groups)
+    # SECURITY: Removed user_name_filter to prevent users from querying other users' entities
+    # Users can only see entities they have access to through their client groups
 
-    query += " ORDER BY e.name"
+    if count_only:
+        # Return count only
+        count_query = f"SELECT COUNT(*) as count {base_query}"
+        with connection.cursor() as cursor:
+            cursor.execute(count_query, params)
+            result = cursor.fetchone()
+            return {"count": result[0]}
+
+    # Get entities with pagination
+    query = f"""
+        SELECT DISTINCT e.entity_id, e.name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
+               et.name as entity_type_name
+        {base_query}
+        ORDER BY e.name
+        LIMIT %s OFFSET %s
+    """
+    params.extend([limit, offset])
 
     with connection.cursor() as cursor:
         cursor.execute(query, params)
         results = cursor.fetchall()
 
-        response = []
+        # Get total count for pagination
+        count_query = f"SELECT COUNT(*) as count {base_query}"
+        # Exclude limit and offset from count query
+        cursor.execute(count_query, params[:-2])
+        count_result = cursor.fetchone()
+        total_count = count_result[0]
+
+        data = []
         for result in results:
             # Map database fields to OpenAPI schema
             attributes = json.loads(result[3]) if result[3] else {}
             updated_by_user_name = get_user_name_by_id(
                 connection, result[5]) if result[5] else None
 
-            response.append({
+            data.append({
                 "entity_name": result[1],
                 "entity_type_name": result[6],
                 "attributes": attributes,
@@ -292,12 +307,17 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                 "updated_by_user_name": updated_by_user_name
             })
 
-    return response
+        return {
+            "data": data,
+            "count": total_count,
+            "limit": limit,
+            "offset": offset
+        }
 
 
 def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids):
     """Handle POST operations."""
-    if '/entities:set' in path:
+    if '/entities:set' in path and path.startswith('/entities/'):
         return handle_set_client_group_entities(connection, path_parameters, body, current_user_id)
     else:
         return handle_create_entity(connection, body, current_user_id)
@@ -316,8 +336,11 @@ def handle_set_client_group_entities(connection, path_parameters, body, current_
     entity_names = request_data.get('entity_names', [])
     entity_ids = request_data.get('entity_ids', [])
 
-    if not entity_names and not entity_ids:
+    # Check if both are missing (not provided in request)
+    if 'entity_names' not in request_data and 'entity_ids' not in request_data:
         return {"error": "Either entity_names or entity_ids is required"}
+
+    # Empty arrays are valid (means clear all entities from client group)
 
     # Get client_group_id for the target client group
     client_group_id = get_client_group_id_by_name(
@@ -401,6 +424,16 @@ def handle_create_entity(connection, body, current_user_id):
                 WHERE entity_id = %s
             """, (entity_type_id, attributes_json, user_id, existing[0]))
 
+            # Ensure the entity is still associated with the user's primary client group
+            if user_id:
+                primary_client_group_id = get_user_primary_client_group(
+                    connection, user_id)
+                if primary_client_group_id:
+                    cursor.execute("""
+                        INSERT IGNORE INTO client_group_entities (client_group_id, entity_id, updated_user_id)
+                        VALUES (%s, %s, %s)
+                    """, (primary_client_group_id, existing[0], user_id))
+
             connection.commit()
             return {"message": "Entity updated successfully"}
         else:
@@ -412,15 +445,38 @@ def handle_create_entity(connection, body, current_user_id):
 
             new_entity_id = cursor.lastrowid
 
-            # Add to user's primary client group if available
-            if user_id:
-                primary_client_group_id = get_user_primary_client_group(
-                    connection, user_id)
-                if primary_client_group_id:
-                    cursor.execute("""
-                        INSERT INTO client_group_entities (client_group_id, entity_id, updated_user_id)
-                        VALUES (%s, %s, %s)
-                    """, (primary_client_group_id, new_entity_id, user_id))
+            # CRITICAL: Associate entity with user's primary client group
+            if not user_id:
+                connection.rollback()
+                return {"error": "User ID not found. Cannot create entity."}
+
+            primary_client_group_id = get_user_primary_client_group(
+                connection, user_id)
+            if not primary_client_group_id:
+                connection.rollback()
+                return {"error": "User has no primary client group set. Cannot create entity. Please set a primary client group first."}
+
+            # Insert into client_group_entities table
+            try:
+                cursor.execute("""
+                    INSERT INTO client_group_entities (client_group_id, entity_id, updated_user_id)
+                    VALUES (%s, %s, %s)
+                """, (primary_client_group_id, new_entity_id, user_id))
+
+                # Verify the insertion was successful
+                cursor.execute("""
+                    SELECT COUNT(*) FROM client_group_entities 
+                    WHERE client_group_id = %s AND entity_id = %s
+                """, (primary_client_group_id, new_entity_id))
+                count = cursor.fetchone()[0]
+
+                if count == 0:
+                    connection.rollback()
+                    return {"error": "Failed to associate entity with client group. Entity not accessible."}
+
+            except Exception as e:
+                connection.rollback()
+                return {"error": f"Failed to associate entity with client group: {str(e)}"}
 
             connection.commit()
             return {"message": "Entity created successfully"}
@@ -557,6 +613,9 @@ def lambda_handler(event, context):
     Handle entity operations for V2 API.
     Returns data compliant with OpenAPI specification.
     """
+    # Debug logging to see if this handler is being called
+    path = event.get('path', '')
+    print(f"DEBUG: EntitiesHandler called for path: {path}")
 
     # Extract current user from headers (case-insensitive lookup)
     headers = event.get('headers', {})

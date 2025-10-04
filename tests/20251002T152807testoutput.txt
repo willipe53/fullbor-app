@@ -1,0 +1,3768 @@
+✅ Authentication successful for user: 81fb55e0-e0b1-704a-3aad-791c0788d612
+
+[1/34] Verify Peter Piper Portfolio entity exists (prerequisite check)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/entities/Peter Piper Portfolio
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.419s
+   Headers: {'content-type': 'application/json', 'content-length': '182', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:07 GMT', 'x-amzn-trace-id': 'Root=1-68ded247-4427a3bb6a66c62b3baf80e3;Parent=32c2ca4e4be0cb34;Sampled=0;Lineage=1:0e40fdc5:0', 'x-amzn-requestid': '509782d3-9f62-41e6-9ca5-53826ba77e48', 'x-amz-apigw-id': 'R1XLQEmLiYcESiQ=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'Y-YUAQn8eV9zNjdE_y0WNoamb9ObQPQ5LeVZYAU_V152ygIXUwK4Fw=='}
+   Body: {
+  "entity_name": "Peter Piper Portfolio",
+  "entity_type_name": "Portfolio",
+  "attributes": {},
+  "update_date": "2025-09-26T13:02:13Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[2/34] Verify Harry Hedge Fund entity exists (prerequisite check)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/entities/Harry Hedge Fund
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.418s
+   Headers: {'content-type': 'application/json', 'content-length': '178', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:08 GMT', 'x-amzn-trace-id': 'Root=1-68ded248-7b9e695423f8318c460c153a;Parent=0d756ae39a25fc5e;Sampled=0;Lineage=1:0e40fdc5:0', 'x-amzn-requestid': '56abd4a3-9c7c-48ab-945c-5695b6b06f17', 'x-amz-apigw-id': 'R1XLUHz-iYcEH5Q=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'AJ8nqhAdNDnItEdXmkC3aDzhv2RFvH_w-9sKBwg9ehqZbhz0TB4LAg=='}
+   Body: {
+  "entity_name": "Harry Hedge Fund",
+  "entity_type_name": "Hedge Fund",
+  "attributes": {},
+  "update_date": "2025-09-26T13:02:39Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[3/34] Verify Manager Expenses entity exists (prerequisite check)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/entities/Manager Expenses
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.400s
+   Headers: {'content-type': 'application/json', 'content-length': '183', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:08 GMT', 'x-amzn-trace-id': 'Root=1-68ded248-43ead7fb0908f6c16fc7ada5;Parent=7aa6ed2c712b8220;Sampled=0;Lineage=1:0e40fdc5:0', 'x-amzn-requestid': '42265e82-5949-4d04-99c3-edcbe1f12940', 'x-amz-apigw-id': 'R1XLYGiAiYcEiyg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'HOLZQoKQBhjZaQHjbmAeXRILWxEO4wSXUsE2keMfBIwc-SCmSvlO3Q=='}
+   Body: {
+  "entity_name": "Manager Expenses",
+  "entity_type_name": "Expense Account",
+  "attributes": {},
+  "update_date": "2025-09-27T16:25:11Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[4/34] Associate required entities with client group 19
+
+🔍 REQUEST DETAILS:
+   Method: POST
+   URL: https://api.fullbor.ai/v2/client-groups/Byrde Family Foundation/entities:set
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "entity_names": [
+    "Peter Piper Portfolio",
+    "Manager Expenses",
+    "Harry Hedge Fund"
+  ]
+}
+
+📡 RESPONSE DETAILS:
+   Status: 201
+   Duration: 0.436s
+   Headers: {'content-type': 'application/json', 'content-length': '55', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:09 GMT', 'x-amzn-trace-id': 'Root=1-68ded248-4efa1102784d5be36f99d772;Parent=52f2b16720f863ba;Sampled=0;Lineage=1:4f3b87e8:0', 'x-amzn-requestid': '1119a402-50c1-4b01-a7ae-f660df0c3666', 'x-amz-apigw-id': 'R1XLcEF9CYcEF0A=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'x3V2A1gKJ6gOoQ7myP6VxGleYAAqlyz0SwoOAu0m78JJrhkY9zFasQ=='}
+   Body: {
+  "message": "Entity associations updated successfully"
+}
+  ✅ PASS
+
+[5/34] Count original transactions
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'count': True}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.424s
+   Headers: {'content-type': 'application/json', 'content-length': '13', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:09 GMT', 'x-amzn-trace-id': 'Root=1-68ded249-790c365d555c270513f7355c;Parent=0007baf33dba4c52;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '21a68574-5f06-417d-b06d-3037f0ece7b3', 'x-amz-apigw-id': 'R1XLhHgBCYcEHVg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '8S0GROa5VTq6d2jioYgV-GpmulZrfHLl6XtSuFUggqi6HQghSQqfpQ=='}
+   Body: {
+  "count": 10
+}
+  ✅ PASS
+
+[6/34] Create new transaction - Management fees
+
+🔍 REQUEST DETAILS:
+   Method: POST
+   URL: https://api.fullbor.ai/v2/transactions
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "transaction_type_name": "Management fees",
+  "portfolio_entity_name": "Peter Piper Portfolio",
+  "contra_entity_name": "Manager Expenses",
+  "instrument_entity_name": "Harry Hedge Fund",
+  "transaction_status_name": "QUEUED",
+  "properties": {
+    "amount": 1000.0,
+    "fee_period": "monthly",
+    "created_via": "api_test"
+  }
+}
+
+📡 RESPONSE DETAILS:
+   Status: 201
+   Duration: 0.401s
+   Headers: {'content-type': 'application/json', 'content-length': '69', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:10 GMT', 'x-amzn-trace-id': 'Root=1-68ded249-6c111c3b1596a882325c86d3;Parent=1fb0b918cd5ebdfd;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '92adfe0f-011c-4489-a871-f3ab6736114a', 'x-amz-apigw-id': 'R1XLlGEiiYcEJ6A=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '3Jh8bEVUcJ1gj7GeaaZu61SDDPcYt5f-amoShb0kQ_G21e-F7BFr4w=='}
+   Body: {
+  "message": "Transaction created successfully",
+  "transaction_id": 43
+}
+  ✅ PASS
+
+[7/34] Verify transaction count increased
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'count': True}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.378s
+   Headers: {'content-type': 'application/json', 'content-length': '13', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:10 GMT', 'x-amzn-trace-id': 'Root=1-68ded24a-36dd31ae5b1cf5145e75d08c;Parent=07d6a2f0581a266a;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'f77d4e06-a75b-41d9-8270-fb22e189e25c', 'x-amz-apigw-id': 'R1XLpEhdiYcEnWA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '9Y4g8cgVS-wumazIIFFbYKwUmEmA0ZkkjXVLr8GqDXND5B4b0GjlsA=='}
+   Body: {
+  "count": 11
+}
+  ✅ PASS
+
+[8/34] Filter transactions by portfolio entity (should include new transaction)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'portfolio_entity_name': 'Peter Piper Portfolio'}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.458s
+   Headers: {'content-type': 'application/json', 'content-length': '4882', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:10 GMT', 'x-amzn-trace-id': 'Root=1-68ded24a-5e43dd16669efaff4b284862;Parent=050cc7a996346c8b;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'ba6ff87a-0f58-414c-b5e7-a65fd1796802', 'x-amz-apigw-id': 'R1XLtHQciYcEqLw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'ZDhnvn7X-lJATBEisFAyfcVlp3OZcwsZ9HYyQAUtgyVsfJeLHYiQpQ=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 28,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 2,
+        "post_date": "2025-10-09",
+        "record_date": "2025-09-26"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    },
+    {
+      "transaction_id": 26,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Cover Short",
+      "properties": {
+        "price": 23.3,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "Swiss Franc"
+      },
+      "update_date": "2025-09-28T17:28:18Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 22,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 123.45,
+        "amount": 23000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:59:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 21,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Agilent Technologies",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.2,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:38:49Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 20,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Apple Inc.",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 23.4,
+        "amount": 3000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:36:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 16,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 1,
+        "post_date": "2025-10-07",
+        "record_date": "2025-09-27"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 13,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.3,
+        "amount": "10000000",
+        "trade_date": "2025-09-27",
+        "settle_date": "2025-09-30",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 12,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Commitments I have made",
+      "instrument_entity_name": "Bain Capital V LP",
+      "transaction_status_name": "UNKNOWN",
+      "transaction_type_name": "Commitment",
+      "properties": {
+        "amount": 5000000,
+        "currency_code": "US Dollar",
+        "expected_years": 50,
+        "expected_percent": "80%"
+      },
+      "update_date": "2025-09-28T15:31:03Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 11,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Bob Hedge Fund",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000000,
+        "post_date": "2025-10-31",
+        "currency_code": "Swedish Krona"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    }
+  ],
+  "count": 11,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[9/34] Filter transactions by contra entity (should include new transaction)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'contra_entity_name': 'Manager Expenses'}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.417s
+   Headers: {'content-type': 'application/json', 'content-length': '1322', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:11 GMT', 'x-amzn-trace-id': 'Root=1-68ded24a-589ca0a5310e729a30c60794;Parent=767702e6eea55031;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '3715b3c9-f6b6-4172-9cf4-b3798c518144', 'x-amz-apigw-id': 'R1XLxG9wCYcEC4Q=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'GW5j-v7lIfO7G-ztFSwY2IM4j4TLH7SoqdU1qbFxx04Hzxogfa7-nQ=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 11,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Bob Hedge Fund",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000000,
+        "post_date": "2025-10-31",
+        "currency_code": "Swedish Krona"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    }
+  ],
+  "count": 3,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[10/34] Filter transactions by instrument entity (should include new transaction)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'instrument_entity_name': 'Harry Hedge Fund'}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.418s
+   Headers: {'content-type': 'application/json', 'content-length': '889', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:11 GMT', 'x-amzn-trace-id': 'Root=1-68ded24b-7337250949f84d66446618b2;Parent=7aa4e62fcd8bfdaa;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'e5e3cd79-f6b1-4f98-adb8-943489db094f', 'x-amz-apigw-id': 'R1XL1GuhiYcEN5g=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'eRRdO7aK0AjgJAWxWvrEALLCB5E1HPtZeylUOOeNGqLisMGL9A06GA=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    }
+  ],
+  "count": 2,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[11/34] Filter transactions by status QUEUED (should include new transaction)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'transaction_status_name': 'QUEUED'}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.424s
+   Headers: {'content-type': 'application/json', 'content-length': '889', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:12 GMT', 'x-amzn-trace-id': 'Root=1-68ded24b-094601ef3edbcd2a745eee5f;Parent=3d0d8aea00f2ccdd;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'c2c9f4ea-71b1-4785-b9a6-4e6db5835834', 'x-amz-apigw-id': 'R1XL6FaICYcEtgw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'd9HTtJeTBmjlZgCZ2GTQZBNt-2sjH4W_vW9qpdtL3eni8DcI5YzREw=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    }
+  ],
+  "count": 2,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[12/34] Filter transactions by type Management fees (should include new transaction)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'transaction_type_name': 'Management fees'}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.402s
+   Headers: {'content-type': 'application/json', 'content-length': '1322', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:12 GMT', 'x-amzn-trace-id': 'Root=1-68ded24c-6a517a4d368479736baffc63;Parent=4c99621bd64c2b2c;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '5a3c2ccc-7dde-4216-b73c-cddaf75538c9', 'x-amz-apigw-id': 'R1XL-FXqCYcEoFw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '8IpvkGMNQ31ZfqS34c2XuSXjmAR92QW1N4piRgE4CHn4S5uP4iw2JQ=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 11,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Bob Hedge Fund",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000000,
+        "post_date": "2025-10-31",
+        "currency_code": "Swedish Krona"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    }
+  ],
+  "count": 3,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[13/34] Get specific transaction by ID
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions/43
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.415s
+   Headers: {'content-type': 'application/json', 'content-length': '418', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:12 GMT', 'x-amzn-trace-id': 'Root=1-68ded24c-10aaaa9722429abe4d62c4d9;Parent=21cd55c355636181;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '2fa2f6dc-7073-40ba-a1bc-5b6dfe6b553b', 'x-amz-apigw-id': 'R1XMCHjcCYcEoLQ=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'adsCgx4Cv0YoYEdncf0sBqJMKyWgwLzitNeMA9QRujBDJ7wRV_kU7A=='}
+   Body: {
+  "transaction_id": 43,
+  "portfolio_entity_name": "Peter Piper Portfolio",
+  "contra_entity_name": "Manager Expenses",
+  "instrument_entity_name": "Harry Hedge Fund",
+  "transaction_status_name": "QUEUED",
+  "transaction_type_name": "Management fees",
+  "properties": {
+    "amount": 1000.0,
+    "fee_period": "monthly",
+    "created_via": "api_test"
+  },
+  "update_date": "2025-10-02T19:28:10Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[14/34] Test pagination - limit=1
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'limit': 1}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.426s
+   Headers: {'content-type': 'application/json', 'content-length': '468', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:13 GMT', 'x-amzn-trace-id': 'Root=1-68ded24d-1de13d953f51cb6e6d0c1156;Parent=6d3330cd963107ab;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'b8905822-e1fc-4a3b-ac6a-94f9eeff3260', 'x-amz-apigw-id': 'R1XMGHh9CYcEYQg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'zRd8IEvXw90HYeeYNFifiBeP20z-G5wqRAwYLzMVuycbvFeJzVMyzQ=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    }
+  ],
+  "count": 11,
+  "limit": 1,
+  "offset": 0
+}
+  ✅ PASS
+
+[15/34] Test pagination - offset=0
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'offset': 0}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.416s
+   Headers: {'content-type': 'application/json', 'content-length': '4882', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:13 GMT', 'x-amzn-trace-id': 'Root=1-68ded24d-28d8fa072063e30d0698623b;Parent=6c5cd45baca62d04;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '5cb7502d-aff2-45ec-aaaf-951d0015546d', 'x-amz-apigw-id': 'R1XMKEzOiYcEvog=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'wMo_hwy7lBTMjl7KeZB1fvFBAKPgmWoycfF0tDzrqmDvl9lNHNC8NQ=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 43,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:28:10Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 28,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 2,
+        "post_date": "2025-10-09",
+        "record_date": "2025-09-26"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    },
+    {
+      "transaction_id": 26,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Cover Short",
+      "properties": {
+        "price": 23.3,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "Swiss Franc"
+      },
+      "update_date": "2025-09-28T17:28:18Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 22,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 123.45,
+        "amount": 23000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:59:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 21,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Agilent Technologies",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.2,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:38:49Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 20,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Apple Inc.",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 23.4,
+        "amount": 3000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:36:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 16,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 1,
+        "post_date": "2025-10-07",
+        "record_date": "2025-09-27"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 13,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.3,
+        "amount": "10000000",
+        "trade_date": "2025-09-27",
+        "settle_date": "2025-09-30",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 12,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Commitments I have made",
+      "instrument_entity_name": "Bain Capital V LP",
+      "transaction_status_name": "UNKNOWN",
+      "transaction_type_name": "Commitment",
+      "properties": {
+        "amount": 5000000,
+        "currency_code": "US Dollar",
+        "expected_years": 50,
+        "expected_percent": "80%"
+      },
+      "update_date": "2025-09-28T15:31:03Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 11,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Bob Hedge Fund",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000000,
+        "post_date": "2025-10-31",
+        "currency_code": "Swedish Krona"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    }
+  ],
+  "count": 11,
+  "limit": 100,
+  "offset": 0
+}
+  ✅ PASS
+
+[16/34] Test pagination - offset=1
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'offset': 1}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.446s
+   Headers: {'content-type': 'application/json', 'content-length': '4462', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:14 GMT', 'x-amzn-trace-id': 'Root=1-68ded24d-76845558385e9b043329db39;Parent=06a8c19df1809695;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'f26a43a5-46ba-4b26-b30f-963d3cc20b76', 'x-amz-apigw-id': 'R1XMOGfzCYcEmAw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '4xrHfMsCjuVf8Qd3Quop4KFVQFL4CfjqqClKUeMUwE3BKgOxqMksSA=='}
+   Body: {
+  "data": [
+    {
+      "transaction_id": 38,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Harry Hedge Fund",
+      "transaction_status_name": "QUEUED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000.0,
+        "fee_period": "monthly",
+        "created_via": "api_test"
+      },
+      "update_date": "2025-10-02T19:21:40Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 28,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 2,
+        "post_date": "2025-10-09",
+        "record_date": "2025-09-26"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    },
+    {
+      "transaction_id": 26,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Cover Short",
+      "properties": {
+        "price": 23.3,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "Swiss Franc"
+      },
+      "update_date": "2025-09-28T17:28:18Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 22,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 123.45,
+        "amount": 23000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:59:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 21,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Agilent Technologies",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.2,
+        "amount": 1000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:38:49Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 20,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "Apple Inc.",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Sell",
+      "properties": {
+        "price": 23.4,
+        "amount": 3000000,
+        "trade_date": "2025-09-28",
+        "settle_date": "2025-10-01",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:36:52Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 16,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": null,
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Split",
+      "properties": {
+        "ratio": 1,
+        "post_date": "2025-10-07",
+        "record_date": "2025-09-27"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 13,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Peter Piper Portfolio",
+      "instrument_entity_name": "AbbVie",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Buy",
+      "properties": {
+        "price": 23.3,
+        "amount": "10000000",
+        "trade_date": "2025-09-27",
+        "settle_date": "2025-09-30",
+        "settle_currency": "US Dollar"
+      },
+      "update_date": "2025-09-28T15:31:01Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 12,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Commitments I have made",
+      "instrument_entity_name": "Bain Capital V LP",
+      "transaction_status_name": "UNKNOWN",
+      "transaction_type_name": "Commitment",
+      "properties": {
+        "amount": 5000000,
+        "currency_code": "US Dollar",
+        "expected_years": 50,
+        "expected_percent": "80%"
+      },
+      "update_date": "2025-09-28T15:31:03Z",
+      "updated_by_user_name": "willipe53+test@gmail.com"
+    },
+    {
+      "transaction_id": 11,
+      "portfolio_entity_name": "Peter Piper Portfolio",
+      "contra_entity_name": "Manager Expenses",
+      "instrument_entity_name": "Bob Hedge Fund",
+      "transaction_status_name": "PROCESSED",
+      "transaction_type_name": "Management fees",
+      "properties": {
+        "amount": 1000000,
+        "post_date": "2025-10-31",
+        "currency_code": "Swedish Krona"
+      },
+      "update_date": "2025-09-29T13:50:08Z",
+      "updated_by_user_name": "mark.r.dandrea@outlook.com"
+    }
+  ],
+  "count": 11,
+  "limit": 100,
+  "offset": 1
+}
+  ✅ PASS
+
+[17/34] Update transaction properties
+
+🔍 REQUEST DETAILS:
+   Method: PUT
+   URL: https://api.fullbor.ai/v2/transactions/43
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "properties": {
+    "amount": 1500.0,
+    "fee_period": "quarterly",
+    "created_via": "api_test",
+    "updated": true
+  }
+}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.396s
+   Headers: {'content-type': 'application/json', 'content-length': '47', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:14 GMT', 'x-amzn-trace-id': 'Root=1-68ded24e-4868fc9309b3a6f05785c8a8;Parent=16af5d2c63a90ac6;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '347d5740-773c-4721-b594-6ddc81d2af47', 'x-amz-apigw-id': 'R1XMTFeaCYcEqRQ=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '4jXArtZBcLG7-kTDnIhs3KOks-f9AbMiWyxHfFt_XyaJ7DLz6VufyA=='}
+   Body: {
+  "message": "Transaction updated successfully"
+}
+  ✅ PASS
+
+[18/34] Verify transaction was updated
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions/43
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.413s
+   Headers: {'content-type': 'application/json', 'content-length': '437', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:15 GMT', 'x-amzn-trace-id': 'Root=1-68ded24e-4bc35b383b30c11e4f74deed;Parent=2a64fe38ecd3b4d7;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': 'c78aeaa9-2a30-4a8f-84cd-bf04848faa7c', 'x-amz-apigw-id': 'R1XMXEHUCYcEQlw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '8g_WN3vKFpjUVg1svO2bjni22eM4Pu8IjOtB3eXq0YRtlY7n-1wC2A=='}
+   Body: {
+  "transaction_id": 43,
+  "portfolio_entity_name": "Peter Piper Portfolio",
+  "contra_entity_name": "Manager Expenses",
+  "instrument_entity_name": "Harry Hedge Fund",
+  "transaction_status_name": "QUEUED",
+  "transaction_type_name": "Management fees",
+  "properties": {
+    "amount": 1500.0,
+    "updated": true,
+    "fee_period": "quarterly",
+    "created_via": "api_test"
+  },
+  "update_date": "2025-10-02T19:28:14Z",
+  "updated_by_user_name": "willipe53+test@gmail.com"
+}
+  ✅ PASS
+
+[19/34] Delete transaction
+
+🔍 REQUEST DETAILS:
+   Method: DELETE
+   URL: https://api.fullbor.ai/v2/transactions/43
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 204
+   Duration: 0.346s
+   Headers: {'content-type': 'application/json', 'content-length': '0', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:15 GMT', 'x-amzn-trace-id': 'Root=1-68ded24f-1219c1157f7b93676bd6775e;Parent=0cdc8ea5ebae6bb7;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '43e75536-bfc7-4cc8-ac7c-bd601c7bb63d', 'x-amz-apigw-id': 'R1XMaEJgiYcEQlw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '1cv7ywc3UX_PHJsJMI4LBkGIG3O06UucrEZRaBBBLY23pzuMYLS8Jw=='}
+   Body (raw): ...
+  ✅ PASS
+
+[20/34] Verify transaction no longer exists (cleanup verification)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions/43
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.410s
+   Headers: {'content-type': 'application/json', 'content-length': '51', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:15 GMT', 'x-amzn-trace-id': 'Root=1-68ded24f-33f5369e71eca67c48109505;Parent=3e0ca3d822260cef;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '7fdf60a8-7fe4-40e0-ac28-e7587f4295f4', 'x-amz-apigw-id': 'R1XMeE8DiYcEUnA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'BkqF-dDbBcQXoH0Tw72qSJv89ZmxJGQh4Ry8owm4_2S3MM6jVS5HRw=='}
+   Body: {
+  "error": "Transaction not found or access denied"
+}
+  ✅ PASS
+
+[21/34] Verify transaction count back to original
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transactions
+   Params: {'count': True}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.343s
+   Headers: {'content-type': 'application/json', 'content-length': '13', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:16 GMT', 'x-amzn-trace-id': 'Root=1-68ded24f-0ac1d40074d9f86264d0334c;Parent=08e87def22f2be9b;Sampled=0;Lineage=1:1e6f107f:0', 'x-amzn-requestid': '8341a183-27ec-4fd4-b361-00399720c948', 'x-amz-apigw-id': 'R1XMiGP7CYcEA0A=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'ttkEs43DRWAWp5NBFWG4eQyUIA_ZBsyLK4ZjMVC93vO0n6adchalxg=='}
+   Body: {
+  "count": 10
+}
+  ✅ PASS
+
+[22/34] List all transaction types
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.424s
+   Headers: {'content-type': 'application/json', 'content-length': '18624', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:16 GMT', 'x-amzn-trace-id': 'Root=1-68ded250-61c2e2c54b8b310b39ea445d;Parent=56a9e7ca12d68476;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '0a4b6c5f-8a83-4ad2-a1fe-81ad34c87c57', 'x-amz-apigw-id': 'R1XMmFaXiYcEAQw=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'CdwEUcGpgQa34DOEejFsmExwAwu4gYemtIQOatf6oNAwL08NUSo-WQ=='}
+   Body: [
+  {
+    "transaction_type_name": "Barter",
+    "properties": {
+      "a": 1
+    },
+    "update_date": "2025-09-29T13:50:49Z",
+    "updated_by_user_name": null
+  },
+  {
+    "transaction_type_name": "Buy",
+    "properties": {
+      "type": "object",
+      "title": "Buy",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Buy marketable security",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-28T20:30:17Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Capital Call",
+    "properties": {
+      "a": 2,
+      "type": "object",
+      "title": "Capital Call",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital payable to a private equity fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-29T13:50:31Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Carried interest",
+    "properties": {
+      "type": "object",
+      "title": "Carried interest",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Carried interest",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cash Dividend",
+    "properties": {
+      "type": "object",
+      "title": "Cash Dividend",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Cash Dividend",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [
+        "IA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-27T19:22:32Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cash Journal",
+    "properties": {
+      "type": "object",
+      "title": "Valuation adjustments",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Cash Journal",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Commitment",
+    "properties": {
+      "type": "object",
+      "title": "Commitment",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_calls": {
+          "type": "number",
+          "default": 5,
+          "description": "Total number of calls expected"
+        },
+        "expected_percent": {
+          "type": "number",
+          "default": "80",
+          "description": "Percent of total commitment that will be called"
+        },
+        "expected_call_frequency": {
+          "type": "number",
+          "default": 12,
+          "description": "Number of months between calls"
+        }
+      },
+      "description": "Commit capital to a private equity fund",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "PECC"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument up",
+        "contra amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-27T18:38:57Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Contribution",
+    "properties": {
+      "type": "object",
+      "title": "Contribution",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Inflow from investor",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "CA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cover Short",
+    "properties": {
+      "type": "object",
+      "title": "Cover Short",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Buy security to cover short position",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T17:27:15Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Distribution",
+    "properties": {
+      "type": "object",
+      "title": "Distribution",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital distribution from a private equity fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Holding",
+    "properties": {
+      "type": "object",
+      "title": "Holding",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "weight": {
+          "type": "number"
+        },
+        "proxy_instrument": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Instrument"
+          ]
+        }
+      },
+      "description": "Placeholder or proxy investment used for exposure reporting",
+      "current_position": "message_timestamp",
+      "forecast_position": "update_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF",
+        "ETF",
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": [
+        "I have to think this one through"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Instrument Journal",
+    "properties": {
+      "type": "object",
+      "title": "Valuation adjustments",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Instrument Journal",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": null
+  },
+  {
+    "transaction_type_name": "Management fees",
+    "properties": {
+      "type": "object",
+      "title": "Management fees",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Manager fees",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Name Change",
+    "properties": {
+      "type": "object",
+      "title": "Name Change",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Name Change",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": []
+    },
+    "update_date": "2025-09-27T19:23:26Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Performance fees",
+    "properties": {
+      "type": "object",
+      "title": "Performance fees",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Performance fees",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Portfolio expense",
+    "properties": {
+      "type": "object",
+      "title": "Portfolio expense",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Portfolio expense",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Position expense",
+    "properties": {
+      "type": "object",
+      "title": "Position expense",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Position expense",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Redemption",
+    "properties": {
+      "type": "object",
+      "title": "Redemption",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital distribution from manager fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FU",
+        "HF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Sell",
+    "properties": {
+      "type": "object",
+      "title": "Sell",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Sell marketable security",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency up",
+        "portfolio amount instrument down"
+      ]
+    },
+    "update_date": "2025-09-27T17:26:43Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Sell Short",
+    "properties": {
+      "type": "object",
+      "title": "Sell Short",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Sell borrowed security short",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency up",
+        "portfolio amount instrument down"
+      ]
+    },
+    "update_date": "2025-09-27T17:27:00Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Split",
+    "properties": {
+      "type": "object",
+      "title": "Split",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "ratio": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Split",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": [
+        "portfolio ratio*position instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T19:21:53Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Stock Dividend",
+    "properties": {
+      "type": "object",
+      "title": "Stock Dividend",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Stock Dividend",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [
+        "IA"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T19:22:09Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Subscription",
+    "properties": {
+      "type": "object",
+      "title": "Subscription",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital payable to a manager fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FU",
+        "HF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Withdrawal",
+    "properties": {
+      "type": "object",
+      "title": "Withdrawal",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Outflow to investor",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "CA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  }
+]
+  ✅ PASS
+
+[23/34] Get transaction type 'Buy' by name
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types/Buy
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.310s
+   Headers: {'content-type': 'application/json', 'content-length': '885', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:16 GMT', 'x-amzn-trace-id': 'Root=1-68ded250-7b161fc560d906bc19881693;Parent=31e972a5bba73287;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '5b8965d1-de40-4421-a8fd-41f35bbf4930', 'x-amz-apigw-id': 'R1XMqFDwiYcER6w=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'WAZR7kRjzi-nAYsQh2SW3L15316tjsPCX8yQLbauIg8BQdyCe25_wg=='}
+   Body: {
+  "transaction_type_name": "Buy",
+  "properties": {
+    "type": "object",
+    "title": "Buy",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "required": [
+      "trade_date",
+      "settle_date",
+      "amount",
+      "price",
+      "settle_currency"
+    ],
+    "properties": {
+      "price": {
+        "type": "number"
+      },
+      "amount": {
+        "type": "number"
+      },
+      "trade_date": {
+        "type": "string",
+        "format": "date"
+      },
+      "settle_date": {
+        "type": "string",
+        "format": "date"
+      },
+      "settle_currency": {
+        "type": "string",
+        "x-enum-api": [
+          "get_entities",
+          "entity_category",
+          "Currency"
+        ]
+      }
+    },
+    "description": "Buy marketable security",
+    "current_position": "trade_date",
+    "forecast_position": "settle_date",
+    "valid_instruments": [
+      "FI",
+      "FU",
+      "EQ",
+      "ETF",
+      "CCY"
+    ],
+    "valid_contra_groups": [
+      "IA",
+      "EA",
+      "P"
+    ],
+    "position_keeping_actions": [
+      "contra amount*price settle_currency down",
+      "portfolio amount instrument up"
+    ]
+  },
+  "update_date": "2025-09-28T20:30:17Z",
+  "updated_by_user_name": "10"
+}
+  ✅ PASS
+
+[24/34] Get transaction type 'Sell' by name
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types/Sell
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.357s
+   Headers: {'content-type': 'application/json', 'content-length': '888', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:17 GMT', 'x-amzn-trace-id': 'Root=1-68ded250-727ba2d0291122611406e2a6;Parent=40a37c4fd5a99619;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '606b9c2c-d056-481b-a241-bbc49165611a', 'x-amz-apigw-id': 'R1XMtEOwiYcEHVg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'PUSwe7gSy-aZPcvwrrGueKSWNBgU3xL2M_hd-xrENEMrtxARtQQ5bA=='}
+   Body: {
+  "transaction_type_name": "Sell",
+  "properties": {
+    "type": "object",
+    "title": "Sell",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "required": [
+      "trade_date",
+      "settle_date",
+      "amount",
+      "price",
+      "settle_currency"
+    ],
+    "properties": {
+      "price": {
+        "type": "number"
+      },
+      "amount": {
+        "type": "number"
+      },
+      "trade_date": {
+        "type": "string",
+        "format": "date"
+      },
+      "settle_date": {
+        "type": "string",
+        "format": "date"
+      },
+      "settle_currency": {
+        "type": "string",
+        "x-enum-api": [
+          "get_entities",
+          "entity_category",
+          "Currency"
+        ]
+      }
+    },
+    "description": "Sell marketable security",
+    "current_position": "trade_date",
+    "forecast_position": "settle_date",
+    "valid_instruments": [
+      "FI",
+      "FU",
+      "EQ",
+      "ETF",
+      "CCY"
+    ],
+    "valid_contra_groups": [
+      "IA",
+      "EA",
+      "P"
+    ],
+    "position_keeping_actions": [
+      "contra amount*price settle_currency up",
+      "portfolio amount instrument down"
+    ]
+  },
+  "update_date": "2025-09-27T17:26:43Z",
+  "updated_by_user_name": "10"
+}
+  ✅ PASS
+
+[25/34] Get non-existent transaction type (should fail)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types/NonExistent Type
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 404
+   Duration: 0.380s
+   Headers: {'content-type': 'application/json', 'content-length': '39', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:17 GMT', 'x-amzn-trace-id': 'Root=1-68ded251-3192f366119229c95114f02e;Parent=53aeb579f503baa2;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '4cba0142-faed-428e-97aa-831a0f73e14a', 'x-amz-apigw-id': 'R1XMxGjUCYcEbsg=', 'x-cache': 'Error from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'BExInLXaoIumGndhIK4mIEn1MNmqQpoDky60BSorW6Ez5WBsE3rFnw=='}
+   Body: {
+  "error": "Transaction type not found"
+}
+  ✅ PASS
+
+[26/34] Create test transaction type
+
+🔍 REQUEST DETAILS:
+   Method: POST
+   URL: https://api.fullbor.ai/v2/transaction-types
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "transaction_type_name": "Test Transaction Type 20251002152807",
+  "properties": {
+    "test_property": "original_value",
+    "created_via": "api_test"
+  }
+}
+
+📡 RESPONSE DETAILS:
+   Status: 201
+   Duration: 0.373s
+   Headers: {'content-type': 'application/json', 'content-length': '52', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:18 GMT', 'x-amzn-trace-id': 'Root=1-68ded251-0cbd790b361bf2563994882f;Parent=0da7aafb4ad7e09f;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': 'cdd424b9-390a-49b1-a00d-b063ada47d4a', 'x-amz-apigw-id': 'R1XM1G0TCYcEJ6A=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'l9GR368jcNbMc4i1CL_HsbAyyNmofxK2Si7GyxaqeH_KK18pYf8gPA=='}
+   Body: {
+  "message": "Transaction type created successfully"
+}
+  ✅ PASS
+
+[27/34] Update test transaction type
+
+🔍 REQUEST DETAILS:
+   Method: PUT
+   URL: https://api.fullbor.ai/v2/transaction-types/Test Transaction Type 20251002152807
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+   Payload: {
+  "properties": {
+    "test_property": "updated_value",
+    "created_via": "api_test",
+    "updated": true
+  }
+}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.376s
+   Headers: {'content-type': 'application/json', 'content-length': '52', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:18 GMT', 'x-amzn-trace-id': 'Root=1-68ded252-746eb32b66fa23196c4c5162;Parent=04dd6f8466811a15;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': 'f4763dc3-befb-4324-b322-019329997536', 'x-amz-apigw-id': 'R1XM5F29iYcEWAg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'BpjIVAnc7xHLqSFjRg3JsLXLgMHf5FMwwZpxnFjY0otOZDyBCmTB5Q=='}
+   Body: {
+  "message": "Transaction type updated successfully"
+}
+  ✅ PASS
+
+[28/34] Verify transaction type was updated
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types/Test Transaction Type 20251002152807
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.529s
+   Headers: {'content-type': 'application/json', 'content-length': '228', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:18 GMT', 'x-amzn-trace-id': 'Root=1-68ded252-0e82cc923ec50b37706378d7;Parent=7d95393a20c91b7a;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '31d86b90-fcce-4ba4-a462-f9d21de809fe', 'x-amz-apigw-id': 'R1XM8FAbCYcERkg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '226zSUalRvtaCwy2Pg6tgnEru2rJi9_YL50tu5NDncVP_-cqrE2yyg=='}
+   Body: {
+  "transaction_type_name": "Test Transaction Type 20251002152807",
+  "properties": {
+    "updated": true,
+    "created_via": "api_test",
+    "test_property": "updated_value"
+  },
+  "update_date": "2025-10-02T19:28:18Z",
+  "updated_by_user_name": "10"
+}
+  ✅ PASS
+
+[29/34] Delete test transaction type
+
+🔍 REQUEST DETAILS:
+   Method: DELETE
+   URL: https://api.fullbor.ai/v2/transaction-types/Test Transaction Type 20251002152807
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 204
+   Duration: 0.327s
+   Headers: {'content-type': 'application/json', 'content-length': '0', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:19 GMT', 'x-amzn-trace-id': 'Root=1-68ded252-22b01ff4136d7b12663a4fb2;Parent=49e69d20ca33976f;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '0f8f5ba4-864d-43ee-a7cc-0f3df84931ab', 'x-amz-apigw-id': 'R1XNBHLPiYcEN6A=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '3Au1F4I2oc697GNNAVc0jFT8Pl7xmhgV5IhGJ3PWOzWThdWiN8QWyg=='}
+   Body (raw): ...
+  ✅ PASS
+
+[30/34] Verify transaction type no longer exists (cleanup verification)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types/Test Transaction Type 20251002152807
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 404
+   Duration: 0.371s
+   Headers: {'content-type': 'application/json', 'content-length': '39', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:19 GMT', 'x-amzn-trace-id': 'Root=1-68ded253-092308022793561b7a09d690;Parent=240b2bf19b468afa;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': 'd1f40cbc-5611-4eb7-938f-0f4d9921e088', 'x-amz-apigw-id': 'R1XNFGNEiYcELKA=', 'x-cache': 'Error from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'pgCjR_ypomgOsSXXPE7YuwN5kbLCasWMesuaR2QYrZrjbLTpg2iVLg=='}
+   Body: {
+  "error": "Transaction type not found"
+}
+  ✅ PASS
+
+[31/34] List transaction types (verify test type removed)
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.412s
+   Headers: {'content-type': 'application/json', 'content-length': '18624', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:19 GMT', 'x-amzn-trace-id': 'Root=1-68ded253-05a3c0202fb5e7fb31e3caa0;Parent=412729a00640ec4d;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': '6edb49b7-db7c-4ac8-ac17-91058581e545', 'x-amz-apigw-id': 'R1XNJEwVCYcEHKA=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '6oeq9zTgjL5aEWaDFpKEn_xyvAM0fTQdOHMbcjlNwgMlvqL3e7EKdg=='}
+   Body: [
+  {
+    "transaction_type_name": "Barter",
+    "properties": {
+      "a": 1
+    },
+    "update_date": "2025-09-29T13:50:49Z",
+    "updated_by_user_name": null
+  },
+  {
+    "transaction_type_name": "Buy",
+    "properties": {
+      "type": "object",
+      "title": "Buy",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Buy marketable security",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-28T20:30:17Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Capital Call",
+    "properties": {
+      "a": 2,
+      "type": "object",
+      "title": "Capital Call",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital payable to a private equity fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-29T13:50:31Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Carried interest",
+    "properties": {
+      "type": "object",
+      "title": "Carried interest",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Carried interest",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cash Dividend",
+    "properties": {
+      "type": "object",
+      "title": "Cash Dividend",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Cash Dividend",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [
+        "IA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-27T19:22:32Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cash Journal",
+    "properties": {
+      "type": "object",
+      "title": "Valuation adjustments",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Cash Journal",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Commitment",
+    "properties": {
+      "type": "object",
+      "title": "Commitment",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_calls": {
+          "type": "number",
+          "default": 5,
+          "description": "Total number of calls expected"
+        },
+        "expected_percent": {
+          "type": "number",
+          "default": "80",
+          "description": "Percent of total commitment that will be called"
+        },
+        "expected_call_frequency": {
+          "type": "number",
+          "default": 12,
+          "description": "Number of months between calls"
+        }
+      },
+      "description": "Commit capital to a private equity fund",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "PECC"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument up",
+        "contra amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-27T18:38:57Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Contribution",
+    "properties": {
+      "type": "object",
+      "title": "Contribution",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Inflow from investor",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "CA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Cover Short",
+    "properties": {
+      "type": "object",
+      "title": "Cover Short",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Buy security to cover short position",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T17:27:15Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Distribution",
+    "properties": {
+      "type": "object",
+      "title": "Distribution",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital distribution from a private equity fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Holding",
+    "properties": {
+      "type": "object",
+      "title": "Holding",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "weight": {
+          "type": "number"
+        },
+        "proxy_instrument": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Instrument"
+          ]
+        }
+      },
+      "description": "Placeholder or proxy investment used for exposure reporting",
+      "current_position": "message_timestamp",
+      "forecast_position": "update_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF",
+        "ETF",
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": [
+        "I have to think this one through"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Instrument Journal",
+    "properties": {
+      "type": "object",
+      "title": "Valuation adjustments",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Instrument Journal",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": null
+  },
+  {
+    "transaction_type_name": "Management fees",
+    "properties": {
+      "type": "object",
+      "title": "Management fees",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Manager fees",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Name Change",
+    "properties": {
+      "type": "object",
+      "title": "Name Change",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Name Change",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": []
+    },
+    "update_date": "2025-09-27T19:23:26Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Performance fees",
+    "properties": {
+      "type": "object",
+      "title": "Performance fees",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Performance fees",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Portfolio expense",
+    "properties": {
+      "type": "object",
+      "title": "Portfolio expense",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Portfolio expense",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Position expense",
+    "properties": {
+      "type": "object",
+      "title": "Position expense",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Position expense",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "F",
+        "HF",
+        "PEF"
+      ],
+      "valid_contra_groups": [
+        "EA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Redemption",
+    "properties": {
+      "type": "object",
+      "title": "Redemption",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital distribution from manager fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FU",
+        "HF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Sell",
+    "properties": {
+      "type": "object",
+      "title": "Sell",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Sell marketable security",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency up",
+        "portfolio amount instrument down"
+      ]
+    },
+    "update_date": "2025-09-27T17:26:43Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Sell Short",
+    "properties": {
+      "type": "object",
+      "title": "Sell Short",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "trade_date",
+        "settle_date",
+        "amount",
+        "price",
+        "settle_currency"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "trade_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "settle_currency": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        }
+      },
+      "description": "Sell borrowed security short",
+      "current_position": "trade_date",
+      "forecast_position": "settle_date",
+      "valid_instruments": [
+        "FI",
+        "FU",
+        "EQ",
+        "ETF",
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount*price settle_currency up",
+        "portfolio amount instrument down"
+      ]
+    },
+    "update_date": "2025-09-27T17:27:00Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Split",
+    "properties": {
+      "type": "object",
+      "title": "Split",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "ratio": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Split",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [],
+      "position_keeping_actions": [
+        "portfolio ratio*position instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T19:21:53Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Stock Dividend",
+    "properties": {
+      "type": "object",
+      "title": "Stock Dividend",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Stock Dividend",
+      "current_position": "post_date",
+      "forecast_position": "record_date",
+      "valid_instruments": [
+        "EQ"
+      ],
+      "valid_contra_groups": [
+        "IA"
+      ],
+      "position_keeping_actions": [
+        "contra amount instrument down",
+        "portfolio amount instrument up"
+      ]
+    },
+    "update_date": "2025-09-27T19:22:09Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Subscription",
+    "properties": {
+      "type": "object",
+      "title": "Subscription",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Capital payable to a manager fund",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "FU",
+        "HF"
+      ],
+      "valid_contra_groups": [
+        "IA",
+        "EA",
+        "P"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code down",
+        "portfolio amount currency_code up"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_type_name": "Withdrawal",
+    "properties": {
+      "type": "object",
+      "title": "Withdrawal",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "required": [
+        "amount",
+        "currency_code"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "post_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency_code": {
+          "type": "string",
+          "x-enum-api": [
+            "get_entities",
+            "entity_category",
+            "Currency"
+          ]
+        },
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Outflow to investor",
+      "current_position": "message_timestamp",
+      "forecast_position": "expected_date",
+      "valid_instruments": [
+        "CCY"
+      ],
+      "valid_contra_groups": [
+        "CA"
+      ],
+      "position_keeping_actions": [
+        "contra amount currency_code up",
+        "portfolio amount currency_code down"
+      ]
+    },
+    "update_date": "2025-09-28T16:58:27Z",
+    "updated_by_user_name": "10"
+  }
+]
+  ✅ PASS
+
+[32/34] List all transaction statuses
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-statuses
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.428s
+   Headers: {'content-type': 'application/json', 'content-length': '440', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:20 GMT', 'x-amzn-trace-id': 'Root=1-68ded254-22a985dc512e7a4571f42eca;Parent=549b2ace392a7357;Sampled=0;Lineage=1:1627d4d4:0', 'x-amzn-requestid': '1598d43f-aca7-4e0f-950c-40decc79a113', 'x-amz-apigw-id': 'R1XNNEvqiYcELmQ=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'ucE9twQbuZwjhB3qENOdM1_PLYTmDSUE66iTT1s0n6u3Q9Z3AER92A=='}
+   Body: [
+  {
+    "transaction_status_name": "INCOMPLETE",
+    "update_date": "2025-09-26T19:19:26Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_status_name": "PROCESSED",
+    "update_date": "2025-09-26T19:19:31Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_status_name": "QUEUED",
+    "update_date": "2025-09-26T19:19:29Z",
+    "updated_by_user_name": "10"
+  },
+  {
+    "transaction_status_name": "UNKNOWN",
+    "update_date": "2025-09-28T15:18:41Z",
+    "updated_by_user_name": "10"
+  }
+]
+  ✅ PASS
+
+[33/34] Test transaction types count
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-types
+   Params: {'count': True}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.324s
+   Headers: {'content-type': 'application/json', 'content-length': '13', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:20 GMT', 'x-amzn-trace-id': 'Root=1-68ded254-770d8bd320253cb916278305;Parent=2e14fd3a14504605;Sampled=0;Lineage=1:24618e7d:0', 'x-amzn-requestid': 'bce9a213-0aef-4063-83b8-b8a490b40b5d', 'x-amz-apigw-id': 'R1XNQGsliYcEMkQ=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': '3ZNezncxjn87ZkqfCaSI470gy2bXM5CbB2c1FU9Sedoxzp3cjkpmiQ=='}
+   Body: {
+  "count": 24
+}
+  ✅ PASS
+
+[34/34] Test transaction statuses count
+
+🔍 REQUEST DETAILS:
+   Method: GET
+   URL: https://api.fullbor.ai/v2/transaction-statuses
+   Params: {'count': True}
+   Headers: {'Content-Type': 'application/json', 'Authorization': '***', 'X-Current-User-Id': '81fb55e0-e0b1-704a-3aad-791c0788d612'}
+
+📡 RESPONSE DETAILS:
+   Status: 200
+   Duration: 0.370s
+   Headers: {'content-type': 'application/json', 'content-length': '12', 'connection': 'keep-alive', 'date': 'Thu, 02 Oct 2025 19:28:21 GMT', 'x-amzn-trace-id': 'Root=1-68ded254-16a1231413860913182f01f6;Parent=1ed0717eb04bb214;Sampled=0;Lineage=1:1627d4d4:0', 'x-amzn-requestid': '96dcd438-5a07-451e-a9ba-4b6d9ca03528', 'x-amz-apigw-id': 'R1XNUF3RCYcEGgg=', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da26d1d98186e04c83824717d4976ec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'JFK52-P2', 'x-amz-cf-id': 'eJGmCHRILvGQ1p2Y07b7_udla1vAuo4kv7jMFMLmPIT9miNC62wkgg=='}
+   Body: {
+  "count": 4
+}
+  ✅ PASS
+
+Summary: 34/34 passed in 13.62s
+
+📄 Results exported to: 20251002T152807testoutput.json
+📄 All output logged to: 20251002T152807testoutput.txt

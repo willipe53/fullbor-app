@@ -1,0 +1,122 @@
+{
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "total_duration": 5.811136245727539
+  },
+  "tests": [
+    {
+      "name": "Count original client groups",
+      "passed": true,
+      "duration": 0.49109792709350586,
+      "status_code": 200,
+      "response_size": 261,
+      "error_message": null
+    },
+    {
+      "name": "Create new client group - Test Entity from API",
+      "passed": true,
+      "duration": 0.4613301753997803,
+      "status_code": 201,
+      "response_size": 72,
+      "error_message": null
+    },
+    {
+      "name": "Verify client group count increased",
+      "passed": true,
+      "duration": 0.41637086868286133,
+      "status_code": 200,
+      "response_size": 430,
+      "error_message": null
+    },
+    {
+      "name": "Update client group attributes",
+      "passed": true,
+      "duration": 0.3820648193359375,
+      "status_code": 200,
+      "response_size": 48,
+      "error_message": null
+    },
+    {
+      "name": "Clear entities for client group (remove all)",
+      "passed": true,
+      "duration": 0.39853525161743164,
+      "status_code": 201,
+      "response_size": 55,
+      "error_message": null
+    },
+    {
+      "name": "Set entities for client group",
+      "passed": true,
+      "duration": 0.42795825004577637,
+      "status_code": 201,
+      "response_size": 55,
+      "error_message": null
+    },
+    {
+      "name": "Verify updated client group",
+      "passed": true,
+      "duration": 0.3512098789215088,
+      "status_code": 200,
+      "response_size": 167,
+      "error_message": null
+    },
+    {
+      "name": "Delete test client group",
+      "passed": true,
+      "duration": 0.416759729385376,
+      "status_code": 204,
+      "response_size": 0,
+      "error_message": null
+    },
+    {
+      "name": "Verify test client group is deleted",
+      "passed": true,
+      "duration": 0.4015190601348877,
+      "status_code": 200,
+      "response_size": 52,
+      "error_message": null
+    },
+    {
+      "name": "Verify client group count back to original",
+      "passed": true,
+      "duration": 0.4192948341369629,
+      "status_code": 200,
+      "response_size": 261,
+      "error_message": null
+    },
+    {
+      "name": "Verify Byrde Family Foundation exists (basic existence check)",
+      "passed": true,
+      "duration": 0.4007987976074219,
+      "status_code": 200,
+      "response_size": 210,
+      "error_message": null
+    },
+    {
+      "name": "Test pagination - count only",
+      "passed": true,
+      "duration": 0.40044283866882324,
+      "status_code": 200,
+      "response_size": 261,
+      "error_message": null
+    },
+    {
+      "name": "Test pagination - limit=1, offset=0",
+      "passed": true,
+      "duration": 0.44263601303100586,
+      "status_code": 200,
+      "response_size": 259,
+      "error_message": null
+    },
+    {
+      "name": "Test pagination - limit=1, offset=1",
+      "passed": true,
+      "duration": 0.40111780166625977,
+      "status_code": 200,
+      "response_size": 49,
+      "error_message": null
+    }
+  ]
+}

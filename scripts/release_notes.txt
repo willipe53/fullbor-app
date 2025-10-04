@@ -1,3 +1,9 @@
-- YAML-driven API test runner** (`tests/comprehensive-api-test.py`)
-- `tests/simple-client-groups-test.yaml` - Isolated client group CRUD tests
-- `tests/client-groups-script.yaml` - Comprehensive client group workflow tests
+- Moved onebor.ai into src directory, migrated to v2 API (untested)
+- More descriptive examples in openapi.yaml
+- Pagination across all GET calls
+- Test scripts:
+    - entities-and-types-script.yaml**: Entity and entity type management testing
+    - position-keeper-script.yaml**: Position keeper start/stop operations
+    - transactions-and-types-script.yaml**: Transaction lifecycle testing
+    - users-and-invitations-script.yaml**: User and invitation management testing
+

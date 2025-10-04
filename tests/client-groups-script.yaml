@@ -17,10 +17,10 @@ tests:
     expect:
       status: 200
       json:
-        - path: "@"
+        - path: "data"
           exists: true
     extract:
-      original_count: "length(@)"
+      original_count: "length(data)"
 
   # Step 2: Create a new entity called Test Entity from API
   - name: "Create new client group - Test Entity from API"
@@ -35,8 +35,6 @@ tests:
       json:
         - path: "message"
           equals: "Client group created successfully"
-    extract:
-      created_group_id: "client_group_id"
 
   # Step 3: Count the number of client groups returned, expect ORIGINAL_COUNT+1
   - name: "Verify client group count increased"
@@ -46,44 +44,57 @@ tests:
     expect:
       status: 200
       json:
-        - path: "@"
+        - path: "data"
           exists: true
-        - path: "length(@)"
+        - path: "length(data)"
           equals: "{{original_count + 1}}"
 
   # Step 4: Change one of the attributes of the entity (Update the client group)
   - name: "Update client group attributes"
     request:
       method: PUT
-      url: "/client-groups/{{created_group_name}}"
+      url: "/client-groups/Test Client Group {{timestamp}}"
       json:
-        client_group_name: "{{created_group_name}}"
+        client_group_name: "Test Client Group {{timestamp}}"
         description: "Updated test client group description"
         is_active: true
     expect:
       status: 200
       json:
-        - path: "description"
-          equals: "Updated test client group description"
-        - path: "is_active"
-          equals: true
+        - path: "message"
+          equals: "Client group updated successfully"
 
-  # Step 5: Skip entity setting due to foreign key constraints
-  - name: "Skip entity setting - entity IDs don't exist in test environment"
+  # Step 5a: Clear all entities for the client group first
+  - name: "Clear entities for client group (remove all)"
     request:
-      method: GET
-      url: "/client-groups/Byrde Family Foundation"
-    expect:
-      status: 200
+      method: POST
+      url: "/client-groups/Byrde Family Foundation/entities:set"
       json:
-        - path: "@"
+        entity_ids: []
+    expect:
+      status: 201
+      json:
+        - path: "message"
+          exists: true
+
+  # Step 5b: Set entities for the client group (using entity IDs 1,2,4,5,6)
+  - name: "Set entities for client group"
+    request:
+      method: POST
+      url: "/client-groups/Byrde Family Foundation/entities:set"
+      json:
+        entity_ids: [1, 2, 4, 5, 6]
+    expect:
+      status: 201
+      json:
+        - path: "message"
           exists: true
 
   # Step 6: Confirm that attributes have been updated
   - name: "Verify updated client group"
     request:
       method: GET
-      url: "/client-groups/{{created_group_name}}"
+      url: "/client-groups/Test Client Group {{timestamp}}"
     expect:
       status: 200
       json:
@@ -94,7 +105,7 @@ tests:
   - name: "Delete test client group"
     request:
       method: DELETE
-      url: "/client-groups/{{created_group_name}}"
+      url: "/client-groups/Test Client Group {{timestamp}}"
     expect:
       status: 204
 
@@ -102,7 +113,7 @@ tests:
   - name: "Verify test client group is deleted"
     request:
       method: GET
-      url: "/client-groups/{{created_group_name}}"
+      url: "/client-groups/Test Client Group {{timestamp}}"
     expect:
       status: 200
       json:
@@ -117,11 +128,11 @@ tests:
     expect:
       status: 200
       json:
-        - path: "@"
+        - path: "data"
           exists: true
 
   # Additional test: Verify Byrde Family Foundation exists
-  - name: "Verify Byrde Family Foundation exists"
+  - name: "Verify Byrde Family Foundation exists (basic existence check)"
     request:
       method: GET
       url: "/client-groups/Byrde Family Foundation"
@@ -130,3 +141,63 @@ tests:
       json:
         - path: "@"
           exists: true
+
+  # Pagination Tests
+  - name: "Test pagination - count only"
+    request:
+      method: GET
+      url: "/client-groups?count=true"
+    expect:
+      status: 200
+      json:
+        - path: "count"
+          exists: true
+          type: "integer"
+    extract:
+      total_count: "count"
+
+  - name: "Test pagination - limit=1, offset=0"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        limit: 1
+        offset: 0
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "count"
+          exists: true
+          type: "integer"
+        - path: "limit"
+          equals: 1
+        - path: "offset"
+          equals: 0
+        - path: "length(data)"
+          equals: 1
+
+  - name: "Test pagination - limit=1, offset=1"
+    request:
+      method: GET
+      url: "/client-groups"
+      params:
+        limit: 1
+        offset: 1
+    expect:
+      status: 200
+      json:
+        - path: "data"
+          exists: true
+          type: "array"
+        - path: "count"
+          exists: true
+          type: "integer"
+        - path: "limit"
+          equals: 1
+        - path: "offset"
+          equals: 1
+        - path: "length(data)"
+          less_than_or_equal: 1

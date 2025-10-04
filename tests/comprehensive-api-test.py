@@ -886,7 +886,11 @@ def run_tests_with_args(args, timestamp):
                 results.append(result)
 
                 if not args.quiet:
-                    status = "✅ PASS" if result.passed else f"❌ FAIL: {result.error_message}"
+                    # Check if this is a skip test
+                    if tc.name.startswith("❌ SKIP"):
+                        status = "❌ SKIP"
+                    else:
+                        status = "✅ PASS" if result.passed else f"❌ FAIL: {result.error_message}"
                     print(f"  {status}")
                 elif not result.passed:
                     print(
@@ -913,7 +917,11 @@ def run_tests_with_args(args, timestamp):
                     results.append(result)
 
                     if not args.quiet:
-                        status = "✅ PASS" if result.passed else f"❌ FAIL: {result.error_message}"
+                        # Check if this is a skip test
+                        if tc.name.startswith("❌ SKIP"):
+                            status = "❌ SKIP"
+                        else:
+                            status = "✅ PASS" if result.passed else f"❌ FAIL: {result.error_message}"
                         print(
                             f"[{len(results)}/{len(tests)}] {tc.name}: {status}")
                     elif not result.passed:
@@ -958,7 +966,13 @@ def run_tests_with_args(args, timestamp):
         table.add_column("Error", style="red")
 
         for result in results:
-            status = "✅ PASS" if result.passed else "❌ FAIL"
+            # Check if this is a skip test (find the test case by name)
+            test_case = next(
+                (tc for tc in tests if tc.name == result.name), None)
+            if test_case and test_case.name.startswith("❌ SKIP"):
+                status = "❌ SKIP"
+            else:
+                status = "✅ PASS" if result.passed else "❌ FAIL"
             duration = f"{result.duration:.3f}s"
             status_code = str(result.status_code) if result.status_code else ""
             error = result.error_message or ""

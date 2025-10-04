@@ -188,10 +188,12 @@ def lambda_handler(event, context):
                     }
 
                 with connection.cursor() as cursor:
+                    # Check for count parameter
+                    count_only = query_parameters.get(
+                        'count', 'false').lower() == 'true'
+
                     # Build the base query
                     base_query = """
-                        SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to,
-                               cg.name as client_group_name, i.updated_user_id
                         FROM invitations i
                         JOIN client_groups cg ON i.client_group_id = cg.client_group_id
                         WHERE i.client_group_id IN ({})
@@ -208,22 +210,33 @@ def lambda_handler(event, context):
                     if filter_param == 'unexpired':
                         base_query += " AND i.expires_at > NOW()"
 
-                    # Add ordering
-                    base_query += " ORDER BY i.invitation_id DESC"
+                    if count_only:
+                        # Return count only
+                        count_query = f"SELECT COUNT(*) as count {base_query}"
+                        cursor.execute(count_query, query_params)
+                        result = cursor.fetchone()
+                        response = {"count": result[0]}
+                    else:
+                        # Return invitations data
+                        data_query = f"""
+                            SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to,
+                                   cg.name as client_group_name, i.updated_user_id
+                            {base_query}
+                            ORDER BY i.invitation_id DESC
+                        """
+                        cursor.execute(data_query, query_params)
 
-                    cursor.execute(base_query, query_params)
-
-                    results = cursor.fetchall()
-                    response = []
-                    for result in results:
-                        response.append({
-                            "invitation_id": result[0],
-                            "code": result[1],
-                            "expires_at": result[2].isoformat() + "Z" if result[2] else None,
-                            "client_group_name": result[4],
-                            "email_sent_to": result[3],
-                            "updated_by_user_name": str(result[5]) if result[5] else None
-                        })
+                        results = cursor.fetchall()
+                        response = []
+                        for result in results:
+                            response.append({
+                                "invitation_id": result[0],
+                                "code": result[1],
+                                "expires_at": result[2].isoformat() + "Z" if result[2] else None,
+                                "client_group_name": result[4],
+                                "email_sent_to": result[3],
+                                "updated_by_user_name": str(result[5]) if result[5] else None
+                            })
 
         elif http_method == 'POST':
             # Handle POST operations
@@ -241,9 +254,9 @@ def lambda_handler(event, context):
                     # Update expires_at to now() (effectively expiring the invitation)
                     cursor.execute("""
                         UPDATE invitations 
-                        SET expires_at = NOW() 
+                        SET expires_at = NOW(), updated_user_id = %s
                         WHERE code = %s AND expires_at > NOW()
-                    """, (code,))
+                    """, (current_user_id, code))
 
                     if cursor.rowcount == 0:
                         return {
@@ -415,11 +428,11 @@ def lambda_handler(event, context):
         elif http_method == 'DELETE':
             status_code = 204
 
-    return {
-        "statusCode": status_code,
-        "body": json.dumps(response),
-        "headers": {"Content-Type": "application/json"}
-    }
+        return {
+            "statusCode": status_code,
+            "body": json.dumps(response),
+            "headers": {"Content-Type": "application/json"}
+        }
 
     except Exception as e:
         # Try to close connection if it exists

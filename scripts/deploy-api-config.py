@@ -55,6 +55,8 @@ class APIGatewayDeployer:
         self.acm_client = boto3.client('acm', region_name=region)
         self.route53_client = boto3.client('route53')
         self.lambda_client = boto3.client('lambda', region_name=region)
+        self.s3_client = boto3.client('s3', region_name=region)
+        self.cloudfront_client = boto3.client('cloudfront', region_name=region)
 
         # Load OpenAPI spec
         self.openapi_spec = self._load_openapi_spec()
@@ -268,7 +270,8 @@ class APIGatewayDeployer:
             'TransactionTypesHandler': 'TransactionTypesHandler',
             'TransactionStatusesHandler': 'TransactionStatusesHandler',
             'UsersHandler': 'UsersHandler',
-            'InvitationsHandler': 'InvitationsHandler'
+            'InvitationsHandler': 'InvitationsHandler',
+            'PositionKeeper': 'PositionKeeper'
         }
 
         return handler_mapping.get(handler_name, handler_name)
@@ -283,7 +286,7 @@ class APIGatewayDeployer:
 
             # Map paths to Lambda handlers based on OpenAPI spec
             path_to_handler = {
-                '/client-groups/{client_group_name}/entities:set': 'EntitiesHandler',
+                '/client-groups/{client_group_name}/entities:set': 'ClientGroupsHandler',
                 '/client-groups': 'ClientGroupsHandler',
                 '/entities': 'EntitiesHandler',
                 '/entity-types': 'EntityTypesHandler',
@@ -291,7 +294,8 @@ class APIGatewayDeployer:
                 '/transaction-types': 'TransactionTypesHandler',
                 '/transaction-statuses': 'TransactionStatusesHandler',
                 '/users': 'UsersHandler',
-                '/invitations': 'InvitationsHandler'
+                '/invitations': 'InvitationsHandler',
+                '/position-keeper': 'PositionKeeper'
             }
 
             for resource in resources['items']:
@@ -442,6 +446,139 @@ class APIGatewayDeployer:
             logger.error(f"Failed to deploy API: {e}")
             raise
 
+    def _deploy_openapi_to_s3(self) -> None:
+        """Deploy OpenAPI specification as JSON and index.html to S3."""
+        logger.info(
+            "Deploying OpenAPI specification and documentation to S3...")
+
+        try:
+            # Convert OpenAPI spec to JSON
+            openapi_json = json.dumps(self.openapi_spec, indent=2)
+
+            # Upload to S3
+            bucket_name = "fullbor-api-docs"
+
+            # Check if bucket exists and create if it doesn't
+            try:
+                self.s3_client.head_bucket(Bucket=bucket_name)
+                logger.info(f"S3 bucket {bucket_name} exists")
+            except ClientError as e:
+                if e.response['Error']['Code'] == '404':
+                    logger.info(f"Creating S3 bucket {bucket_name}...")
+                    try:
+                        # Create bucket in the same region as the deployment
+                        self.s3_client.create_bucket(
+                            Bucket=bucket_name,
+                            CreateBucketConfiguration={
+                                'LocationConstraint': self.region}
+                        )
+                        logger.info(f"✅ Created S3 bucket: {bucket_name}")
+                    except ClientError as create_error:
+                        if create_error.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
+                            logger.info(
+                                f"Bucket {bucket_name} already exists and is owned by you")
+                        elif create_error.response['Error']['Code'] == 'BucketAlreadyExists':
+                            logger.warning(
+                                f"Bucket {bucket_name} already exists but is owned by another AWS account")
+                            raise Exception(
+                                f"Cannot create bucket {bucket_name} - it exists but is owned by another account")
+                        else:
+                            raise
+                else:
+                    raise
+
+            # Upload the OpenAPI spec
+            self.s3_client.put_object(
+                Bucket=bucket_name,
+                Key="openapi.json",
+                Body=openapi_json,
+                ContentType='application/json',
+                CacheControl='max-age=3600'  # Cache for 1 hour
+            )
+            logger.info(
+                f"✅ Deployed OpenAPI spec to s3://{bucket_name}/openapi.json")
+
+            # Upload the index.html file
+            project_root = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__)))
+            index_html_path = os.path.join(
+                project_root, 'api-config', 'index.html')
+
+            if os.path.exists(index_html_path):
+                with open(index_html_path, 'r', encoding='utf-8') as f:
+                    index_html_content = f.read()
+
+                self.s3_client.put_object(
+                    Bucket=bucket_name,
+                    Key="index.html",
+                    Body=index_html_content,
+                    ContentType='text/html',
+                    CacheControl='max-age=3600'  # Cache for 1 hour
+                )
+                logger.info(
+                    f"✅ Deployed documentation to s3://{bucket_name}/index.html")
+            else:
+                logger.warning(f"index.html not found at {index_html_path}")
+
+            # Upload the logo file
+            logo_path = os.path.join(
+                project_root, 'api-config', 'boar34black_small.png')
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as f:
+                    logo_content = f.read()
+
+                self.s3_client.put_object(
+                    Bucket=bucket_name,
+                    Key="boar34black_small.png",
+                    Body=logo_content,
+                    ContentType='image/png',
+                    CacheControl='max-age=86400'  # Cache for 24 hours
+                )
+                logger.info(
+                    f"✅ Deployed logo to s3://{bucket_name}/boar34black_small.png")
+            else:
+                logger.warning(f"Logo file not found at {logo_path}")
+
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchBucket':
+                logger.error(
+                    f"S3 bucket {bucket_name} does not exist and could not be created")
+                logger.error(
+                    "Please create the bucket manually or check your AWS permissions")
+                logger.error(
+                    f"You can create it with: aws s3 mb s3://{bucket_name} --region {self.region}")
+            else:
+                logger.error(f"Failed to deploy OpenAPI spec to S3: {e}")
+            raise
+
+    def _create_cloudfront_invalidations(self) -> None:
+        """Create CloudFront invalidations for both distributions."""
+        logger.info("Creating CloudFront invalidations...")
+
+        distributions = {
+            "E10FZL3I8R4R7A": "API docs",
+            "EPZLOBGCZS220": "Web root"
+        }
+
+        for distribution_id, description in distributions.items():
+            try:
+                response = self.cloudfront_client.create_invalidation(
+                    DistributionId=distribution_id,
+                    InvalidationBatch={
+                        'Paths': {
+                            'Quantity': 1,
+                            'Items': ['/*']
+                        },
+                        'CallerReference': f'cli-{int(time.time())}-{distribution_id}'
+                    }
+                )
+                invalidation_id = response['Invalidation']['Id']
+                logger.info(
+                    f"✅ Created invalidation for {description} ({distribution_id}): {invalidation_id}")
+            except ClientError as e:
+                logger.warning(
+                    f"Failed to create invalidation for {description} ({distribution_id}): {e}")
+
     def deploy(self) -> None:
         """Main deployment method."""
         logger.info("🚀 Starting API Gateway deployment...")
@@ -473,6 +610,12 @@ class APIGatewayDeployer:
 
             # Deploy API
             self._deploy_api(api_id)
+
+            # Deploy OpenAPI spec to S3
+            self._deploy_openapi_to_s3()
+
+            # Create CloudFront invalidations
+            self._create_cloudfront_invalidations()
 
             # Final info
             api_url = f"https://{self.domain_name}{self.api_path}"

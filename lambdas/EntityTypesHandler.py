@@ -117,46 +117,63 @@ def lambda_handler(event, context):
                     }
             else:
                 # List all entity types: /entity-types
-                # Check for entity_category filter
+                # Check for entity_category filter and count parameter
                 entity_category_filter = query_parameters.get(
                     'entity_category')
+                count_only = query_parameters.get(
+                    'count', 'false').lower() == 'true'
 
                 with connection.cursor() as cursor:
-                    if entity_category_filter:
-                        # Filter by entity_category
-                        cursor.execute("""
-                            SELECT name, attributes_schema, short_label, label_color, 
-                                   entity_category, update_date, updated_user_id
-                            FROM entity_types
-                            WHERE entity_category = %s
-                            ORDER BY name
-                        """, (entity_category_filter,))
+                    if count_only:
+                        # Return count only
+                        if entity_category_filter:
+                            cursor.execute("""
+                                SELECT COUNT(*) as count
+                                FROM entity_types
+                                WHERE entity_category = %s
+                            """, (entity_category_filter,))
+                        else:
+                            cursor.execute(
+                                "SELECT COUNT(*) as count FROM entity_types")
+                        result = cursor.fetchone()
+                        response = {"count": result[0]}
                     else:
-                        # Get all entity types
-                        cursor.execute("""
-                            SELECT name, attributes_schema, short_label, label_color, 
-                                   entity_category, update_date, updated_user_id
-                            FROM entity_types
-                            ORDER BY name
-                        """)
+                        # Return entity types data
+                        if entity_category_filter:
+                            # Filter by entity_category
+                            cursor.execute("""
+                                SELECT name, attributes_schema, short_label, label_color, 
+                                       entity_category, update_date, updated_user_id
+                                FROM entity_types
+                                WHERE entity_category = %s
+                                ORDER BY name
+                            """, (entity_category_filter,))
+                        else:
+                            # Get all entity types
+                            cursor.execute("""
+                                SELECT name, attributes_schema, short_label, label_color, 
+                                       entity_category, update_date, updated_user_id
+                                FROM entity_types
+                                ORDER BY name
+                            """)
 
-                    results = cursor.fetchall()
+                        results = cursor.fetchall()
 
-                    response = []
-                    for result in results:
-                        # Map database fields to OpenAPI schema
-                        attributes_schema = json.loads(
-                            result[1]) if result[1] else {}
+                        response = []
+                        for result in results:
+                            # Map database fields to OpenAPI schema
+                            attributes_schema = json.loads(
+                                result[1]) if result[1] else {}
 
-                        response.append({
-                            "entity_type_name": result[0],
-                            "attributes_schema": attributes_schema,
-                            "short_label": result[2],
-                            "label_color": result[3],
-                            "entity_category": result[4],
-                            "update_date": result[5].isoformat() + "Z" if result[5] else None,
-                            "updated_by_user_name": str(result[6]) if result[6] else None
-                        })
+                            response.append({
+                                "entity_type_name": result[0],
+                                "attributes_schema": attributes_schema,
+                                "short_label": result[2],
+                                "label_color": result[3],
+                                "entity_category": result[4],
+                                "update_date": result[5].isoformat() + "Z" if result[5] else None,
+                                "updated_by_user_name": str(result[6]) if result[6] else None
+                            })
 
         elif http_method == 'POST':
             # Handle POST operations: /entity-types (create or upsert)
