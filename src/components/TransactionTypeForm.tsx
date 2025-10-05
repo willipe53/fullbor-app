@@ -20,7 +20,6 @@ import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import AuditTrail from "./AuditTrail";
 
 interface TransactionType {
   transaction_type_id: number;
@@ -423,12 +422,6 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
                 transaction type.
               </Typography>
             </FormControl>
-
-            {/* Audit Trail */}
-            <AuditTrail
-              updateDate={editingTransactionType?.update_date}
-              updatedUserId={editingTransactionType?.updated_user_id}
-            />
           </Box>
 
           {/* Fixed Footer with Action Buttons */}

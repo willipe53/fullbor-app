@@ -226,6 +226,9 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
         }}
         isEmailEditDisabled={mutation.isPending}
         editable={false}
+        update_date={editingUser?.update_date}
+        updated_user_id={editingUser?.updated_user_id}
+        updated_by_user_name={editingUser?.updated_by_user_name}
       />
 
       {/* Scrollable Content */}

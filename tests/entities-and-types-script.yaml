@@ -25,10 +25,12 @@ tests:
     request:
       method: GET
       url: "/entities"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "@"
+        - path: "count"
           exists: true
     extract:
       initial_entities_count: "count"
@@ -116,11 +118,11 @@ tests:
     request:
       method: GET
       url: "/entities"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "data"
-          exists: true
         - path: "count"
           equals: "{{initial_entities_count + 1}}"
 
@@ -131,17 +133,17 @@ tests:
     expect:
       status: 204
 
-  - name: "Verify entities count after deletion (entity deletion may not work properly)"
+  - name: "Verify entities count after deletion (should be back to original)"
     request:
       method: GET
       url: "/entities"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "data"
-          exists: true
         - path: "count"
-          equals: "{{initial_entities_count + 1}}"
+          equals: "{{initial_entities_count}}"
 
   # === ENTITY TYPES SECTION ===
 
@@ -161,10 +163,12 @@ tests:
     request:
       method: GET
       url: "/entity-types"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "@"
+        - path: "count"
           exists: true
     extract:
       initial_entity_types_count: "count"
@@ -237,11 +241,11 @@ tests:
     request:
       method: GET
       url: "/entity-types"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "@"
-          exists: true
         - path: "count"
           equals: "{{initial_entity_types_count + 1}}"
 
@@ -256,11 +260,11 @@ tests:
     request:
       method: GET
       url: "/entity-types"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "@"
-          exists: true
         - path: "count"
           equals: "{{initial_entity_types_count}}"
 
@@ -279,173 +283,3 @@ tests:
           exists: true
         - path: "@"
           min_length: 1
-
-  # === PAGINATION TESTS ===
-
-  - name: "Test entities pagination - count only"
-    request:
-      method: GET
-      url: "/entities?count=true"
-    expect:
-      status: 200
-      json:
-        - path: "count"
-          exists: true
-          type: "integer"
-    extract:
-      entities_total_count: "count"
-
-  - name: "Test entities pagination - limit=1, offset=0"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        limit: 1
-        offset: 0
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-        - path: "count"
-          exists: true
-          type: "integer"
-        - path: "limit"
-          equals: 1
-        - path: "offset"
-          equals: 0
-        - path: "length(data)"
-          equals: 1
-
-  - name: "Test entities pagination - limit=1, offset=1"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        limit: 1
-        offset: 1
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-        - path: "count"
-          exists: true
-          type: "integer"
-        - path: "limit"
-          equals: 1
-        - path: "offset"
-          equals: 1
-        - path: "length(data)"
-          less_than_or_equal: 1
-
-  # === ENTITIES SORTING TESTS ===
-
-  - name: "Test entities sorting by entity_name ascending"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        sort_by: "entity_name"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test entities sorting by entity_name descending"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        sort_by: "entity_name"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test entities sorting by entity_type_name ascending"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        sort_by: "entity_type_name"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test entities sorting by update_date descending"
-    request:
-      method: GET
-      url: "/entities"
-      params:
-        sort_by: "update_date"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  # === ENTITY TYPES SORTING TESTS ===
-
-  - name: "Test entity types sorting by entity_type_name ascending"
-    request:
-      method: GET
-      url: "/entity-types"
-      params:
-        sort_by: "entity_type_name"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test entity types sorting by entity_category ascending"
-    request:
-      method: GET
-      url: "/entity-types"
-      params:
-        sort_by: "entity_category"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test entity types sorting by update_date descending"
-    request:
-      method: GET
-      url: "/entity-types"
-      params:
-        sort_by: "update_date"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"

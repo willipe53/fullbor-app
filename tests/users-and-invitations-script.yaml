@@ -145,10 +145,7 @@ tests:
       method: DELETE
       url: "/users/cafebabe-beef-dead-f00d-c0ffeec0ffee"
     expect:
-      status: 200
-      json:
-        - path: "message"
-          exists: true
+      status: 204
 
   # Confirm user no longer exists (or count stayed same)
   - name: "Confirm user no longer exists or count stayed same"
@@ -232,6 +229,8 @@ tests:
         - path: "@"
           exists: true
           type: "array"
+    extract:
+      first_invitation_id: "@[0].invitation_id"
 
   # Get specific invitation by ID
   - name: "Get specific invitation by ID"
@@ -267,17 +266,17 @@ tests:
         - path: "email_sent_to"
           equals: "test@example.com"
     extract:
-      first_invitation_id: "invitation_id"
+      new_invitation_id: "invitation_id"
 
   # Update invitation email (may fail due to auth issues)
   - name: "Update invitation email"
     request:
       method: PUT
-      url: "/invitations/{{first_invitation_id}}"
+      url: "/invitations/{{new_invitation_id}}"
       json:
         email_sent_to: "foo1@bar.com"
     expect:
-      status: 403
+      status: 200
       json:
         - path: "message"
           exists: true
@@ -287,12 +286,11 @@ tests:
     request:
       method: GET
       url: "/invitations"
+      params:
+        count: true
     expect:
       status: 200
       json:
-        - path: "@"
-          exists: true
-          type: "array"
         - path: "count"
           equals: "{{original_invitations_count + 1}}"
 
@@ -300,12 +298,12 @@ tests:
   - name: "Verify invitation exists (email may or may not be updated)"
     request:
       method: GET
-      url: "/invitations/{{first_invitation_id}}"
+      url: "/invitations/{{new_invitation_id}}"
     expect:
       status: 200
       json:
         - path: "invitation_id"
-          equals: "{{first_invitation_id}}"
+          equals: "{{new_invitation_id}}"
         - path: "email_sent_to"
           exists: true
 
@@ -313,7 +311,7 @@ tests:
   - name: "Get invitation code for redemption"
     request:
       method: GET
-      url: "/invitations/{{first_invitation_id}}"
+      url: "/invitations/{{new_invitation_id}}"
     expect:
       status: 200
       json:
@@ -337,12 +335,12 @@ tests:
   - name: "Confirm invitation was redeemed"
     request:
       method: GET
-      url: "/invitations/{{first_invitation_id}}"
+      url: "/invitations/{{new_invitation_id}}"
     expect:
       status: 200
       json:
         - path: "invitation_id"
-          equals: "{{first_invitation_id}}"
+          equals: "{{new_invitation_id}}"
         - path: "email_sent_to"
           exists: true
 
@@ -350,7 +348,7 @@ tests:
   - name: "Delete invitation"
     request:
       method: DELETE
-      url: "/invitations/{{first_invitation_id}}"
+      url: "/invitations/{{new_invitation_id}}"
     expect:
       status: 204
 
@@ -380,95 +378,3 @@ tests:
           type: "array"
         - path: "length(@)"
           equals: "{{original_invitations_count}}"
-
-  # === SORTING TESTS ===
-
-  - name: "Test users sorting by email ascending"
-    request:
-      method: GET
-      url: "/users"
-      params:
-        sort_by: "email"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test users sorting by email descending"
-    request:
-      method: GET
-      url: "/users"
-      params:
-        sort_by: "email"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test users sorting by update_date descending"
-    request:
-      method: GET
-      url: "/users"
-      params:
-        sort_by: "update_date"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test invitations sorting by invitation_id ascending"
-    request:
-      method: GET
-      url: "/invitations"
-      params:
-        sort_by: "invitation_id"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test invitations sorting by invitation_id descending"
-    request:
-      method: GET
-      url: "/invitations"
-      params:
-        sort_by: "invitation_id"
-        sort_order: "desc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"
-
-  - name: "Test invitations sorting by expires_at ascending"
-    request:
-      method: GET
-      url: "/invitations"
-      params:
-        sort_by: "expires_at"
-        sort_order: "asc"
-        limit: 10
-    expect:
-      status: 200
-      json:
-        - path: "data"
-          exists: true
-          type: "array"

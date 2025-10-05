@@ -70,7 +70,6 @@ const EntityTypesTable: React.FC = () => {
       return rawData;
     }
 
-    // Handle paginated response format: { data: EntityType[], count: number, limit: number, offset: number }
     if (rawData && typeof rawData === "object" && "data" in rawData) {
       return rawData.data || [];
     }

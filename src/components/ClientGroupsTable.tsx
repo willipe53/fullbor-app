@@ -29,7 +29,7 @@ const ClientGroupsTable: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showEntityEditor, setShowEntityEditor] = useState(false);
   const [entityEditorClientGroup, setEntityEditorClientGroup] =
-    useState<any>(null);
+    useState<apiService.ClientGroup | null>(null);
 
   // Get current user's database ID
   const { data: currentUserData } = useQuery({
@@ -263,7 +263,7 @@ const ClientGroupsTable: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleAddEntities = (clientGroup: any) => {
+  const handleAddEntities = (clientGroup: apiService.ClientGroup) => {
     console.log("🎯 Opening entity editor for client group:", clientGroup);
     setEntityEditorClientGroup(clientGroup);
     setIsModalOpen(false); // Close the form modal
@@ -293,7 +293,7 @@ const ClientGroupsTable: React.FC = () => {
       <EntitiesTable
         groupSelectionMode={{
           clientGroupId: entityEditorClientGroup.client_group_id,
-          clientGroupName: entityEditorClientGroup.name,
+          clientGroupName: entityEditorClientGroup.client_group_name,
           onFinish: handleEntityEditorFinish,
           onCancel: handleEntityEditorCancel,
         }}

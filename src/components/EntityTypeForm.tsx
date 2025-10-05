@@ -20,7 +20,6 @@ import "ace-builds/src-noconflict/ext-language_tools";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
-import AuditTrail from "./AuditTrail";
 import FormHeader from "./FormHeader";
 
 interface EntityType {
@@ -424,6 +423,9 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
         }}
         onDirtyChange={() => setIsDirty(true)}
         isNameEditDisabled={mutation.isPending || deleteMutation.isPending}
+        update_date={editingEntityType?.update_date}
+        updated_user_id={editingEntityType?.updated_user_id}
+        updated_by_user_name={editingEntityType?.updated_by_user_name}
       />
 
       {mutation.isError && (
@@ -666,12 +668,6 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
               directly in the text editor above.
             </Typography>
           </FormControl>
-
-          {/* Audit Trail */}
-          <AuditTrail
-            updateDate={editingEntityType?.update_date}
-            updatedUserId={editingEntityType?.updated_user_id}
-          />
         </Box>
 
         {/* Fixed Footer with Action Buttons */}

@@ -1,26 +1,34 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Box,
   Typography,
-  TextField,
   Button,
-  Alert,
   CircularProgress,
   Paper,
+  TextField,
+  Alert,
 } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../contexts/AuthContext";
+import { Grid } from "@mui/material";
+import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-json";
+import "ace-builds/src-noconflict/theme-github";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import FormJsonToggle from "./FormJsonToggle";
-import { prepareJsonForForm } from "../utils";
-import TransferList, { type TransferListItem } from "./TransferList";
-import AuditTrail from "./AuditTrail";
 import FormHeader from "./FormHeader";
+import FormJsonToggle from "./FormJsonToggle";
 
 interface ClientGroupFormProps {
-  editingClientGroup: any;
+  editingClientGroup: apiService.ClientGroup | null;
   onClose: () => void;
-  onAddEntities?: (clientGroup: any) => void;
+  onAddEntities?: (clientGroup: apiService.ClientGroup) => void;
+}
+
+interface PreferenceField {
+  key: string;
+  label: string;
+  type: string;
+  description: string;
+  isCustom: boolean;
 }
 
 const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
@@ -28,37 +36,39 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   onClose,
   onAddEntities,
 }) => {
-  const { userId } = useAuth();
   const queryClient = useQueryClient();
-
-  // Form state
   const [name, setName] = useState<string>("");
+  const [preferences, setPreferences] = useState<apiService.JSONValue>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // State for JSON toggle
   const [preferencesMode, setPreferencesMode] = useState<"form" | "json">(
     "form"
   );
-  const [dynamicFields, setDynamicFields] = useState<Record<string, any>>({});
-  const [fieldKeys, setFieldKeys] = useState<string[]>([]); // Stable keys for React
-  const [jsonPreferences, setJsonPreferences] = useState<string>("{}");
-  const [jsonError, setJsonError] = useState<string>("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedUsers, setSelectedUsers] = useState<TransferListItem[]>([]);
+  const [jsonPreferences, setJsonPreferences] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
   const [isDirty, setIsDirty] = useState(false);
   const [initialFormState, setInitialFormState] = useState<{
     name: string;
-    dynamicFields: Record<string, any>;
-    jsonPreferences: string;
-    selectedUsers: TransferListItem[];
+    preferences: apiService.JSONValue;
   } | null>(null);
 
-  // Get current user's database ID for queries
-  const { data: currentUserData } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
-    enabled: !!userId,
+  const isCreate = !editingClientGroup?.client_group_id;
+
+  // Query to get entity count for this client group
+  const { data: entityCountData } = useQuery({
+    queryKey: ["entities", "count", editingClientGroup?.client_group_id],
+    queryFn: () =>
+      apiService.queryEntities({
+        client_group_id: editingClientGroup!.client_group_id,
+        count: true,
+      }),
+    enabled: !!editingClientGroup?.client_group_id && !isCreate,
   });
 
-  const currentUser =
-    currentUserData && currentUserData.length > 0 ? currentUserData[0] : null;
+  const entityCount =
+    entityCountData && "count" in entityCountData ? entityCountData.count : 0;
 
   // Function to check if form is dirty
   const checkIfDirty = useCallback(() => {
@@ -66,478 +76,278 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
 
     const currentState = {
       name,
-      dynamicFields,
-      jsonPreferences,
-      selectedUsers,
+      preferences,
     };
 
     return (
       currentState.name !== initialFormState.name ||
-      JSON.stringify(currentState.dynamicFields) !==
-        JSON.stringify(initialFormState.dynamicFields) ||
-      currentState.jsonPreferences !== initialFormState.jsonPreferences ||
-      JSON.stringify(currentState.selectedUsers) !==
-        JSON.stringify(initialFormState.selectedUsers)
+      JSON.stringify(currentState.preferences) !==
+        JSON.stringify(initialFormState.preferences)
     );
-  }, [name, dynamicFields, jsonPreferences, selectedUsers, initialFormState]);
+  }, [name, preferences, initialFormState]);
 
   // Update dirty state whenever form values change
   useEffect(() => {
     setIsDirty(checkIfDirty());
   }, [checkIfDirty]);
 
-  // Get current entity count for this client group (only for existing groups)
-  const { data: currentGroupEntityCount } = useQuery({
-    queryKey: [
-      "entity-count",
-      editingClientGroup?.client_group_id,
-      currentUser?.user_id,
-    ],
-    queryFn: () =>
-      apiService.queryEntityCount({
-        user_id: currentUser!.user_id,
-        client_group_id: editingClientGroup!.client_group_id,
-      }),
-    enabled: !!editingClientGroup?.client_group_id && !!currentUser?.user_id, // Only for existing groups and when user is loaded
-  });
+  // Handle preference change
+  const handlePreferenceChange = useCallback((key: string, value: unknown) => {
+    setPreferences((prev) => {
+      const prevObj =
+        typeof prev === "object" && prev !== null
+          ? (prev as Record<string, unknown>)
+          : {};
+      return {
+        ...prevObj,
+        [key]: value,
+      } as apiService.JSONValue;
+    });
+    setIsDirty(true);
+  }, []);
 
-  // Fetch all users that the current user can see
-  const { data: allUsersData } = useQuery({
-    queryKey: ["users", "all", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryUsers({ requesting_user_id: currentUser!.user_id }),
-    enabled: !!currentUser?.user_id,
-  });
+  // Handle JSON change
+  const handleJsonChange = useCallback((value: string) => {
+    setJsonPreferences(value);
+    setJsonError(null);
 
-  // Fetch all client groups for name validation
-  const { data: allClientGroups } = useQuery({
-    queryKey: ["client-groups", "all", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        user_id: currentUser!.user_id,
-      }),
-    enabled: !!currentUser?.user_id,
-  });
+    try {
+      if (value.trim()) {
+        const parsed = JSON.parse(value);
+        setPreferences(parsed);
+      } else {
+        setPreferences({});
+      }
+      setIsDirty(true);
+    } catch {
+      setJsonError("Invalid JSON format");
+    }
+  }, []);
 
-  // Get current members of the client group (for existing groups)
-  const { data: currentMembersData } = useQuery({
-    queryKey: ["users", "group-members", editingClientGroup?.client_group_id],
-    queryFn: () =>
-      apiService.queryUsers({
-        client_group_id: editingClientGroup!.client_group_id,
-      }),
-    enabled: !!editingClientGroup?.client_group_id,
-  });
+  // Handle mode change
+  const handleModeChange = useCallback(
+    (_: unknown, newMode: "form" | "json" | null) => {
+      if (newMode !== null) {
+        setPreferencesMode(newMode);
 
-  // Initialize form with editing client group data
+        if (newMode === "json") {
+          // Convert preferences to JSON string
+          setJsonPreferences(JSON.stringify(preferences, null, 2));
+        }
+      }
+    },
+    [preferences]
+  );
+
+  // Format JSON
+  const formatJson = useCallback(() => {
+    try {
+      const parsed = JSON.parse(jsonPreferences);
+      setJsonPreferences(JSON.stringify(parsed, null, 2));
+      setJsonError(null);
+    } catch {
+      setJsonError("Invalid JSON format");
+    }
+  }, [jsonPreferences]);
+
+  // Check if JSON is formatted
+  const isJsonFormatted = useCallback(() => {
+    try {
+      const parsed = JSON.parse(jsonPreferences);
+      const formatted = JSON.stringify(parsed, null, 2);
+      return jsonPreferences === formatted;
+    } catch {
+      return false;
+    }
+  }, [jsonPreferences]);
+
+  // Get preference fields
+  const preferenceFields = useMemo((): PreferenceField[] => {
+    const preferenceKeys = Object.keys(
+      typeof preferences === "object" && preferences !== null
+        ? (preferences as Record<string, unknown>)
+        : {}
+    );
+
+    return preferenceKeys.map((key): PreferenceField => {
+      return {
+        key,
+        label: key,
+        type: "text",
+        description: "",
+        isCustom: true, // All preference fields are custom
+      };
+    });
+  }, [preferences]);
+
+  // Initialize form when editingClientGroup changes
   useEffect(() => {
-    if (editingClientGroup?.client_group_id) {
+    if (editingClientGroup) {
       setName(editingClientGroup.client_group_name || "");
+      setPreferences(editingClientGroup.preferences || {});
 
-      // Use utility to safely parse preferences
-      const { object: preferences, jsonString } = prepareJsonForForm(
-        editingClientGroup.preferences
-      );
-
-      setDynamicFields(preferences);
-      setFieldKeys(
-        Object.keys(preferences).map((_, index) => `field_${index}`)
-      );
-      setJsonPreferences(jsonString);
-
-      // For existing groups, we'll set selected users when currentMembersData loads
-      // This will be handled in a separate useEffect below
-
-      // Set initial form state for dirty tracking (after all fields are populated)
-      setTimeout(() => {
-        const { object: preferences, jsonString } = prepareJsonForForm(
-          editingClientGroup.preferences
-        );
-        const members = currentMembersData
-          ? currentMembersData.map((user: any) => ({
-              id: user.user_id,
-              label: user.email,
-            }))
-          : [];
-
-        setInitialFormState({
-          name: editingClientGroup.client_group_name || "",
-          dynamicFields: preferences,
-          jsonPreferences: jsonString,
-          selectedUsers: members,
-        });
-        setIsDirty(false); // Reset dirty state when loading existing client group
-      }, 100); // Small delay to allow currentMembersData to load
+      // Set initial form state for dirty tracking
+      setInitialFormState({
+        name: editingClientGroup.client_group_name || "",
+        preferences: editingClientGroup.preferences || {},
+      });
     } else {
-      // New client group
       setName("");
-      setDynamicFields({});
-      setFieldKeys([]);
-      setJsonPreferences("{}");
-      setSelectedUsers([]);
-
-      // Set initial state for new client group
+      setPreferences({});
       setInitialFormState({
         name: "",
-        dynamicFields: {},
-        jsonPreferences: "{}",
-        selectedUsers: [],
+        preferences: {},
       });
-      setIsDirty(false);
     }
-  }, [editingClientGroup, currentMembersData]);
-
-  // Update selectedUsers when currentMembersData changes
-  useEffect(() => {
-    if (editingClientGroup?.client_group_id && currentMembersData) {
-      const members = currentMembersData.map((user: any) => ({
-        id: user.user_id,
-        label: user.email,
-      }));
-      setSelectedUsers(members);
-    }
-  }, [currentMembersData, editingClientGroup?.client_group_id]);
-
-  // Handle JSON mode changes
-  useEffect(() => {
-    if (preferencesMode === "json") {
-      try {
-        JSON.parse(jsonPreferences);
-        setJsonError("");
-      } catch (error) {
-        setJsonError("Invalid JSON syntax");
-      }
-    }
-  }, [jsonPreferences, preferencesMode]);
-
-  // Mutation for making this client group primary
-  const makePrimaryMutation = useMutation({
-    mutationFn: async () => {
-      return apiService.updateUser({
-        user_id: currentUser!.user_id,
-        sub: userId!,
-        email: currentUser!.email,
-        primary_client_group_id: editingClientGroup.client_group_id,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", userId] });
-      queryClient.invalidateQueries({
-        queryKey: ["client-groups", currentUser!.user_id],
-      });
-
-      // Invalidate the primary client group query used by the title bar
-      queryClient.invalidateQueries({
-        queryKey: ["client-groups", editingClientGroup.client_group_id],
-      });
-
-      // Also invalidate any queries that depend on the old primary group
-      if (currentUser?.primary_client_group_id) {
-        queryClient.invalidateQueries({
-          queryKey: ["client-groups", currentUser.primary_client_group_id],
-        });
-      }
-
-      // Close modal after short delay
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-    },
-    onError: (error: any) => {
-      console.error("Make primary failed:", error);
-    },
-  });
+    setIsDirty(false);
+  }, [editingClientGroup]);
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      console.log(
-        "🗑️ Starting delete for client group:",
-        editingClientGroup.client_group_id
-      );
-      const result = await apiService.deleteClientGroup(
-        editingClientGroup.client_group_name
-      );
-      console.log("🗑️ Delete API result:", result);
-      return result;
+      if (!editingClientGroup?.client_group_name) {
+        throw new Error("No client group to delete");
+      }
+      return apiService.deleteClientGroup(editingClientGroup.client_group_name);
     },
-    onSuccess: (data) => {
-      console.log("✅ Delete successful:", data);
-      // Invalidate all client groups related queries
-      queryClient.invalidateQueries({
-        queryKey: ["client-groups"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["current-user"],
-      });
-
-      // Close the form and refresh the table
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
-    },
-    onError: (error: any) => {
-      console.error("❌ Error deleting client group:", error);
-      setErrors({
-        submit: `Failed to delete client group: ${
-          error.message || "Unknown error"
-        }`,
-      });
     },
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
-      let result;
-
+    mutationFn: async (data: Partial<apiService.ClientGroup>) => {
       if (editingClientGroup?.client_group_id) {
-        // Update existing client group
-        result = await apiService.updateClientGroup(data);
-
-        // Also update membership if this is an existing group
-        if (selectedUsers.length > 0 || !isCreate) {
-          const membershipPromises = selectedUsers.map((user) =>
-            apiService.modifyClientGroupMembership({
-              add_or_remove: "add",
-              client_group_id: editingClientGroup.client_group_id,
-              user_id: Number(user.id),
-            })
-          );
-          await Promise.all(membershipPromises);
-        }
+        return apiService.updateClientGroup(
+          editingClientGroup.client_group_name,
+          data as apiService.ClientGroup
+        );
       } else {
-        // Create new client group
-        result = await apiService.createClientGroup(data);
+        return apiService.createClientGroup(data as apiService.ClientGroup);
       }
-
-      return result;
     },
     onSuccess: () => {
-      // Invalidate all client groups related queries
-      queryClient.invalidateQueries({
-        queryKey: ["client-groups", currentUser!.user_id],
-      });
       queryClient.invalidateQueries({ queryKey: ["client-groups"] });
-      queryClient.invalidateQueries({
-        queryKey: ["clientGroups", currentUser!.user_id],
-      });
       queryClient.invalidateQueries({ queryKey: ["users"] });
-
-      // Refetch the main table query
-      queryClient.refetchQueries({
-        queryKey: ["client-groups", currentUser!.user_id],
-      });
-
-      // Close modal after short delay
       setTimeout(() => {
         onClose();
       }, 1000);
     },
-    onError: (error: any) => {
-      console.error("Client group operation failed:", error);
-      const friendlyError = apiService.parseApiError(error);
-      setErrors({ general: friendlyError });
-    },
   });
+
+  // Handle opening entities table
+  const handleOpenEntitiesTable = useCallback(async () => {
+    // If form is dirty, save it first
+    if (isDirty) {
+      const newErrors: Record<string, string> = {};
+
+      if (!name.trim()) {
+        newErrors.name = "Client group name is required";
+      }
+
+      if (jsonError) {
+        newErrors.json = jsonError;
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return; // Don't proceed if there are validation errors
+      }
+
+      setErrors({});
+
+      // Prepare the data for API call
+      const requestData: Partial<apiService.ClientGroup> = {
+        client_group_name: name.trim(),
+        preferences: preferences,
+      };
+
+      if (editingClientGroup?.client_group_id) {
+        requestData.client_group_id = editingClientGroup.client_group_id;
+      }
+
+      try {
+        const savedClientGroup = await mutation.mutateAsync(requestData);
+        // After successful save, close this modal and open entities table
+        onClose();
+        if (onAddEntities) {
+          // For create operations, savedClientGroup will be undefined, so use the request data
+          // For update operations, savedClientGroup will be the updated ClientGroup
+          const clientGroupToPass =
+            savedClientGroup ||
+            ({
+              ...requestData,
+              client_group_id: editingClientGroup?.client_group_id || 0,
+            } as apiService.ClientGroup);
+          onAddEntities(clientGroupToPass);
+        }
+      } catch (error) {
+        console.error(
+          "Failed to save client group before opening entities table:",
+          error
+        );
+        // Don't proceed to entities table if save failed
+      }
+    } else {
+      // No changes to save, close this modal and open entities table directly
+      onClose();
+      if (onAddEntities && editingClientGroup) {
+        onAddEntities(editingClientGroup);
+      }
+    }
+  }, [
+    isDirty,
+    name,
+    jsonError,
+    preferences,
+    editingClientGroup,
+    mutation,
+    onClose,
+    onAddEntities,
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
 
-    // Validate name
     if (!name.trim()) {
-      newErrors.name = "Name is required";
-    } else {
-      // Check for duplicate names (case-insensitive)
-      const trimmedName = name.trim();
-      const isDuplicate = allClientGroups?.some(
-        (group: any) =>
-          group.client_group_name.toLowerCase() === trimmedName.toLowerCase() &&
-          group.client_group_id !== editingClientGroup?.client_group_id
-      );
-
-      if (isDuplicate) {
-        newErrors.name =
-          "An organization with this name already exists. Please choose a different name.";
-      }
+      newErrors.name = "Client group name is required";
     }
 
-    // Validate JSON mode if applicable
-    let finalPreferences = dynamicFields;
-    if (preferencesMode === "json") {
-      if (jsonError) {
-        newErrors.json = "Please fix JSON syntax errors before submitting";
-      } else {
-        try {
-          finalPreferences = JSON.parse(jsonPreferences);
-        } catch {
-          newErrors.json = "Invalid JSON syntax";
-        }
-      }
+    if (jsonError) {
+      newErrors.json = jsonError;
     }
 
-    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-    if (Object.keys(newErrors).length > 0) return;
+    setErrors({});
 
-    // Prepare request data
-    const requestData: any = {
-      name: name.trim(),
-      preferences: finalPreferences,
+    // Basic form submission logic
+    const requestData: Partial<apiService.ClientGroup> = {
+      client_group_name: name.trim(),
+      preferences: preferences,
     };
 
     if (editingClientGroup?.client_group_id) {
-      // Include ID for updates
       requestData.client_group_id = editingClientGroup.client_group_id;
-    } else {
-      // Include user_id for new client groups
-      requestData.user_id = currentUser!.user_id;
     }
 
     mutation.mutate(requestData);
-  };
-
-  const handlePreferencesFieldChange = (key: string, value: any) => {
-    setDynamicFields((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-
-    // Update JSON representation
-    const updated = { ...dynamicFields, [key]: value };
-    setJsonPreferences(JSON.stringify(updated, null, 2));
-  };
-
-  const handleFieldKeyChange = (
-    oldKey: string,
-    newKey: string,
-    _stableKey: string
-  ) => {
-    if (newKey === oldKey) return;
-
-    const value = dynamicFields[oldKey];
-    const updated = { ...dynamicFields };
-    delete updated[oldKey];
-    if (newKey) {
-      updated[newKey] = value;
-    }
-    setDynamicFields(updated);
-    setJsonPreferences(JSON.stringify(updated, null, 2));
-  };
-
-  const handleJsonChange = (value: string) => {
-    setJsonPreferences(value);
-    try {
-      const parsed = JSON.parse(value);
-      setDynamicFields(parsed);
-      setJsonError("");
-    } catch (error) {
-      setJsonError("Invalid JSON syntax");
-    }
-  };
-
-  const addPreferenceField = () => {
-    const key = `setting_${Object.keys(dynamicFields).length + 1}`;
-    const stableKey = `field_${fieldKeys.length}`;
-    setFieldKeys((prev) => [...prev, stableKey]);
-    handlePreferencesFieldChange(key, "");
-  };
-
-  const removePreferenceField = (key: string, stableKey: string) => {
-    const updated = { ...dynamicFields };
-    delete updated[key];
-    setDynamicFields(updated);
-    setFieldKeys((prev) => prev.filter((k) => k !== stableKey));
-    setJsonPreferences(JSON.stringify(updated, null, 2));
-  };
-
-  const isCreate = !editingClientGroup?.client_group_id;
-
-  const handleAddEntities = async () => {
-    // First, save any pending changes (same logic as handleSubmit)
-    const newErrors: Record<string, string> = {};
-
-    if (!name.trim()) {
-      newErrors.name = "Client group name is required";
-    } else {
-      // Check for duplicate names (case-insensitive)
-      const trimmedName = name.trim();
-      const isDuplicate = allClientGroups?.some(
-        (group: any) =>
-          group.client_group_name.toLowerCase() === trimmedName.toLowerCase() &&
-          group.client_group_id !== editingClientGroup?.client_group_id
-      );
-
-      if (isDuplicate) {
-        newErrors.name =
-          "An organization with this name already exists. Please choose a different name.";
-      }
-    }
-
-    let finalPreferences = dynamicFields;
-    if (preferencesMode === "json") {
-      if (jsonError) {
-        newErrors.json = "Please fix JSON syntax errors before submitting";
-      } else {
-        try {
-          finalPreferences = JSON.parse(jsonPreferences);
-        } catch {
-          newErrors.json = "Invalid JSON syntax";
-        }
-      }
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) return; // Don't proceed if there are validation errors
-
-    // Prepare request data
-    const requestData: any = {
-      name: name.trim(),
-      preferences: finalPreferences,
-    };
-
-    if (editingClientGroup?.client_group_id) {
-      // Include ID for updates
-      requestData.client_group_id = editingClientGroup.client_group_id;
-    } else {
-      // Include user_id for new client groups
-      requestData.user_id = currentUser!.user_id;
-    }
-
-    try {
-      // Execute the same mutation logic as the form submission
-      const result = await mutation.mutateAsync(requestData);
-
-      // After successful save, notify parent with updated client group info
-      const updatedClientGroup = {
-        ...editingClientGroup,
-        ...requestData,
-        client_group_id: editingClientGroup?.client_group_id || result?.id,
-      };
-
-      if (onAddEntities) {
-        onAddEntities(updatedClientGroup);
-      }
-    } catch (error) {
-      console.error(
-        "❌ Failed to save client group before adding entities:",
-        error
-      );
-      // Don't proceed to entity editor if save failed
-    }
   };
 
   const containerSx = {
     width: "100%",
     maxWidth: "800px",
     margin: "0 auto",
-    height: "600px", // Fixed height for the form
+    height: "600px",
     display: "flex",
     flexDirection: "column",
-    position: "relative", // Enable absolute positioning for header/footer
   };
 
   return (
@@ -553,288 +363,259 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           setName(newName);
         }}
         onDirtyChange={() => setIsDirty(true)}
-        isNameEditDisabled={
-          mutation.isPending ||
-          makePrimaryMutation.isPending ||
-          deleteMutation.isPending
-        }
+        isNameEditDisabled={mutation.isPending || deleteMutation.isPending}
+        update_date={editingClientGroup?.update_date}
+        updated_by_user_name={editingClientGroup?.updated_by_user_name}
       />
 
-      {/* Scrollable Content */}
+      {/* Scrollable Body Content */}
       <Box
         sx={{
-          position: "absolute",
-          top: "80px", // Height of header
-          left: 0,
-          right: 0,
-          bottom: 0,
+          flex: 1,
           overflow: "auto",
           p: 3,
+          minHeight: 0, // Allow flex child to shrink
         }}
       >
-        {errors.general && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {errors.general}
-          </Alert>
-        )}
-
-        {mutation.isSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Client group {isCreate ? "created" : "updated"} successfully!
-          </Alert>
-        )}
-
-        {makePrimaryMutation.error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to make primary:{" "}
-            {makePrimaryMutation.error instanceof Error
-              ? makePrimaryMutation.error.message
-              : "Unknown error"}
-          </Alert>
-        )}
-
-        {makePrimaryMutation.isSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Client group set as primary successfully!
-          </Alert>
-        )}
-
         <Box component="form" onSubmit={handleSubmit}>
+          {/* Error Display */}
+          {errors.general && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {errors.general}
+            </Alert>
+          )}
+
           {/* Preferences Section */}
-          <Box sx={{ mb: 3 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 3, mb: 3, backgroundColor: "rgba(0, 0, 0, 0.02)" }}
+          >
+            {/* Header with title and mode toggle */}
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                mb: 2,
+                mb: 3,
               }}
             >
-              <Typography variant="h6">Preferences</Typography>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: "medium", color: "primary.main" }}
+              >
+                Preferences
+              </Typography>
+
               <FormJsonToggle
                 value={preferencesMode}
-                onChange={(_, newMode) => {
-                  if (newMode !== null) {
-                    setPreferencesMode(newMode);
-                  }
-                }}
-                disabled={mutation.isPending}
+                onChange={handleModeChange}
               />
             </Box>
 
-            {preferencesMode === "form" ? (
+            {/* Form fields mode */}
+            {preferencesMode === "form" && (
+              <Grid container spacing={3}>
+                {preferenceFields.map((field) => (
+                  <Grid size={{ xs: 12, sm: 6 }} key={field.key}>
+                    <TextField
+                      fullWidth
+                      label={field.label || field.key}
+                      value={
+                        (typeof preferences === "object" && preferences !== null
+                          ? (preferences as Record<string, unknown>)[field.key]
+                          : undefined) || ""
+                      }
+                      onChange={(e) =>
+                        handlePreferenceChange(field.key, e.target.value)
+                      }
+                      type={field.type === "number" ? "number" : "text"}
+                      helperText={
+                        field.isCustom ? "Custom preference" : field.description
+                      }
+                      color={field.isCustom ? "warning" : "primary"}
+                      variant={field.isCustom ? "outlined" : "outlined"}
+                    />
+                  </Grid>
+                ))}
+                {preferenceFields.length === 0 && (
+                  <Grid size={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      No preferences set. Add preferences by switching to JSON
+                      mode or by adding them programmatically.
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+
+            {/* JSON mode */}
+            {preferencesMode === "json" && (
               <Box>
-                {Object.entries(dynamicFields).map(([key, value], index) => {
-                  const stableKey = fieldKeys[index] || `field_${index}`;
-                  return (
-                    <Box
-                      key={stableKey}
-                      sx={{ display: "flex", gap: 1, mb: 2 }}
-                    >
-                      <TextField
-                        label="Setting Name"
-                        value={key}
-                        onChange={(e) => {
-                          handleFieldKeyChange(key, e.target.value, stableKey);
-                        }}
-                        size="small"
-                        sx={{ flex: 1 }}
-                      />
-                      <TextField
-                        label="Value"
-                        value={value}
-                        onChange={(e) =>
-                          handlePreferencesFieldChange(key, e.target.value)
-                        }
-                        size="small"
-                        sx={{ flex: 2 }}
-                      />
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => removePreferenceField(key, stableKey)}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
-                  );
-                })}
                 <Box
-                  sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
                 >
-                  <Button variant="outlined" onClick={addPreferenceField}>
-                    Add Preference
+                  <Typography variant="body2" color="text.secondary">
+                    Edit preferences as JSON (Advanced)
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={formatJson}
+                    disabled={
+                      !jsonPreferences.trim() ||
+                      isJsonFormatted() ||
+                      !!jsonError
+                    }
+                    sx={{ textTransform: "none" }}
+                  >
+                    Format JSON
                   </Button>
                 </Box>
-              </Box>
-            ) : (
-              <Box>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={8}
-                  value={jsonPreferences}
-                  onChange={(e) => handleJsonChange(e.target.value)}
-                  error={!!jsonError}
-                  helperText={jsonError}
-                  placeholder="Enter JSON preferences..."
+
+                {jsonError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {jsonError}
+                  </Alert>
+                )}
+
+                <Box
                   sx={{
-                    "& .MuiInputBase-input": {
-                      fontFamily: "monospace",
-                      fontSize: "0.875rem",
-                    },
+                    border: jsonError ? "2px solid #f44336" : "1px solid #ccc",
+                    borderRadius: 1,
+                    overflow: "hidden",
                   }}
-                />
+                >
+                  <AceEditor
+                    mode="json"
+                    theme="github"
+                    value={jsonPreferences}
+                    onChange={handleJsonChange}
+                    name="json-preferences-editor"
+                    width="100%"
+                    height="300px"
+                    fontSize={14}
+                    showPrintMargin={false}
+                    showGutter={true}
+                    highlightActiveLine={true}
+                    setOptions={{
+                      enableBasicAutocompletion: false,
+                      enableLiveAutocompletion: false,
+                      enableSnippets: false,
+                      showLineNumbers: true,
+                      tabSize: 2,
+                      useWorker: false,
+                    }}
+                  />
+                </Box>
+
                 {errors.json && (
-                  <Typography color="error" variant="caption" sx={{ mt: 1 }}>
+                  <Alert severity="error" sx={{ mt: 2 }}>
                     {errors.json}
-                  </Typography>
+                  </Alert>
                 )}
               </Box>
             )}
+          </Paper>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Membership
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Membership goes Here
+            </Typography>
           </Box>
 
-          {/* Membership - only for existing groups */}
-          {!isCreate && allUsersData && (
-            <TransferList
-              title="Membership"
-              leftTitle="Available Users"
-              rightTitle="Group Members"
-              availableItems={allUsersData.map((user: any) => ({
-                id: user.user_id,
-                label: user.email,
-              }))}
-              selectedItems={selectedUsers}
-              onSelectionChange={setSelectedUsers}
-              disabled={mutation.isPending}
-            />
-          )}
-
-          {/* Entity management - only for existing groups */}
+          {/* Entity Selection - only show for existing client groups */}
           {!isCreate && (
-            <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
-              <Typography variant="body1" color="text.secondary">
-                {editingClientGroup.client_group_name} contains{" "}
-                {currentGroupEntityCount || 0} entities.
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Entity Selection
               </Typography>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleAddEntities}
-                sx={{
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Change {editingClientGroup.client_group_name} Entities
-              </Button>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography variant="body1" color="text.secondary">
+                  Client Group currently contains {entityCount} entities.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleOpenEntitiesTable}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Add/Remove Entities
+                </Button>
+              </Box>
             </Box>
           )}
-
-          {/* Audit Trail */}
-          <AuditTrail
-            updateDate={editingClientGroup.update_date}
-            updatedUserId={editingClientGroup.updated_user_id}
-          />
         </Box>
+      </Box>
 
-        {/* Fixed Footer with Action Buttons */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
-            p: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            backgroundColor: "background.paper",
-            flexShrink: 0,
-          }}
-        >
-          {/* Delete Button - only show for existing groups */}
-          {!isCreate && (
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Are you sure you want to delete "${editingClientGroup.client_group_name}"? This action cannot be undone.`
-                  )
-                ) {
-                  deleteMutation.mutate();
-                }
-              }}
-              disabled={
-                mutation.isPending ||
-                makePrimaryMutation.isPending ||
-                deleteMutation.isPending
-              }
-            >
-              {deleteMutation.isPending ? (
-                <CircularProgress size={20} />
-              ) : (
-                "DELETE"
-              )}
-            </Button>
-          )}
-
+      {/* Fixed Footer with Action Buttons */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 2,
+          p: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "background.paper",
+          flexShrink: 0,
+        }}
+      >
+        {/* Delete Button - only show for existing groups */}
+        {!isCreate && (
           <Button
             variant="outlined"
-            onClick={onClose}
-            disabled={
-              mutation.isPending ||
-              makePrimaryMutation.isPending ||
-              deleteMutation.isPending
-            }
+            color="error"
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to delete "${editingClientGroup.client_group_name}"? This action cannot be undone.`
+                )
+              ) {
+                deleteMutation.mutate();
+              }
+            }}
+            disabled={mutation.isPending || deleteMutation.isPending}
           >
-            Cancel
-          </Button>
-
-          {/* Make Primary Button - only show for existing groups that aren't already primary */}
-          {!isCreate &&
-            currentUser?.primary_client_group_id !==
-              editingClientGroup.client_group_id && (
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => makePrimaryMutation.mutate()}
-                disabled={
-                  mutation.isPending ||
-                  makePrimaryMutation.isPending ||
-                  deleteMutation.isPending
-                }
-              >
-                {makePrimaryMutation.isPending ? (
-                  <CircularProgress size={20} />
-                ) : (
-                  "Make Primary"
-                )}
-              </Button>
-            )}
-
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={
-              mutation.isPending ||
-              makePrimaryMutation.isPending ||
-              deleteMutation.isPending ||
-              !!jsonError ||
-              (!isCreate && !isDirty) // Disable if editing existing group and not dirty
-            }
-          >
-            {mutation.isPending ? (
+            {deleteMutation.isPending ? (
               <CircularProgress size={20} />
-            ) : isCreate ? (
-              "Create Client Group"
             ) : (
-              `Update ${editingClientGroup.client_group_name}`
+              "DELETE"
             )}
           </Button>
-        </Box>
+        )}
+
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          disabled={mutation.isPending || deleteMutation.isPending}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={mutation.isPending || deleteMutation.isPending}
+        >
+          {mutation.isPending ? (
+            <CircularProgress size={20} />
+          ) : isCreate ? (
+            "Create Client Group"
+          ) : (
+            `Update ${editingClientGroup.client_group_name}`
+          )}
+        </Button>
       </Box>
     </Paper>
   );

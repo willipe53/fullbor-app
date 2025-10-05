@@ -234,10 +234,6 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
     entity_type_name_filter = query_parameters.get('entity_type_name')
     client_group_name_filter = query_parameters.get('client_group_name')
     count_only = query_parameters.get('count', 'false').lower() == 'true'
-    # Only apply limit/offset if explicitly provided
-    limit = int(query_parameters.get('limit')
-                ) if query_parameters.get('limit') else None
-    offset = int(query_parameters.get('offset', 0))
 
     # Build base query using only entities the current user has access to
     base_query = """
@@ -281,11 +277,6 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
         ORDER BY e.name
     """
 
-    # Add LIMIT and OFFSET only if limit is specified
-    if limit is not None:
-        query += " LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-
     with connection.cursor() as cursor:
         cursor.execute(query, params)
         results = cursor.fetchall()
@@ -306,23 +297,6 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                 "updated_by_user_name": updated_by_user_name
             })
 
-        # Return format depends on whether pagination was applied
-        if limit is not None:
-            # Get total count for pagination
-            count_query = f"SELECT COUNT(*) as count {base_query}"
-            # Exclude limit and offset from count query
-            cursor.execute(count_query, params[:-2])
-            count_result = cursor.fetchone()
-            total_count = count_result[0]
-
-            return {
-                "data": data,
-                "count": total_count,
-                "limit": limit,
-                "offset": offset
-            }
-        else:
-            # No pagination - return simple array
             return data
 
 

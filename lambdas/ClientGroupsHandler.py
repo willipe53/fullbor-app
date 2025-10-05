@@ -17,7 +17,8 @@ def validate_client_group_deletion(connection, client_group_id):
                 "SELECT COUNT(*) FROM users WHERE primary_client_group_id = %s",
                 (client_group_id,)
             )
-            primary_count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            primary_count = result[0] if result else 0
 
             error_messages = []
             if primary_count > 0:
@@ -314,8 +315,6 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
 
     # Get query parameters
     count_only = query_parameters.get('count', 'false').lower() == 'true'
-    limit = int(query_parameters.get('limit', 100))
-    offset = int(query_parameters.get('offset', 0))
 
     with connection.cursor() as cursor:
         if count_only:
@@ -326,7 +325,8 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
                 INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
                 WHERE cge.client_group_id = %s
             """, (client_group_id,))
-            count = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            count = result[0] if result else 0
             return {"count": count}
         else:
             # Return entities with pagination
@@ -338,8 +338,7 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
                 INNER JOIN entity_types et ON e.entity_type_id = et.entity_type_id
                 WHERE cge.client_group_id = %s
                 ORDER BY e.name
-                LIMIT %s OFFSET %s
-            """, (client_group_id, limit, offset))
+            """, (client_group_id))
             entities = cursor.fetchall()
 
             # Get total count
@@ -349,7 +348,8 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
                 INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
                 WHERE cge.client_group_id = %s
             """, (client_group_id,))
-            total_count = cursor.fetchone()[0]
+            count_result = cursor.fetchone()
+            total_count = count_result[0] if count_result else 0
 
             # Format entities
             entity_list = []
@@ -367,9 +367,7 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
 
             return {
                 "data": entity_list,
-                "count": total_count,
-                "limit": limit,
-                "offset": offset
+                "count": total_count
             }
 
 
@@ -378,8 +376,6 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
     # Apply query filters
     entity_name_filter = query_parameters.get('entity_name')
     count_only = query_parameters.get('count', 'false').lower() == 'true'
-    limit = int(query_parameters.get('limit', 100))
-    offset = int(query_parameters.get('offset', 0))
 
     # Build base query
     if user_client_groups:
@@ -394,9 +390,7 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
             return {"count": 0}
         return {
             "data": [],
-            "count": 0,
-            "limit": limit,
-            "offset": offset
+            "count": 0
         }
 
     # Add entity filter
@@ -416,9 +410,7 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
                 return {"count": 0}
             return {
                 "data": [],
-                "count": 0,
-                "limit": limit,
-                "offset": offset
+                "count": 0
             }
 
     if count_only:
@@ -427,16 +419,14 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
         with connection.cursor() as cursor:
             cursor.execute(count_query, params)
             result = cursor.fetchone()
-            return {"count": result[0]}
+            return {"count": result[0] if result else 0}
 
     # Get client groups with pagination
     query = f"""
         SELECT DISTINCT cg.client_group_id, cg.name, cg.preferences, cg.update_date, cg.updated_user_id
         {base_query}
         ORDER BY cg.name
-        LIMIT %s OFFSET %s
     """
-    params.extend([limit, offset])
 
     with connection.cursor() as cursor:
         cursor.execute(query, params)
@@ -444,10 +434,9 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
 
         # Get total count for pagination
         count_query = f"SELECT COUNT(*) as count {base_query}"
-        # Exclude limit and offset from count query
-        cursor.execute(count_query, params[:-2])
+        cursor.execute(count_query, params)
         count_result = cursor.fetchone()
-        total_count = count_result[0]
+        total_count = count_result[0] if count_result else 0
 
         data = []
         for result in results:
@@ -466,10 +455,7 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
 
         return {
             "data": data,
-            "count": total_count,
-            "limit": limit,
-            "offset": offset
-        }
+            "count": total_count}
 
 
 def handle_post_operations(connection, path, path_parameters, body, current_user_id, current_user_id_db, user_client_groups):

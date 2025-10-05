@@ -92,23 +92,70 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     },
   });
 
-  // Fetch current group entities (only in group selection mode)
-  const { data: groupEntityIds } = useQuery({
-    queryKey: ["client-group-entities", groupSelectionMode?.clientGroupId],
+  // Fetch entity count for the title (only in group selection mode)
+  const { data: entityCount } = useQuery({
+    queryKey: [
+      "client-group-entity-count",
+      groupSelectionMode?.clientGroupName,
+    ],
     queryFn: () =>
-      apiService.queryClientGroupEntities({
-        client_group_id: groupSelectionMode!.clientGroupId,
-        user_id: currentUserData!.user_id,
-      }),
-    enabled: !!groupSelectionMode?.clientGroupId && !!currentUserData,
+      apiService.getClientGroupEntityCount(groupSelectionMode!.clientGroupName),
+    enabled: !!groupSelectionMode?.clientGroupName,
+  });
+
+  // Fetch entity IDs that belong to this client group (for checkbox selection)
+  const {
+    data: groupEntityIds,
+    isLoading: isLoadingGroupEntities,
+    error: groupEntitiesError,
+  } = useQuery({
+    queryKey: ["client-group-entity-ids", groupSelectionMode?.clientGroupName],
+    queryFn: async () => {
+      console.log(
+        "🔍 Fetching group entity IDs for client_group_name:",
+        groupSelectionMode!.clientGroupName
+      );
+      try {
+        const result = await apiService.getClientGroupEntityIds(
+          groupSelectionMode!.clientGroupName
+        );
+        console.log("🔍 getClientGroupEntityIds returned:", result);
+        return result;
+      } catch (error) {
+        console.error("🔍 Error in getClientGroupEntityIds:", error);
+        throw error;
+      }
+    },
+    enabled: !!groupSelectionMode?.clientGroupName,
   });
 
   // Update current group entity IDs when data changes
   React.useEffect(() => {
+    console.log("🔍 EntitiesTable useEffect - groupEntityIds:", groupEntityIds);
+    console.log(
+      "🔍 EntitiesTable useEffect - groupEntityIds type:",
+      typeof groupEntityIds
+    );
+    console.log(
+      "🔍 EntitiesTable useEffect - groupEntityIds isArray:",
+      Array.isArray(groupEntityIds)
+    );
+    console.log(
+      "🔍 EntitiesTable useEffect - groupSelectionMode:",
+      groupSelectionMode
+    );
     if (groupEntityIds && groupSelectionMode) {
-      const newSet = new Set(groupEntityIds);
+      const newSet = new Set<number>(groupEntityIds);
+      console.log("🔍 Setting selectedEntityIds to:", Array.from(newSet));
       setCurrentGroupEntityIds(newSet);
-      setSelectedEntityIds(new Set(newSet)); // Initialize selection with current group entities
+      setSelectedEntityIds(new Set<number>(newSet)); // Initialize selection with current group entities
+    } else {
+      console.log(
+        "🔍 Not setting selectedEntityIds - groupEntityIds:",
+        groupEntityIds,
+        "groupSelectionMode:",
+        groupSelectionMode
+      );
     }
   }, [groupEntityIds, groupSelectionMode]);
 
@@ -141,7 +188,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       });
     }
 
-    // Handle paginated response format: { data: Entity[], count: number, limit: number, offset: number }
     if (
       rawEntitiesData &&
       typeof rawEntitiesData === "object" &&
@@ -173,7 +219,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const entityTypesData = React.useMemo(() => {
     if (!rawEntityTypesData) return [];
 
-    // Handle paginated response format: { data: EntityType[], count: number, limit: number, offset: number }
     if (
       rawEntityTypesData &&
       typeof rawEntityTypesData === "object" &&
@@ -341,13 +386,19 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
                   />
                 );
               },
-              renderCell: (params: GridRenderCellParams) => (
-                <Checkbox
-                  checked={selectedEntityIds.has(params.row.entity_id)}
-                  onChange={() => handleEntityToggle(params.row.entity_id)}
-                  size="small"
-                />
-              ),
+              renderCell: (params: GridRenderCellParams) => {
+                const isSelected = selectedEntityIds.has(params.row.entity_id);
+                console.log(
+                  `🔍 Checkbox for entity ${params.row.entity_id}: isSelected=${isSelected}`
+                );
+                return (
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={() => handleEntityToggle(params.row.entity_id)}
+                    size="small"
+                  />
+                );
+              },
             },
           ]
         : []),
@@ -442,6 +493,30 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       </Box>
     );
   }
+
+  // Debug info for group entities loading
+  console.log("🔍 Query enabled:", !!groupSelectionMode?.clientGroupName);
+  console.log("🔍 groupSelectionMode:", groupSelectionMode);
+
+  if (groupSelectionMode && isLoadingGroupEntities) {
+    console.log("🔍 Loading group entities...");
+  }
+
+  if (groupSelectionMode && groupEntitiesError) {
+    console.log("🔍 Error loading group entities:", groupEntitiesError);
+  }
+
+  // Debug current selection state
+  console.log("🔍 Current selectedEntityIds:", Array.from(selectedEntityIds));
+  console.log("🔍 Current selectedEntityIds size:", selectedEntityIds.size);
+  console.log(
+    "🔍 Current filteredEntitiesData:",
+    filteredEntitiesData?.map((e) => e.entity_id)
+  );
+  console.log(
+    "🔍 Current filteredEntitiesData length:",
+    filteredEntitiesData?.length
+  );
 
   if (error) {
     return (

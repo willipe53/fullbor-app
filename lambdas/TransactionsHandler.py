@@ -344,8 +344,6 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
     transaction_type_name_filter = query_parameters.get(
         'transaction_type_name')
     count_only = query_parameters.get('count', 'false').lower() == 'true'
-    limit = int(query_parameters.get('limit', 100))
-    offset = int(query_parameters.get('offset', 0))
 
     # Build base query
     base_query = """
@@ -387,7 +385,7 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
         with connection.cursor() as cursor:
             cursor.execute(count_query, params)
             result = cursor.fetchone()
-            return {"count": result[0]}
+            return {"count": result[0] if result else 0}
 
     # Get transactions with pagination
     query = f"""
@@ -397,9 +395,7 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
                ts.name as transaction_status_name, tt.name as transaction_type_name
         {base_query}
         ORDER BY t.transaction_id DESC
-        LIMIT %s OFFSET %s
     """
-    params.extend([limit, offset])
 
     with connection.cursor() as cursor:
         cursor.execute(query, params)
@@ -407,10 +403,9 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
 
         # Get total count for pagination
         count_query = f"SELECT COUNT(*) as count {base_query}"
-        cursor.execute(count_query, valid_portfolio_entity_ids +
-                       params[len(valid_portfolio_entity_ids):-2])
+        cursor.execute(count_query, params)
         count_result = cursor.fetchone()
-        total_count = count_result[0]
+        total_count = count_result[0] if count_result else 0
 
         data = []
         for result in results:
@@ -433,9 +428,7 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
 
         return {
             "data": data,
-            "count": total_count,
-            "limit": limit,
-            "offset": offset
+            "count": total_count
         }
 
 

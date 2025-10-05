@@ -4,6 +4,9 @@ import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import CancelIcon from "@mui/icons-material/Cancel";
+import { useQuery } from "@tanstack/react-query";
+import * as apiService from "../services/api";
+import { formatDatabaseTimestamp } from "../utils";
 
 export interface FormHeaderProps {
   // Common props
@@ -29,6 +32,11 @@ export interface FormHeaderProps {
 
   // Optional additional content
   additionalContent?: React.ReactNode;
+
+  // Audit trail props
+  update_date?: string; // ISO datetime string from database
+  updated_user_id?: number; // Database user_id who made the update
+  updated_by_user_name?: string; // User name/email who made the update (alternative to user_id)
 }
 
 const FormHeader: React.FC<FormHeaderProps> = ({
@@ -46,11 +54,27 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   isEmailEditDisabled = false,
   editable = true,
   additionalContent,
+  update_date,
+  updated_user_id,
+  updated_by_user_name,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [tempName, setTempName] = useState(name || "");
   const [tempEmail, setTempEmail] = useState(email || "");
+
+  // Query to get user information for audit trail (only if we have user_id but not user_name)
+  const { data: updatedUserData } = useQuery({
+    queryKey: ["user", updated_user_id],
+    queryFn: () => apiService.queryUsers({ user_id: updated_user_id! }),
+    enabled: !!updated_user_id && !updated_by_user_name,
+  });
+
+  const updatedUser =
+    updatedUserData && updatedUserData.length > 0 ? updatedUserData[0] : null;
+
+  // Determine the display name for audit trail
+  const auditTrailUserName = updated_by_user_name || updatedUser?.email;
 
   const handleNameEditStart = () => {
     setTempName(name || "");
@@ -120,176 +144,193 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   return (
     <Box
       sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        p: 2,
         borderBottom: "1px solid",
         borderColor: "divider",
         backgroundColor: "background.paper",
         zIndex: 1,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
-        <Typography variant="h5" component="h2">
-          {isEditing ? (
-            <>
-              Edit {title}
-              {displayValue && (
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    ml: 2,
-                    gap: 1,
-                  }}
-                >
-                  {isUserForm && isEditingEmail ? (
-                    <TextField
-                      value={tempEmail}
-                      onChange={(e) => {
-                        setTempEmail(e.target.value);
-                        if (onDirtyChange && e.target.value !== email) {
-                          onDirtyChange();
-                        }
-                      }}
-                      onKeyDown={(e) => handleKeyPress(e, "email")}
-                      size="small"
-                      variant="standard"
-                      disabled={isEmailEditDisabled}
-                      autoFocus
-                      sx={{
-                        minWidth: 200,
-                        "& .MuiInputBase-input": {
-                          fontSize: "1.25rem",
-                          fontWeight: 600,
-                        },
-                      }}
-                      InputProps={{
-                        endAdornment: (
-                          <Box sx={{ display: "flex", gap: 0.5 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+          <Typography variant="h5" component="h2">
+            {isEditing ? (
+              <>
+                Edit {title}
+                {displayValue && (
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      ml: 2,
+                      gap: 1,
+                    }}
+                  >
+                    {isUserForm && isEditingEmail ? (
+                      <TextField
+                        value={tempEmail}
+                        onChange={(e) => {
+                          setTempEmail(e.target.value);
+                          if (onDirtyChange && e.target.value !== email) {
+                            onDirtyChange();
+                          }
+                        }}
+                        onKeyDown={(e) => handleKeyPress(e, "email")}
+                        size="small"
+                        variant="standard"
+                        disabled={isEmailEditDisabled}
+                        autoFocus
+                        sx={{
+                          minWidth: 200,
+                          "& .MuiInputBase-input": {
+                            fontSize: "1.25rem",
+                            fontWeight: 600,
+                          },
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <Box sx={{ display: "flex", gap: 0.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={handleEmailEditSave}
+                                disabled={
+                                  isEmailEditDisabled || !tempEmail.trim()
+                                }
+                              >
+                                <CheckIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={handleEmailEditCancel}
+                                disabled={isEmailEditDisabled}
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ),
+                        }}
+                      />
+                    ) : !isUserForm && isEditingName ? (
+                      <TextField
+                        value={tempName}
+                        onChange={(e) => {
+                          setTempName(e.target.value);
+                          if (onDirtyChange && e.target.value !== name) {
+                            onDirtyChange();
+                          }
+                        }}
+                        onKeyDown={(e) => handleKeyPress(e, "name")}
+                        size="small"
+                        variant="standard"
+                        disabled={isNameEditDisabled}
+                        autoFocus
+                        sx={{
+                          minWidth: 200,
+                          "& .MuiInputBase-input": {
+                            fontSize: "1.25rem",
+                            fontWeight: 600,
+                          },
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <Box sx={{ display: "flex", gap: 0.5 }}>
+                              <IconButton
+                                size="small"
+                                onClick={handleNameEditSave}
+                                disabled={
+                                  isNameEditDisabled || !tempName.trim()
+                                }
+                              >
+                                <CheckIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={handleNameEditCancel}
+                                disabled={isNameEditDisabled}
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ),
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <Typography
+                          component="span"
+                          variant="h5"
+                          sx={{ fontWeight: 600, color: "text.primary" }}
+                        >
+                          {displayValue || `New ${title}`}
+                        </Typography>
+                        {displayValue &&
+                          !isUserForm &&
+                          !isEditingName &&
+                          editable && (
                             <IconButton
                               size="small"
-                              onClick={handleEmailEditSave}
-                              disabled={
-                                isEmailEditDisabled || !tempEmail.trim()
-                              }
-                            >
-                              <CheckIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={handleEmailEditCancel}
-                              disabled={isEmailEditDisabled}
-                            >
-                              <CancelIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        ),
-                      }}
-                    />
-                  ) : !isUserForm && isEditingName ? (
-                    <TextField
-                      value={tempName}
-                      onChange={(e) => {
-                        setTempName(e.target.value);
-                        if (onDirtyChange && e.target.value !== name) {
-                          onDirtyChange();
-                        }
-                      }}
-                      onKeyDown={(e) => handleKeyPress(e, "name")}
-                      size="small"
-                      variant="standard"
-                      disabled={isNameEditDisabled}
-                      autoFocus
-                      sx={{
-                        minWidth: 200,
-                        "& .MuiInputBase-input": {
-                          fontSize: "1.25rem",
-                          fontWeight: 600,
-                        },
-                      }}
-                      InputProps={{
-                        endAdornment: (
-                          <Box sx={{ display: "flex", gap: 0.5 }}>
-                            <IconButton
-                              size="small"
-                              onClick={handleNameEditSave}
-                              disabled={isNameEditDisabled || !tempName.trim()}
-                            >
-                              <CheckIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={handleNameEditCancel}
+                              onClick={handleNameEditStart}
                               disabled={isNameEditDisabled}
+                              sx={{ ml: 1 }}
                             >
-                              <CancelIcon fontSize="small" />
+                              <EditIcon fontSize="small" />
                             </IconButton>
-                          </Box>
-                        ),
-                      }}
-                    />
-                  ) : (
-                    <>
-                      <Typography
-                        component="span"
-                        variant="h5"
-                        sx={{ fontWeight: 600, color: "text.primary" }}
-                      >
-                        {displayValue || `New ${title}`}
-                      </Typography>
-                      {displayValue &&
-                        !isUserForm &&
-                        !isEditingName &&
-                        editable && (
-                          <IconButton
-                            size="small"
-                            onClick={handleNameEditStart}
-                            disabled={isNameEditDisabled}
-                            sx={{ ml: 1 }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      {displayValue &&
-                        isUserForm &&
-                        !isEditingEmail &&
-                        editable && (
-                          <IconButton
-                            size="small"
-                            onClick={handleEmailEditStart}
-                            disabled={isEmailEditDisabled}
-                            sx={{ ml: 1 }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                    </>
-                  )}
-                </Box>
-              )}
-            </>
-          ) : (
-            `New ${title}`
+                          )}
+                        {displayValue &&
+                          isUserForm &&
+                          !isEditingEmail &&
+                          editable && (
+                            <IconButton
+                              size="small"
+                              onClick={handleEmailEditStart}
+                              disabled={isEmailEditDisabled}
+                              sx={{ ml: 1 }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                      </>
+                    )}
+                  </Box>
+                )}
+              </>
+            ) : (
+              `New ${title}`
+            )}
+          </Typography>
+
+          {isEditing && secondaryValue && (
+            <Chip
+              label={`${isUserForm ? "Sub" : "ID"}: ${secondaryValue}`}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
           )}
-        </Typography>
 
-        {isEditing && secondaryValue && (
-          <Chip
-            label={`${isUserForm ? "Sub" : "ID"}: ${secondaryValue}`}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        )}
+          {additionalContent}
+        </Box>
 
-        {additionalContent}
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
       </Box>
 
-      <IconButton onClick={onClose} size="small">
-        <CloseIcon />
-      </IconButton>
+      {/* Audit Trail */}
+      {update_date && auditTrailUserName && (
+        <Box sx={{ px: 2, pb: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            Last updated by {auditTrailUserName} on{" "}
+            {formatDatabaseTimestamp(update_date)}.
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -187,16 +187,12 @@ export interface QueryEntitiesRequest {
   client_group_name?: string;
   client_group_id?: number;
   count?: boolean;
-  limit?: number;
-  offset?: number;
 }
 
 export type QueryEntitiesResponse =
   | {
       data: Entity[];
       count: number;
-      limit: number;
-      offset: number;
     }
   | { count: number }
   | Entity[]; // Simple array when no pagination parameters are provided
@@ -211,8 +207,6 @@ export type QueryEntityTypesResponse =
   | {
       data: EntityType[];
       count: number;
-      limit: number;
-      offset: number;
     }
   | { count: number };
 
@@ -326,8 +320,6 @@ export interface QueryUsersRequest {
   email?: string;
   client_group_name?: string;
   count?: boolean;
-  limit?: number;
-  offset?: number;
 }
 
 export type QueryUsersResponse = User[] | { count: number };
@@ -352,16 +344,12 @@ export interface QueryClientGroupsRequest {
   entity_name?: string;
   email?: string;
   count?: boolean;
-  limit?: number;
-  offset?: number;
 }
 
 export type QueryClientGroupsResponse =
   | {
       data: ClientGroup[];
       count: number;
-      limit: number;
-      offset: number;
     }
   | { count: number };
 
@@ -378,8 +366,6 @@ export const queryUsers = async (
   if (data.email) cleanParams.email = data.email;
   if (data.client_group_name)
     cleanParams.client_group_name = data.client_group_name;
-  if (data.limit) cleanParams.limit = String(data.limit);
-  if (data.offset) cleanParams.offset = String(data.offset);
 
   console.log("🔍 API - queryUsers cleanParams:", cleanParams);
 
@@ -565,6 +551,57 @@ export const queryClientGroupEntities = async (
     }
   );
   return result.map((entity: Entity) => entity.entity_id || 0);
+};
+
+// Get count of entities in a client group
+export const getClientGroupEntityCount = async (
+  clientGroupName: string
+): Promise<number> => {
+  console.log(
+    "🔍 API: Getting entity count for client group:",
+    clientGroupName
+  );
+  const result = await apiCall<{ count: number }>(
+    `/client-groups/${clientGroupName}/entities`,
+    {
+      method: "GET",
+      searchParams: {
+        count: "true",
+      },
+    }
+  );
+  console.log("🔍 API: Count result:", result);
+  return result.count;
+};
+
+// Get entity IDs that belong to a client group (for checkbox selection)
+export const getClientGroupEntityIds = async (
+  clientGroupName: string
+): Promise<number[]> => {
+  console.log("🔍 API: Getting entity IDs for client group:", clientGroupName);
+  const result = await apiCall<Entity[] | { data: Entity[]; count: number }>(
+    `/client-groups/${clientGroupName}/entities`,
+    {
+      method: "GET",
+    }
+  );
+  console.log("🔍 API: Group entities result:", result);
+
+  // Handle different response formats
+  let entities: Entity[] = [];
+
+  if (Array.isArray(result)) {
+    // Direct array response
+    entities = result;
+  } else if (result && typeof result === "object" && "data" in result) {
+    entities = result.data;
+  }
+
+  const entityIds = entities.map((entity: Entity) => entity.entity_id || 0);
+  console.log("🔍 API: Mapped entity IDs:", entityIds);
+  console.log("🔍 API: Total entities in group:", entityIds.length);
+
+  return entityIds;
 };
 
 export const modifyClientGroupEntities = async (
@@ -833,16 +870,12 @@ export interface QueryTransactionsRequest {
   transaction_status_name?: string;
   transaction_type_name?: string;
   count?: boolean;
-  limit?: number;
-  offset?: number;
 }
 
 export type QueryTransactionsResponse =
   | {
       data: Transaction[];
       count: number;
-      limit: number;
-      offset: number;
     }
   | { count: number };
 
@@ -991,6 +1024,8 @@ export const apiService = {
   setClientGroupUsers,
   setClientGroupEntities,
   queryClientGroupEntities,
+  getClientGroupEntityCount,
+  getClientGroupEntityIds,
   modifyClientGroupEntities,
 
   // Entities
