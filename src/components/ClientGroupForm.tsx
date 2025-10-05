@@ -355,7 +355,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       {/* Fixed Header */}
       <FormHeader
         title="Client Group"
-        isEditing={!isCreate}
+        isEditing={true}
         name={editingClientGroup?.client_group_name}
         id={editingClientGroup?.client_group_id}
         onClose={onClose}

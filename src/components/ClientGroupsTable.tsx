@@ -273,9 +273,19 @@ const ClientGroupsTable: React.FC = () => {
   const handleEntityEditorFinish = (selectedEntityIds: number[]) => {
     console.log("📝 Entity editor finished with entities:", selectedEntityIds);
 
-    // Invalidate client groups and entity counts cache to refresh the table
+    // Invalidate all related caches to refresh the table
     queryClient.invalidateQueries({ queryKey: ["client-groups"] });
-    queryClient.invalidateQueries({ queryKey: ["entity-counts"] });
+    queryClient.invalidateQueries({ queryKey: ["entity-counts", currentUser?.user_id] });
+    
+    // Also invalidate the specific client group entity queries
+    if (entityEditorClientGroup) {
+      queryClient.invalidateQueries({ 
+        queryKey: ["client-group-entity-ids", entityEditorClientGroup.client_group_name] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["client-group-entities", entityEditorClientGroup.client_group_name] 
+      });
+    }
 
     setShowEntityEditor(false);
     setEntityEditorClientGroup(null);

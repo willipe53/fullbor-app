@@ -42,9 +42,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const { userId: sub } = useAuth();
   const queryClient = useQueryClient();
 
-  const [filters, setFilters] = useState<
-    Partial<apiService.QueryEntitiesRequest>
-  >({});
   const [entityNameFilter, setEntityNameFilter] = useState("");
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
   const [editingEntity, setEditingEntity] = useState<apiService.Entity | null>(
@@ -57,107 +54,34 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const [selectedEntityIds, setSelectedEntityIds] = useState<Set<number>>(
     new Set()
   );
-  const [currentGroupEntityIds, setCurrentGroupEntityIds] = useState<
-    Set<number>
-  >(new Set());
 
-  // Fetch entities
+  // Step 3: Fetch all entities (ROWS dataset)
   const {
     data: rawEntitiesData,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["entities", filters],
-    queryFn: () => apiService.queryEntities(filters),
-    enabled: !!sub, // Only need sub for authentication
-  });
-
-  // Get current user's database ID (sub is Cognito UUID, we need database user_id)
-  const { data: currentUserData } = useQuery({
-    queryKey: ["current-user", sub],
-    queryFn: () => apiService.queryUsers({ sub: sub! }),
+    queryKey: ["entities"],
+    queryFn: () => apiService.queryEntities({}),
     enabled: !!sub,
-    select: (data) => {
-      if (Array.isArray(data)) {
-        return data.length > 0 ? data[0] : null;
-      }
-      if (data && typeof data === "object" && "data" in data) {
-        const paginatedData = data as { data: apiService.User[] };
-        return paginatedData.data && paginatedData.data.length > 0
-          ? paginatedData.data[0]
-          : null;
-      }
-      return null;
-    },
   });
 
-  // Fetch entity count for the title (only in group selection mode)
-  const { data: entityCount } = useQuery({
-    queryKey: [
-      "client-group-entity-count",
-      groupSelectionMode?.clientGroupName,
-    ],
-    queryFn: () =>
-      apiService.getClientGroupEntityCount(groupSelectionMode!.clientGroupName),
-    enabled: !!groupSelectionMode?.clientGroupName,
-  });
-
-  // Fetch entity IDs that belong to this client group (for checkbox selection)
-  const {
-    data: groupEntityIds,
-    isLoading: isLoadingGroupEntities,
-    error: groupEntitiesError,
-  } = useQuery({
+  // Step 4: Fetch selected entities for this client group (SELECTED dataset)
+  const { data: selectedEntityIdsFromAPI } = useQuery({
     queryKey: ["client-group-entity-ids", groupSelectionMode?.clientGroupName],
-    queryFn: async () => {
-      console.log(
-        "🔍 Fetching group entity IDs for client_group_name:",
-        groupSelectionMode!.clientGroupName
-      );
-      try {
-        const result = await apiService.getClientGroupEntityIds(
-          groupSelectionMode!.clientGroupName
-        );
-        console.log("🔍 getClientGroupEntityIds returned:", result);
-        return result;
-      } catch (error) {
-        console.error("🔍 Error in getClientGroupEntityIds:", error);
-        throw error;
-      }
-    },
+    queryFn: () =>
+      apiService.getClientGroupEntityIds(groupSelectionMode!.clientGroupName),
     enabled: !!groupSelectionMode?.clientGroupName,
   });
 
-  // Update current group entity IDs when data changes
+  // Step 5: Initialize selectedEntityIds when both datasets are loaded
   React.useEffect(() => {
-    console.log("🔍 EntitiesTable useEffect - groupEntityIds:", groupEntityIds);
-    console.log(
-      "🔍 EntitiesTable useEffect - groupEntityIds type:",
-      typeof groupEntityIds
-    );
-    console.log(
-      "🔍 EntitiesTable useEffect - groupEntityIds isArray:",
-      Array.isArray(groupEntityIds)
-    );
-    console.log(
-      "🔍 EntitiesTable useEffect - groupSelectionMode:",
-      groupSelectionMode
-    );
-    if (groupEntityIds && groupSelectionMode) {
-      const newSet = new Set<number>(groupEntityIds);
-      console.log("🔍 Setting selectedEntityIds to:", Array.from(newSet));
-      setCurrentGroupEntityIds(newSet);
-      setSelectedEntityIds(new Set<number>(newSet)); // Initialize selection with current group entities
-    } else {
-      console.log(
-        "🔍 Not setting selectedEntityIds - groupEntityIds:",
-        groupEntityIds,
-        "groupSelectionMode:",
-        groupSelectionMode
-      );
+    if (selectedEntityIdsFromAPI && groupSelectionMode) {
+      const selectedIds = new Set<number>(selectedEntityIdsFromAPI);
+      setSelectedEntityIds(selectedIds);
     }
-  }, [groupEntityIds, groupSelectionMode]);
+  }, [selectedEntityIdsFromAPI, groupSelectionMode]);
 
   // Transform API response data to array format
   const entitiesData = React.useMemo(() => {
@@ -254,15 +178,25 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     return [...new Set(names)].sort();
   }, [entitiesData]);
 
-  // Apply client-side filtering for entity name
+  // Apply client-side filtering for entity name and type
   const filteredEntitiesData = React.useMemo(() => {
     if (!entitiesData) return [];
-    if (!entityNameFilter) return entitiesData;
 
-    return entitiesData.filter((entity) =>
-      entity.entity_name.toLowerCase().includes(entityNameFilter.toLowerCase())
-    );
-  }, [entitiesData, entityNameFilter]);
+    return entitiesData.filter((entity) => {
+      // Filter by entity name
+      const nameMatch =
+        !entityNameFilter ||
+        entity.entity_name
+          .toLowerCase()
+          .includes(entityNameFilter.toLowerCase());
+
+      // Filter by entity type
+      const typeMatch =
+        !entityTypeFilter || entity.entity_type_name === entityTypeFilter;
+
+      return nameMatch && typeMatch;
+    });
+  }, [entitiesData, entityNameFilter, entityTypeFilter]);
 
   // Checkbox handlers for group selection mode
   const handleEntityToggle = React.useCallback(
@@ -388,9 +322,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
               },
               renderCell: (params: GridRenderCellParams) => {
                 const isSelected = selectedEntityIds.has(params.row.entity_id);
-                console.log(
-                  `🔍 Checkbox for entity ${params.row.entity_id}: isSelected=${isSelected}`
-                );
                 return (
                   <Checkbox
                     checked={isSelected}
@@ -494,30 +425,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     );
   }
 
-  // Debug info for group entities loading
-  console.log("🔍 Query enabled:", !!groupSelectionMode?.clientGroupName);
-  console.log("🔍 groupSelectionMode:", groupSelectionMode);
-
-  if (groupSelectionMode && isLoadingGroupEntities) {
-    console.log("🔍 Loading group entities...");
-  }
-
-  if (groupSelectionMode && groupEntitiesError) {
-    console.log("🔍 Error loading group entities:", groupEntitiesError);
-  }
-
-  // Debug current selection state
-  console.log("🔍 Current selectedEntityIds:", Array.from(selectedEntityIds));
-  console.log("🔍 Current selectedEntityIds size:", selectedEntityIds.size);
-  console.log(
-    "🔍 Current filteredEntitiesData:",
-    filteredEntitiesData?.map((e) => e.entity_id)
-  );
-  console.log(
-    "🔍 Current filteredEntitiesData length:",
-    filteredEntitiesData?.length
-  );
-
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
@@ -533,18 +440,6 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       </Box>
     );
   }
-
-  const handleFilter = () => {
-    const newFilters: Partial<apiService.QueryEntitiesRequest> = {};
-    if (entityTypeFilter) newFilters.entity_type_name = entityTypeFilter;
-    setFilters(newFilters);
-  };
-
-  const clearFilters = () => {
-    setFilters({});
-    setEntityNameFilter("");
-    setEntityTypeFilter("");
-  };
 
   const handleRowClick = (params: GridRowParams) => {
     setEditingEntity(params.row);
@@ -562,32 +457,25 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     // Get the complete desired state (all selected entity IDs)
     const desiredEntityIds = Array.from(selectedEntityIds);
 
-    console.log(
-      "🔄 Finishing entity group editing - desired entities:",
-      desiredEntityIds,
-      "current entities:",
-      Array.from(currentGroupEntityIds)
-    );
-
     try {
-      // Send the complete desired state to the backend
-      const result = await apiService.modifyClientGroupEntities({
-        client_group_id: groupSelectionMode.clientGroupId,
-        entity_ids: desiredEntityIds,
-        user_id: currentUserData!.user_id,
-      });
-
-      console.log("✅ Entity group modification successful:", result);
-      console.log(
-        `📊 Added ${result.added_count}, removed ${result.removed_count} entities`
+      // Step 7: Call PUT /client-groups/{client_group_name}/entities:set
+      const result = await apiService.setClientGroupEntities(
+        groupSelectionMode.clientGroupName,
+        { entity_ids: desiredEntityIds }
       );
 
       // Invalidate relevant caches to ensure UI reflects the changes
       queryClient.invalidateQueries({
-        queryKey: ["client-group-entities", groupSelectionMode.clientGroupId],
+        queryKey: ["client-group-entities", groupSelectionMode.clientGroupName],
       });
       queryClient.invalidateQueries({
         queryKey: ["entities"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "client-group-entity-ids",
+          groupSelectionMode.clientGroupName,
+        ],
       });
 
       groupSelectionMode.onFinish(desiredEntityIds);
@@ -602,7 +490,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
         <Typography variant="h5">
           {groupSelectionMode
-            ? `Entities for ${groupSelectionMode.clientGroupName} (${selectedEntityIds.size} selected)`
+            ? `${groupSelectionMode.clientGroupName} (${selectedEntityIds.size} selected)`
             : "Entities"}
         </Typography>
         <Tooltip
@@ -715,6 +603,16 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
           Filters
         </Typography>
         <Stack spacing={2}>
+          {(entityNameFilter || entityTypeFilter) && (
+            <Box sx={{ p: 1, bgcolor: "primary.light", borderRadius: 1 }}>
+              <Typography variant="body2" color="primary.contrastText">
+                Filters active:{" "}
+                {entityNameFilter && `Name: "${entityNameFilter}"`}
+                {entityNameFilter && entityTypeFilter && " • "}
+                {entityTypeFilter && `Type: "${entityTypeFilter}"`}
+              </Typography>
+            </Box>
+          )}
           <Stack direction="row" spacing={2}>
             <Autocomplete
               options={uniqueEntityNames}
@@ -739,6 +637,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
                   option.toLowerCase().includes(inputValue.toLowerCase())
                 );
               }}
+              noOptionsText="No matching entities"
             />
             <TextField
               select
@@ -759,11 +658,18 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
               ))}
             </TextField>
           </Stack>
-          <Stack direction="row" spacing={2}>
-            <Button variant="contained" onClick={handleFilter}>
-              Apply Filters
-            </Button>
-            <Button variant="outlined" onClick={clearFilters}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredEntitiesData.length} of {entitiesData.length}{" "}
+              entities
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setEntityNameFilter("");
+                setEntityTypeFilter("");
+              }}
+            >
               Clear Filters
             </Button>
             <Button variant="outlined" onClick={() => refetch()}>

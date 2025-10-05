@@ -214,7 +214,7 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
       {/* Header */}
       <FormHeader
         title="User"
-        isEditing={!!editingUser}
+        isEditing={true}
         email={editingUser?.email}
         sub={editingUser?.sub}
         onClose={onClose}

@@ -414,7 +414,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
     >
       <FormHeader
         title="Entity Type"
-        isEditing={!!editingEntityType}
+        isEditing={true}
         name={editingEntityType?.entity_type_name}
         id={editingEntityType?.entity_type_id}
         onClose={onClose || (() => {})}

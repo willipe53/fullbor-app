@@ -331,7 +331,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       {/* Header */}
       <FormHeader
         title="Entity"
-        isEditing={!!editingEntity}
+        isEditing={true}
         name={editingEntity?.entity_name}
         id={editingEntity?.entity_id}
         onClose={onClose}
@@ -341,7 +341,6 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
         onDirtyChange={() => setIsDirty(true)}
         isNameEditDisabled={mutation.isPending}
         update_date={editingEntity?.update_date}
-        updated_user_id={editingEntity?.updated_user_id}
         updated_by_user_name={editingEntity?.updated_by_user_name}
       />
 

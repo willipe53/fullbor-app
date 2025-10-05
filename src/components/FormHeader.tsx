@@ -58,8 +58,8 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   updated_user_id,
   updated_by_user_name,
 }) => {
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(!name); // Start editing if no name (new object)
+  const [isEditingEmail, setIsEditingEmail] = useState(!email); // Start editing if no email (new user)
   const [tempName, setTempName] = useState(name || "");
   const [tempEmail, setTempEmail] = useState(email || "");
 
@@ -162,8 +162,8 @@ const FormHeader: React.FC<FormHeaderProps> = ({
           <Typography variant="h5" component="h2">
             {isEditing ? (
               <>
-                Edit {title}
-                {displayValue && (
+                {displayValue ? `Edit ${title}` : `New ${title}`}
+                {(displayValue || isEditingName || isEditingEmail) && (
                   <Box
                     sx={{
                       display: "inline-flex",
@@ -177,6 +177,9 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         value={tempEmail}
                         onChange={(e) => {
                           setTempEmail(e.target.value);
+                          if (onEmailChange) {
+                            onEmailChange(e.target.value);
+                          }
                           if (onDirtyChange && e.target.value !== email) {
                             onDirtyChange();
                           }
@@ -186,6 +189,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         variant="standard"
                         disabled={isEmailEditDisabled}
                         autoFocus
+                        placeholder={!email ? "Enter email address" : undefined}
                         sx={{
                           minWidth: 200,
                           "& .MuiInputBase-input": {
@@ -221,6 +225,9 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         value={tempName}
                         onChange={(e) => {
                           setTempName(e.target.value);
+                          if (onNameChange) {
+                            onNameChange(e.target.value);
+                          }
                           if (onDirtyChange && e.target.value !== name) {
                             onDirtyChange();
                           }
@@ -230,6 +237,11 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         variant="standard"
                         disabled={isNameEditDisabled}
                         autoFocus
+                        placeholder={
+                          !name
+                            ? `Enter ${title.toLowerCase()} name`
+                            : undefined
+                        }
                         sx={{
                           minWidth: 200,
                           "& .MuiInputBase-input": {

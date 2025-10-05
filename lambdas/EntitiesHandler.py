@@ -297,7 +297,7 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
                 "updated_by_user_name": updated_by_user_name
             })
 
-            return data
+        return data
 
 
 def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids):

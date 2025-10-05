@@ -531,6 +531,12 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
     if not client_group_id or client_group_id not in user_client_groups:
         return {"error": "Client group not found or access denied"}
 
+    # Handle entities:set endpoint
+    if 'entities:set' in path:
+        return handle_set_entities(connection, path_parameters, body, current_user_id_db, user_client_groups)
+    elif 'users:set' in path:
+        return handle_set_users(connection, path_parameters, body, current_user_id_db, user_client_groups)
+
     # Update client group (only update provided fields)
     update_fields = []
     update_params = []

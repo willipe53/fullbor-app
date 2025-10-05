@@ -514,10 +514,20 @@ export const setClientGroupEntities = async (
   clientGroupName: string,
   data: { entity_names: string[] } | { entity_ids: number[] }
 ) => {
-  return apiCall<void>(`/client-groups/${clientGroupName}/entities:set`, {
-    method: "PUT",
-    data,
-  });
+  console.log("🔍 setClientGroupEntities API call:");
+  console.log("  - URL:", `/client-groups/${clientGroupName}/entities:set`);
+  console.log("  - Data:", data);
+
+  const result = await apiCall<void>(
+    `/client-groups/${clientGroupName}/entities:set`,
+    {
+      method: "PUT",
+      data,
+    }
+  );
+
+  console.log("🔍 setClientGroupEntities API response:", result);
+  return result;
 };
 
 export interface QueryClientGroupEntitiesRequest {
