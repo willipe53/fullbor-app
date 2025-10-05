@@ -459,7 +459,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
 
     try {
       // Step 7: Call PUT /client-groups/{client_group_name}/entities:set
-      const result = await apiService.setClientGroupEntities(
+      await apiService.setClientGroupEntities(
         groupSelectionMode.clientGroupName,
         { entity_ids: desiredEntityIds }
       );

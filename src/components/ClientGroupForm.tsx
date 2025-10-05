@@ -16,6 +16,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import * as apiService from "../services/api";
 import FormHeader from "./FormHeader";
 import FormJsonToggle from "./FormJsonToggle";
+import TransferList, { type TransferListItem } from "./TransferList";
 
 interface ClientGroupFormProps {
   editingClientGroup: apiService.ClientGroup | null;
@@ -52,9 +53,15 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   const [initialFormState, setInitialFormState] = useState<{
     name: string;
     preferences: apiService.JSONValue;
+    selectedUserIds: number[];
   } | null>(null);
 
+  // State for user management
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+
   const isCreate = !editingClientGroup?.client_group_id;
+
+  console.log("🔧 ClientGroupForm - Component rendered, isCreate:", isCreate);
 
   // Query to get entity count for this client group
   const { data: entityCountData } = useQuery({
@@ -70,21 +77,56 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   const entityCount =
     entityCountData && "count" in entityCountData ? entityCountData.count : 0;
 
+  // Query to get all users (for available list)
+  const { data: allUsersData } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => apiService.queryUsers(),
+    enabled: !isCreate,
+  });
+
+  // Query to get users in this client group (for selected list)
+  const { data: clientGroupUsersData } = useQuery({
+    queryKey: ["client-group-users", editingClientGroup?.client_group_name],
+    queryFn: () =>
+      apiService.getClientGroupUsers(editingClientGroup!.client_group_name),
+    enabled: !!editingClientGroup?.client_group_name && !isCreate,
+  });
+
   // Function to check if form is dirty
   const checkIfDirty = useCallback(() => {
-    if (!initialFormState) return false;
+    if (!initialFormState) {
+      console.log("🔧 checkIfDirty - no initialFormState");
+      return false;
+    }
 
     const currentState = {
       name,
       preferences,
+      selectedUserIds,
     };
 
-    return (
-      currentState.name !== initialFormState.name ||
+    const nameChanged = currentState.name !== initialFormState.name;
+    const preferencesChanged =
       JSON.stringify(currentState.preferences) !==
-        JSON.stringify(initialFormState.preferences)
+      JSON.stringify(initialFormState.preferences);
+    const usersChanged =
+      JSON.stringify(currentState.selectedUserIds.sort()) !==
+      JSON.stringify(initialFormState.selectedUserIds.sort());
+
+    console.log("🔧 checkIfDirty - nameChanged:", nameChanged);
+    console.log("🔧 checkIfDirty - preferencesChanged:", preferencesChanged);
+    console.log("🔧 checkIfDirty - usersChanged:", usersChanged);
+    console.log(
+      "🔧 checkIfDirty - current selectedUserIds:",
+      currentState.selectedUserIds
     );
-  }, [name, preferences, initialFormState]);
+    console.log(
+      "🔧 checkIfDirty - initial selectedUserIds:",
+      initialFormState.selectedUserIds
+    );
+
+    return nameChanged || preferencesChanged || usersChanged;
+  }, [name, preferences, selectedUserIds, initialFormState]);
 
   // Update dirty state whenever form values change
   useEffect(() => {
@@ -185,22 +227,53 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
     if (editingClientGroup) {
       setName(editingClientGroup.client_group_name || "");
       setPreferences(editingClientGroup.preferences || {});
-
-      // Set initial form state for dirty tracking
-      setInitialFormState({
-        name: editingClientGroup.client_group_name || "",
-        preferences: editingClientGroup.preferences || {},
-      });
     } else {
       setName("");
       setPreferences({});
+      setSelectedUserIds([]);
       setInitialFormState({
         name: "",
         preferences: {},
+        selectedUserIds: [],
       });
+      setIsDirty(false);
     }
-    setIsDirty(false);
   }, [editingClientGroup]);
+
+  // Initialize selectedUserIds and initialFormState when client group users data loads
+  useEffect(() => {
+    if (
+      editingClientGroup &&
+      clientGroupUsersData &&
+      Array.isArray(clientGroupUsersData)
+    ) {
+      const userIds = clientGroupUsersData.map((user) => user.user_id);
+      setSelectedUserIds(userIds);
+
+      // Set initial form state with the loaded user IDs
+      setInitialFormState({
+        name: editingClientGroup.client_group_name || "",
+        preferences: editingClientGroup.preferences || {},
+        selectedUserIds: userIds,
+      });
+      setIsDirty(false);
+    }
+  }, [editingClientGroup, clientGroupUsersData]);
+
+  // Handle user selection change
+  const handleUserSelectionChange = useCallback(
+    (selectedUsers: TransferListItem[]) => {
+      console.log("🔧 ClientGroupForm - handleUserSelectionChange called");
+      console.log("🔧 ClientGroupForm - selectedUsers:", selectedUsers);
+      const userIds = selectedUsers.map((user) =>
+        typeof user.id === "number" ? user.id : parseInt(user.id.toString())
+      );
+      console.log("🔧 ClientGroupForm - userIds:", userIds);
+      setSelectedUserIds(userIds);
+      setIsDirty(true);
+    },
+    []
+  );
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -309,6 +382,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   ]);
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log("🔧 handleSubmit called!");
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
@@ -338,8 +412,115 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       requestData.client_group_id = editingClientGroup.client_group_id;
     }
 
-    mutation.mutate(requestData);
+    console.log("🔧 ClientGroupForm - handleSubmit called");
+    console.log("🔧 ClientGroupForm - isDirty:", isDirty);
+    console.log("🔧 ClientGroupForm - selectedUserIds:", selectedUserIds);
+    console.log("🔧 ClientGroupForm - initialFormState:", initialFormState);
+
+    // Save the client group first
+    mutation.mutate(requestData, {
+      onSuccess: async () => {
+        console.log("🔧 ClientGroupForm - Client group saved successfully");
+        // If this is an existing client group and user selection has changed, save user changes
+        if (editingClientGroup?.client_group_name && isDirty) {
+          const initialUserIds = initialFormState?.selectedUserIds || [];
+          const currentUserIds = selectedUserIds;
+
+          console.log("🔧 ClientGroupForm - initialUserIds:", initialUserIds);
+          console.log("🔧 ClientGroupForm - currentUserIds:", currentUserIds);
+
+          // Check if user selection has changed
+          const userSelectionChanged =
+            JSON.stringify(initialUserIds.sort()) !==
+            JSON.stringify(currentUserIds.sort());
+
+          console.log(
+            "🔧 ClientGroupForm - userSelectionChanged:",
+            userSelectionChanged
+          );
+
+          if (userSelectionChanged) {
+            try {
+              console.log("🔧 ClientGroupForm - Saving user changes...");
+              await apiService.setClientGroupUsers(
+                editingClientGroup.client_group_name,
+                {
+                  user_ids: currentUserIds,
+                }
+              );
+              console.log(
+                "🔧 ClientGroupForm - User changes saved successfully"
+              );
+              // Invalidate user-related queries
+              queryClient.invalidateQueries({
+                queryKey: [
+                  "client-group-users",
+                  editingClientGroup.client_group_name,
+                ],
+              });
+              queryClient.invalidateQueries({ queryKey: ["users"] });
+            } catch (error) {
+              console.error("Failed to save user changes:", error);
+              setErrors({ general: "Failed to save user changes" });
+            }
+          } else {
+            console.log("🔧 ClientGroupForm - No user changes detected");
+          }
+        } else {
+          console.log(
+            "🔧 ClientGroupForm - Not saving user changes - isCreate:",
+            isCreate,
+            "isDirty:",
+            isDirty
+          );
+        }
+      },
+    });
   };
+
+  // Prepare TransferList data
+  const transferListData = useMemo(() => {
+    if (isCreate || !allUsersData || !clientGroupUsersData) {
+      return {
+        availableUsers: [],
+        selectedUsers: [],
+      };
+    }
+
+    // Check if allUsersData is an array (not a count response)
+    const allUsersArray = Array.isArray(allUsersData) ? allUsersData : [];
+    // Ensure clientGroupUsersData is an array (it might be undefined during loading)
+    const clientGroupUsersArray = Array.isArray(clientGroupUsersData)
+      ? clientGroupUsersData
+      : [];
+
+    // Get all users as TransferListItems
+    const allUsers: TransferListItem[] = allUsersArray.map(
+      (user: apiService.User) => ({
+        id: user.user_id,
+        label: user.email,
+      })
+    );
+
+    // Get selected users (users in the client group)
+    const selectedUsers: TransferListItem[] = clientGroupUsersArray.map(
+      (user: apiService.User) => ({
+        id: user.user_id,
+        label: user.email,
+      })
+    );
+
+    // Available users are all users minus selected users
+    const selectedUserIds = new Set(selectedUsers.map((user) => user.id));
+    const availableUsers = allUsers.filter(
+      (user) => !selectedUserIds.has(user.id)
+    );
+
+    return {
+      availableUsers,
+      selectedUsers,
+    };
+  }, [allUsersData, clientGroupUsersData, isCreate]);
 
   const containerSx = {
     width: "100%",
@@ -377,7 +558,11 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           minHeight: 0, // Allow flex child to shrink
         }}
       >
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          onClick={() => console.log("🔧 Form clicked")}
+        >
           {/* Error Display */}
           {errors.general && (
             <Alert severity="error" sx={{ mb: 3 }}>
@@ -521,14 +706,18 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
             )}
           </Paper>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Membership
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Membership goes Here
-            </Typography>
-          </Box>
+          {/* Membership Section - only show for existing client groups */}
+          {!isCreate && (
+            <TransferList
+              title="Membership"
+              leftTitle="Available Users"
+              rightTitle="Group Members"
+              availableItems={transferListData.availableUsers}
+              selectedItems={transferListData.selectedUsers}
+              onSelectionChange={handleUserSelectionChange}
+              disabled={mutation.isPending}
+            />
+          )}
 
           {/* Entity Selection - only show for existing client groups */}
           {!isCreate && (
@@ -606,7 +795,21 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
         <Button
           type="submit"
           variant="contained"
-          disabled={mutation.isPending || deleteMutation.isPending}
+          disabled={mutation.isPending || deleteMutation.isPending || !isDirty}
+          onClick={(e) => {
+            console.log("🔧 Button onClick called");
+            console.log("🔧 Event:", e);
+            // Manually trigger form submission
+            const form = e.currentTarget.closest("form");
+            console.log("🔧 Found form:", form);
+            if (form) {
+              console.log("🔧 Manually submitting form");
+              form.requestSubmit();
+            } else {
+              console.log("🔧 No form found, calling handleSubmit directly");
+              handleSubmit(e);
+            }
+          }}
         >
           {mutation.isPending ? (
             <CircularProgress size={20} />

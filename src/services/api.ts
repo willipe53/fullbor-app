@@ -481,17 +481,6 @@ export interface ModifyClientGroupMembershipRequest {
   add_or_remove: "add" | "remove";
 }
 
-// Client Group User management - Updated for FullBor API
-export const setClientGroupUsers = async (
-  clientGroupName: string,
-  data: { user_names: string[] } | { user_ids: number[] }
-) => {
-  return apiCall<void>(`/client-groups/${clientGroupName}/users:set`, {
-    method: "PUT",
-    data,
-  });
-};
-
 // Client Group Entities interfaces and API functions
 export interface ModifyClientGroupEntitiesRequest {
   client_group_id: number;
@@ -514,20 +503,29 @@ export const setClientGroupEntities = async (
   clientGroupName: string,
   data: { entity_names: string[] } | { entity_ids: number[] }
 ) => {
-  console.log("🔍 setClientGroupEntities API call:");
-  console.log("  - URL:", `/client-groups/${clientGroupName}/entities:set`);
-  console.log("  - Data:", data);
+  return apiCall<void>(`/client-groups/${clientGroupName}/entities:set`, {
+    method: "PUT",
+    data,
+  });
+};
 
-  const result = await apiCall<void>(
-    `/client-groups/${clientGroupName}/entities:set`,
-    {
-      method: "PUT",
-      data,
-    }
+// Client Group User management
+export const getClientGroupUsers = async (clientGroupName: string) => {
+  const result = await apiCall<{ data: User[]; count: number } | User[]>(
+    `/client-groups/${clientGroupName}/users`
   );
+  // Handle both response formats: direct array or paginated object
+  return Array.isArray(result) ? result : result.data;
+};
 
-  console.log("🔍 setClientGroupEntities API response:", result);
-  return result;
+export const setClientGroupUsers = async (
+  clientGroupName: string,
+  data: { user_ids: number[] }
+) => {
+  return apiCall<void>(`/client-groups/${clientGroupName}/users:set`, {
+    method: "PUT",
+    data,
+  });
 };
 
 export interface QueryClientGroupEntitiesRequest {

@@ -14,9 +14,9 @@ info:
 
      **OVERVIEW**
     ------------
-    The API has 42 endpoints across 9 main resource areas:
+    The API has 43 endpoints across 9 main resource areas:
 
-    **CLIENT GROUPS (8 endpoints):**
+    **CLIENT GROUPS (9 endpoints):**
     - GET    /client-groups
     - GET    /client-groups/{client_group_name}
     - POST   /client-groups
@@ -25,6 +25,7 @@ info:
     - PUT    /client-groups/{client_group_name}/entities:set
     - PUT    /client-groups/{client_group_name}/users:set
     - GET    /client-groups/{client_group_name}/entities
+    - GET    /client-groups/{client_group_name}/users
 
     **ENTITIES (5 endpoints):**
     - GET    /entities
@@ -799,6 +800,74 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/Entity"
+                      count:
+                        type: integer
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /client-groups/{client_group_name}/users:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: client_group_name
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - ClientGroups
+      summary: List Users that are valid for a Client Group
+      description: |
+        Returns all users that belong to the specified client group.
+        Security: Users can only access users from client groups they have permission to view.
+      parameters:
+        - in: query
+          name: count
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns only a count
+      responses:
+        "200":
+          description: Users in client group
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
                       count:
                         type: integer
                   - type: object

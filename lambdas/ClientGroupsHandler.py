@@ -269,6 +269,8 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
         # Check if this is a request for entities in the client group
         if path.endswith('/entities'):
             return handle_get_client_group_entities(connection, client_group_name, query_parameters, user_client_groups)
+        elif path.endswith('/users'):
+            return handle_get_client_group_users(connection, client_group_name, query_parameters, user_client_groups)
         else:
             # Get single client group by name: /client-groups/{client_group_name}
             # Check if user has access to this client group
@@ -367,6 +369,69 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
 
             return {
                 "data": entity_list,
+                "count": total_count
+            }
+
+
+def handle_get_client_group_users(connection, client_group_name, query_parameters, user_client_groups):
+    """Handle getting users for a specific client group."""
+    # Check if user has access to this client group
+    client_group_id = get_client_group_id_by_name(
+        connection, client_group_name)
+    if not client_group_id or client_group_id not in user_client_groups:
+        return {"error": "Client group not found or access denied"}
+
+    # Get query parameters
+    count_only = query_parameters.get('count', 'false').lower() == 'true'
+
+    with connection.cursor() as cursor:
+        if count_only:
+            # Return only count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT u.user_id)
+                FROM users u
+                INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
+                WHERE cgu.client_group_id = %s
+            """, (client_group_id,))
+            result = cursor.fetchone()
+            count = result[0] if result else 0
+            return {"count": count}
+        else:
+            # Return users with pagination
+            cursor.execute("""
+                SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id,
+                       u.update_date
+                FROM users u
+                INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
+                WHERE cgu.client_group_id = %s
+                ORDER BY u.email
+            """, (client_group_id))
+            users = cursor.fetchall()
+
+            # Get total count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT u.user_id)
+                FROM users u
+                INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
+                WHERE cgu.client_group_id = %s
+            """, (client_group_id,))
+            count_result = cursor.fetchone()
+            total_count = count_result[0] if count_result else 0
+
+            # Format users
+            user_list = []
+            for user in users:
+                user_list.append({
+                    "user_id": user[0],
+                    "sub": user[1],
+                    "email": user[2],
+                    "preferences": json.loads(user[3]) if user[3] else {},
+                    "primary_client_group_id": user[4],
+                    "update_date": user[5].isoformat() + "Z" if user[5] else None
+                })
+
+            return {
+                "data": user_list,
                 "count": total_count
             }
 
