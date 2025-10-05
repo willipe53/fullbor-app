@@ -411,6 +411,133 @@ def lambda_handler(event, context):
                 connection.commit()
                 response = {"message": "Invitation deleted successfully"}
 
+        elif http_method == 'PUT':
+            # Handle PUT operations: /invitations/{invitation_id}
+            if 'invitation_id' not in path_parameters:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "invitation_id is required for update"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            invitation_id = path_parameters['invitation_id']
+
+            # Get user's client groups for authorization
+            user_id = get_user_id_from_sub(connection, current_user_id)
+            if not user_id:
+                return {
+                    "statusCode": 403,
+                    "body": json.dumps({"error": "User not found"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            # Parse request body
+            try:
+                request_data = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "Invalid JSON in request body"}),
+                    "headers": {"Content-Type": "application/json"}
+                }
+
+            # Check if invitation exists and user has access
+            with connection.cursor() as cursor:
+                # Get invitation details and check access
+                access_query = """
+                    SELECT i.invitation_id, cg.name as client_group_name
+                    FROM invitations i
+                    JOIN client_groups cg ON i.client_group_id = cg.client_group_id
+                    JOIN client_group_users cgu ON cg.client_group_id = cgu.client_group_id
+                    WHERE i.invitation_id = %s AND cgu.user_id = %s
+                """
+                cursor.execute(access_query, (invitation_id, user_id))
+                result = cursor.fetchone()
+
+                if not result:
+                    return {
+                        "statusCode": 403,
+                        "body": json.dumps({"error": "Invitation not found or access denied"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Build update query dynamically based on provided fields
+                update_fields = []
+                update_values = []
+
+                if 'expires_at' in request_data:
+                    try:
+                        # Parse the expires_at date
+                        expires_at_str = request_data['expires_at']
+                        if expires_at_str:
+                            # Handle both ISO format and other formats
+                            if 'T' in expires_at_str:
+                                expires_at = datetime.fromisoformat(
+                                    expires_at_str.replace('Z', '+00:00'))
+                            else:
+                                expires_at = datetime.strptime(
+                                    expires_at_str, '%Y-%m-%d %H:%M:%S')
+                            update_fields.append("expires_at = %s")
+                            update_values.append(expires_at)
+                    except (ValueError, TypeError) as e:
+                        return {
+                            "statusCode": 400,
+                            "body": json.dumps({"error": f"Invalid expires_at format: {str(e)}"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                if 'client_group_name' in request_data:
+                    # Validate client group exists and user has access
+                    client_group_name = request_data['client_group_name']
+                    cg_access_query = """
+                        SELECT cg.client_group_id 
+                        FROM client_groups cg
+                        JOIN client_group_users cgu ON cg.client_group_id = cgu.client_group_id
+                        WHERE cg.name = %s AND cgu.user_id = %s
+                    """
+                    cursor.execute(cg_access_query,
+                                   (client_group_name, user_id))
+                    cg_result = cursor.fetchone()
+
+                    if not cg_result:
+                        return {
+                            "statusCode": 403,
+                            "body": json.dumps({"error": "Client group not found or access denied"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                    update_fields.append("client_group_id = %s")
+                    update_values.append(cg_result[0])
+
+                if 'email_sent_to' in request_data:
+                    email_sent_to = request_data['email_sent_to']
+                    update_fields.append("email_sent_to = %s")
+                    update_values.append(email_sent_to)
+
+                if not update_fields:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "No valid fields provided for update"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                # Add updated_user_id
+                update_fields.append("updated_user_id = %s")
+                update_values.append(user_id)
+
+                # Execute update
+                update_query = f"""
+                    UPDATE invitations 
+                    SET {', '.join(update_fields)}
+                    WHERE invitation_id = %s
+                """
+                update_values.append(invitation_id)
+
+                cursor.execute(update_query, update_values)
+                connection.commit()
+
+                response = {"message": "Invitation updated successfully"}
+
         else:
             # Handle unsupported methods
             return {
@@ -425,6 +552,8 @@ def lambda_handler(event, context):
         status_code = 200
         if http_method == 'POST':
             status_code = 201
+        elif http_method == 'PUT':
+            status_code = 200
         elif http_method == 'DELETE':
             status_code = 204
 

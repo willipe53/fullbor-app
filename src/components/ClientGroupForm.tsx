@@ -5,12 +5,9 @@ import {
   TextField,
   Button,
   Alert,
-  Chip,
   CircularProgress,
-  IconButton,
   Paper,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
@@ -18,6 +15,7 @@ import FormJsonToggle from "./FormJsonToggle";
 import { prepareJsonForForm } from "../utils";
 import TransferList, { type TransferListItem } from "./TransferList";
 import AuditTrail from "./AuditTrail";
+import FormHeader from "./FormHeader";
 
 interface ClientGroupFormProps {
   editingClientGroup: any;
@@ -545,41 +543,22 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   return (
     <Paper sx={containerSx}>
       {/* Fixed Header */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          p: 2,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-          zIndex: 1,
+      <FormHeader
+        title="Client Group"
+        isEditing={!isCreate}
+        name={editingClientGroup?.client_group_name}
+        id={editingClientGroup?.client_group_id}
+        onClose={onClose}
+        onNameChange={(newName) => {
+          setName(newName);
         }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h5" component="h2">
-            {isCreate
-              ? "Create Client Group"
-              : editingClientGroup?.client_group_name || "Edit Client Group"}
-          </Typography>
-          {!isCreate && editingClientGroup?.client_group_id && (
-            <Chip
-              label={`ID: ${editingClientGroup.client_group_id}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-        </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
+        onDirtyChange={() => setIsDirty(true)}
+        isNameEditDisabled={
+          mutation.isPending ||
+          makePrimaryMutation.isPending ||
+          deleteMutation.isPending
+        }
+      />
 
       {/* Scrollable Content */}
       <Box
@@ -621,19 +600,6 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
         )}
 
         <Box component="form" onSubmit={handleSubmit}>
-          {/* Name */}
-          <TextField
-            fullWidth
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!errors.name}
-            helperText={errors.name}
-            disabled={mutation.isPending}
-            sx={{ mb: 3 }}
-            required
-          />
-
           {/* Preferences Section */}
           <Box sx={{ mb: 3 }}>
             <Box

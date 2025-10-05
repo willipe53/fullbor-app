@@ -39,34 +39,17 @@ interface EntitiesTableProps {
 const EntitiesTable: React.FC<EntitiesTableProps> = ({
   groupSelectionMode,
 }) => {
-  const { userId } = useAuth();
+  const { userId: sub } = useAuth();
   const queryClient = useQueryClient();
-
-  // Get current user's database ID
-  const { data: currentUser } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
-    enabled: !!userId,
-    select: (data) => data[0], // Get first user from array
-  });
-
-  // Get primary client group details
-  const { data: primaryClientGroup } = useQuery({
-    queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
-    enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
-  });
 
   const [filters, setFilters] = useState<
     Partial<apiService.QueryEntitiesRequest>
   >({});
   const [entityNameFilter, setEntityNameFilter] = useState("");
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
-  const [editingEntity, setEditingEntity] = useState<any>(null);
+  const [editingEntity, setEditingEntity] = useState<apiService.Entity | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEntityTypesModalOpen, setIsEntityTypesModalOpen] = useState(false);
 
@@ -85,25 +68,39 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     error,
     refetch,
   } = useQuery({
-    queryKey: ["entities", filters, currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryEntities({ ...filters, user_id: currentUser!.user_id }),
-    enabled: !!currentUser?.user_id, // Only run query when user data is loaded
+    queryKey: ["entities", filters],
+    queryFn: () => apiService.queryEntities(filters),
+    enabled: !!sub, // Only need sub for authentication
+  });
+
+  // Get current user's database ID (sub is Cognito UUID, we need database user_id)
+  const { data: currentUserData } = useQuery({
+    queryKey: ["current-user", sub],
+    queryFn: () => apiService.queryUsers({ sub: sub! }),
+    enabled: !!sub,
+    select: (data) => {
+      if (Array.isArray(data)) {
+        return data.length > 0 ? data[0] : null;
+      }
+      if (data && typeof data === "object" && "data" in data) {
+        const paginatedData = data as { data: apiService.User[] };
+        return paginatedData.data && paginatedData.data.length > 0
+          ? paginatedData.data[0]
+          : null;
+      }
+      return null;
+    },
   });
 
   // Fetch current group entities (only in group selection mode)
   const { data: groupEntityIds } = useQuery({
-    queryKey: [
-      "client-group-entities",
-      groupSelectionMode?.clientGroupId,
-      currentUser?.user_id,
-    ],
+    queryKey: ["client-group-entities", groupSelectionMode?.clientGroupId],
     queryFn: () =>
       apiService.queryClientGroupEntities({
         client_group_id: groupSelectionMode!.clientGroupId,
-        user_id: currentUser!.user_id,
+        user_id: currentUserData!.user_id,
       }),
-    enabled: !!groupSelectionMode?.clientGroupId && !!currentUser?.user_id,
+    enabled: !!groupSelectionMode?.clientGroupId && !!currentUserData,
   });
 
   // Update current group entity IDs when data changes
@@ -131,16 +128,16 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       }
 
       // Transform array format [id, name, type_name, attributes] to object format
-      return rawEntitiesData.map((row: any) => {
+      return rawEntitiesData.map((row: unknown): apiService.Entity => {
         if (Array.isArray(row) && row.length >= 4) {
           return {
-            entity_id: row[0],
-            entity_name: row[1],
-            entity_type_name: row[2],
-            attributes: row[3], // Don't parse here, let formatAttributes handle it
+            entity_id: row[0] as number,
+            entity_name: row[1] as string,
+            entity_type_name: row[2] as string,
+            attributes: row[3] as apiService.JSONValue, // Don't parse here, let formatAttributes handle it
           };
         }
-        return row;
+        return row as apiService.Entity;
       });
     }
 
@@ -263,7 +260,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     });
   }, [groupSelectionMode, filteredEntitiesData, selectedEntityIds]);
 
-  const formatAttributes = (attributes: any) => {
+  const formatAttributes = (attributes: apiService.JSONValue) => {
     if (!attributes) return "None";
 
     let parsedAttributes;
@@ -465,11 +462,11 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const handleFilter = () => {
     const newFilters: Partial<apiService.QueryEntitiesRequest> = {};
     if (entityTypeFilter) newFilters.entity_type_name = entityTypeFilter;
-    setFilters({ ...newFilters, user_id: currentUser!.user_id });
+    setFilters(newFilters);
   };
 
   const clearFilters = () => {
-    setFilters({ user_id: currentUser!.user_id });
+    setFilters({});
     setEntityNameFilter("");
     setEntityTypeFilter("");
   };
@@ -502,7 +499,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       const result = await apiService.modifyClientGroupEntities({
         client_group_id: groupSelectionMode.clientGroupId,
         entity_ids: desiredEntityIds,
-        user_id: currentUser!.user_id,
+        user_id: currentUserData!.user_id,
       });
 
       console.log("✅ Entity group modification successful:", result);
@@ -583,7 +580,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
               size="small"
               startIcon={<Add />}
               onClick={() => {
-                setEditingEntity({}); // Set empty object for new entity
+                setEditingEntity(null); // Set null for new entity
                 setIsModalOpen(true);
               }}
               sx={{
@@ -712,12 +709,9 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
               <br />
               {!entityNameFilter && !entityTypeFilter && (
                 <>
-                  No entities exist for{" "}
-                  {primaryClientGroup?.client_group_name || "this client group"}
+                  No entities found.
                   <br />
-                  Click "New" to create one for{" "}
-                  {primaryClientGroup?.client_group_name || "this client group"}
-                  .
+                  Click "New" to create one.
                 </>
               )}
             </Typography>
@@ -787,7 +781,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
           }}
         >
           <EntityForm
-            editingEntity={editingEntity}
+            editingEntity={editingEntity || undefined}
             onClose={handleCloseModal}
           />
         </Box>

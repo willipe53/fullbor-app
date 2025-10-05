@@ -10,7 +10,6 @@ import {
   FormControl,
   FormLabel,
   Snackbar,
-  Chip,
 } from "@mui/material";
 import AceEditor from "react-ace";
 
@@ -22,6 +21,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
 import AuditTrail from "./AuditTrail";
+import FormHeader from "./FormHeader";
 
 interface EntityType {
   entity_type_id: number;
@@ -32,6 +32,7 @@ interface EntityType {
   entity_category?: string;
   update_date?: string;
   updated_by_user_name?: string;
+  updated_user_id?: number;
 }
 
 interface EntityTypeFormProps {
@@ -63,7 +64,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
   editingEntityType,
   onClose,
 }) => {
-  const { userId: _userId } = useAuth();
+  useAuth(); // Keep auth context active
   const [name, setName] = useState("");
   const [shortLabel, setShortLabel] = useState("");
   const [labelColor, setLabelColor] = useState("#4caf50"); // Default green
@@ -238,14 +239,26 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
   }, [editingEntityType]);
 
   const mutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: async (
+      data: apiService.EntityType & { entity_type_id?: number }
+    ) => {
       if (editingEntityType) {
-        return apiService.updateEntityType(
+        return await apiService.updateEntityType(
           editingEntityType.entity_type_name,
           data
         );
       } else {
-        return apiService.createEntityType(data);
+        await apiService.createEntityType(data);
+        // Return a mock EntityType for create operations to satisfy TypeScript
+        // The actual created entity type will be refetched via query invalidation
+        return {
+          entity_type_id: 0, // Temporary ID, will be replaced by refetch
+          entity_type_name: data.entity_type_name,
+          attributes_schema: data.attributes_schema,
+          short_label: data.short_label,
+          label_color: data.label_color,
+          entity_category: data.entity_category,
+        } as apiService.EntityType;
       }
     },
     onSuccess: () => {
@@ -329,9 +342,8 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
       // Parse JSON string to object for API
       const schemaObject = JSON.parse(attributesSchema);
 
-      const requestData: apiService.EntityType & {
-        entity_type_id?: number;
-      } = {
+      const requestData: apiService.EntityType = {
+        entity_type_id: editingEntityType?.entity_type_id || 0, // Use existing ID or 0 for new entities
         entity_type_name: name,
         attributes_schema: schemaObject,
         ...(shortLabel.trim() && { short_label: shortLabel.trim() }),
@@ -340,11 +352,6 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
           entity_category: entityCategory.trim(),
         }),
       };
-
-      // Add entity_type_id for updates
-      if (editingEntityType) {
-        requestData.entity_type_id = editingEntityType.entity_type_id;
-      }
       mutation.mutate(requestData);
     } catch (error) {
       console.error("Error preparing request:", error);
@@ -406,31 +413,18 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
         overflow: "hidden",
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
+      <FormHeader
+        title="Entity Type"
+        isEditing={!!editingEntityType}
+        name={editingEntityType?.entity_type_name}
+        id={editingEntityType?.entity_type_id}
+        onClose={onClose || (() => {})}
+        onNameChange={(newName) => {
+          setName(newName);
         }}
-      >
-        <Typography variant="h4">
-          {editingEntityType ? "Edit Entity Type" : "Create Entity Type"}
-        </Typography>
-        {editingEntityType && (
-          <Chip
-            label={`ID: ${editingEntityType.entity_type_id}`}
-            size="small"
-            variant="outlined"
-            sx={{
-              backgroundColor: "rgba(25, 118, 210, 0.1)",
-              borderColor: "rgba(25, 118, 210, 0.5)",
-              color: "primary.main",
-              fontWeight: "500",
-            }}
-          />
-        )}
-      </Box>
+        onDirtyChange={() => setIsDirty(true)}
+        isNameEditDisabled={mutation.isPending || deleteMutation.isPending}
+      />
 
       {mutation.isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -474,15 +468,6 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
             minHeight: 0, // Allow flex child to shrink
           }}
         >
-          <TextField
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            fullWidth
-            disabled={mutation.isPending}
-          />
-
           <TextField
             label="Entity Category"
             value={entityCategory}

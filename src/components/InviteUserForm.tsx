@@ -64,86 +64,143 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
   // Fetch current user data to get primary client group
   const { data: currentUser } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
+    queryFn: async () => {
+      const result = await apiService.queryUsers({ sub: userId! });
+
+      // Handle paginated response
+      const users = Array.isArray(result)
+        ? result
+        : result && "data" in result
+        ? result.data
+        : [];
+
+      // Find the user with matching sub
+      return users.find((user) => user.sub === userId) || null;
+    },
     enabled: !!userId,
-    select: (data) => data[0], // Assuming queryUsers returns an array
   });
 
-  // Fetch client groups for the dropdown (only groups the user is a member of)
-  const { data: membershipGroups = [] } = useQuery<ClientGroup[]>({
-    queryKey: ["clientGroups", currentUser?.user_id],
+  // Fetch all client groups the user has access to
+  const { data: clientGroups = [] } = useQuery<ClientGroup[]>({
+    queryKey: ["allClientGroups", currentUser?.user_id],
     queryFn: async () => {
       console.log(
-        "🔍 InviteUserForm - Fetching client groups for user_id:",
+        "🔍 InviteUserForm - Fetching all client groups for user:",
         currentUser?.user_id
       );
-      const result = await apiService.queryClientGroups({
-        user_id: currentUser!.user_id,
-      });
-      console.log("🔍 InviteUserForm - Client groups result:", result);
-      return result;
+
+      // Try to get client groups by email first
+      let result;
+      try {
+        result = await apiService.queryClientGroups({
+          email: currentUser!.email,
+        });
+        console.log(
+          "🔍 InviteUserForm - Client groups by email result:",
+          result
+        );
+      } catch (error) {
+        console.log(
+          "🔍 InviteUserForm - Failed to get client groups by email, trying without filter"
+        );
+        // If that fails, try to get all client groups (the user should only see ones they have access to)
+        result = await apiService.queryClientGroups({});
+        console.log("🔍 InviteUserForm - All client groups result:", result);
+      }
+
+      // Handle paginated response
+      const groups = Array.isArray(result)
+        ? result
+        : result && "data" in result
+        ? result.data
+        : [];
+
+      console.log("🔍 InviteUserForm - Processed groups:", groups);
+      return groups;
     },
     enabled: open && !!currentUser?.user_id,
   });
 
-  // Fallback: if no membership groups found, at least include user's primary group
-  const { data: primaryGroup } = useQuery<ClientGroup[]>({
-    queryKey: ["primaryClientGroup", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
-    enabled:
-      open &&
-      !!currentUser?.primary_client_group_id &&
-      membershipGroups.length === 0,
-  });
-
-  // Combine membership groups with primary group (avoid duplicates)
-  const clientGroups = React.useMemo(() => {
-    const groups = [...membershipGroups];
-    if (primaryGroup && primaryGroup.length > 0) {
-      const primaryGroupItem = primaryGroup[0];
-      if (
-        !groups.find(
-          (g) => g.client_group_id === primaryGroupItem.client_group_id
-        )
-      ) {
-        groups.push(primaryGroupItem);
-      }
-    }
-    return groups;
-  }, [membershipGroups, primaryGroup]);
-
   // Check if email is already a member of selected client group
   const { refetch: checkExistingUser } = useQuery({
     queryKey: ["existingUsers", formData.email, formData.clientGroupId],
-    queryFn: () => apiService.queryUsers({ email: formData.email }),
+    queryFn: async () => {
+      const result = await apiService.queryUsers({ email: formData.email });
+
+      // Handle paginated response
+      const users = Array.isArray(result)
+        ? result
+        : result && "data" in result
+        ? result.data
+        : [];
+
+      return { data: users };
+    },
     enabled: false, // Only run when manually triggered
     retry: false,
   });
 
   // Create invitation mutation
   const createInvitationMutation = useMutation({
-    mutationFn: (data: CreateInvitationRequest) =>
-      apiService.createInvitation(data),
+    mutationFn: (data: CreateInvitationRequest) => {
+      console.log(
+        "🔍 InviteUserForm - Mutation function called with data:",
+        data
+      );
+      return apiService.createInvitation(data);
+    },
     onSuccess: (response) => {
-      // Note: createInvitation returns void, so we need to get invitation details separately
+      console.log("🔍 InviteUserForm - Mutation success:", response);
+      // The API actually returns the invitation data, not void!
+      if (response && response.code) {
+        setInvitationCode(response.code);
+        setCopySuccess(false); // Reset copy state for new invitation
+      }
       setIsGenerating(false);
-      setCopySuccess(false); // Reset copy state for new invitation
     },
     onError: (error) => {
-      console.error("Failed to create invitation:", error);
+      console.error("🔍 InviteUserForm - Mutation error:", error);
       setIsGenerating(false);
     },
   });
 
+  // Clear validation errors when email changes
+  useEffect(() => {
+    if (formData.email) {
+      setValidationErrors((prev) =>
+        prev.filter((error) => error.field !== "email")
+      );
+    }
+  }, [formData.email]);
+
   // Initialize form with default values
   useEffect(() => {
+    console.log("🔍 InviteUserForm - Form initialization effect triggered:", {
+      open,
+      currentUser: currentUser
+        ? {
+            user_id: currentUser.user_id,
+            email: currentUser.email,
+            primary_client_group_id: currentUser.primary_client_group_id,
+          }
+        : null,
+      clientGroupsLength: clientGroups.length,
+      clientGroups: clientGroups.map((cg) => ({
+        client_group_id: cg.client_group_id,
+        client_group_name: cg.client_group_name,
+      })),
+    });
+
     if (open && currentUser && clientGroups.length > 0) {
       const primaryClientGroup = clientGroups.find(
         (cg) => cg.client_group_id === currentUser.primary_client_group_id
       );
+
+      console.log(
+        "🔍 InviteUserForm - Found primary client group:",
+        primaryClientGroup
+      );
+
       setFormData({
         clientGroupId: currentUser.primary_client_group_id || "",
         clientGroupName: primaryClientGroup?.client_group_name || "",
@@ -152,6 +209,12 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       });
       setValidationErrors([]);
       setInvitationCode("");
+    } else {
+      console.log("🔍 InviteUserForm - Form initialization skipped:", {
+        open,
+        hasCurrentUser: !!currentUser,
+        clientGroupsLength: clientGroups.length,
+      });
     }
   }, [open, currentUser, clientGroups]);
 
@@ -165,25 +228,46 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
   const checkUserMembership = async () => {
     if (!formData.email || !formData.clientGroupId) return;
 
+    console.log("🔍 InviteUserForm - Checking user membership:", {
+      email: formData.email,
+      clientGroupId: formData.clientGroupId,
+    });
+
     try {
       const result = await checkExistingUser();
+      console.log("🔍 InviteUserForm - Check existing user result:", result);
+
       if (result.data && result.data.length > 0) {
         const existingUser = result.data[0];
+        console.log("🔍 InviteUserForm - Found existing user:", {
+          user: existingUser,
+          primaryClientGroupId: existingUser.primary_client_group_id,
+          selectedClientGroupId: formData.clientGroupId,
+          isMember:
+            existingUser.primary_client_group_id === formData.clientGroupId,
+        });
+
         if (existingUser.primary_client_group_id === formData.clientGroupId) {
           const clientGroup = clientGroups.find(
             (cg) => cg.client_group_id === formData.clientGroupId
+          );
+          console.log(
+            "🔍 InviteUserForm - Setting validation error for existing member"
           );
           setValidationErrors([
             {
               field: "email",
               message: `${formData.email} is already a member of ${
-                clientGroup?.name || "this client group"
+                clientGroup?.client_group_name || "this client group"
               }`,
             },
           ]);
           return false;
         }
       }
+      console.log(
+        "🔍 InviteUserForm - User is not a member, validation passed"
+      );
       return true;
     } catch (error) {
       console.error("Error checking user membership:", error);
@@ -193,9 +277,11 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
 
   // Validate form
   const validateForm = async (): Promise<boolean> => {
+    console.log("🔍 InviteUserForm - Starting form validation");
     const errors: ValidationError[] = [];
 
     if (!formData.clientGroupId) {
+      console.log("🔍 InviteUserForm - Missing client group ID");
       errors.push({
         field: "clientGroupId",
         message: "Please select a client group",
@@ -223,29 +309,58 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       });
     }
 
+    console.log("🔍 InviteUserForm - Validation errors found:", errors);
     setValidationErrors(errors);
 
     if (errors.length === 0) {
+      console.log(
+        "🔍 InviteUserForm - No validation errors, checking user membership"
+      );
       // Check if user is already a member
       const isNotMember = await checkUserMembership();
+      console.log(
+        "🔍 InviteUserForm - User membership check result:",
+        isNotMember
+      );
       return isNotMember ?? true;
     }
 
+    console.log("🔍 InviteUserForm - Validation failed with errors:", errors);
     return false;
   };
 
   // Handle form submission
   const handleGenerateInvitation = async () => {
-    const isValid = await validateForm();
-    if (!isValid) return;
+    console.log("🔍 InviteUserForm - Generate invitation clicked");
+    console.log("🔍 InviteUserForm - Current form data:", formData);
+    console.log(
+      "🔍 InviteUserForm - Current validation errors:",
+      validationErrors
+    );
 
+    const isValid = await validateForm();
+    console.log("🔍 InviteUserForm - Form validation result:", isValid);
+
+    if (!isValid) {
+      console.log("🔍 InviteUserForm - Form validation failed, stopping");
+      return;
+    }
+
+    console.log("🔍 InviteUserForm - Starting invitation creation");
     setIsGenerating(true);
 
-    createInvitationMutation.mutate({
+    const invitationData = {
       expires_at: formData.expiresAt!.toISOString(),
       client_group_name: formData.clientGroupName as string,
       email_sent_to: formData.email,
-    });
+    };
+
+    console.log("🔍 InviteUserForm - Invitation data:", invitationData);
+    console.log(
+      "🔍 InviteUserForm - About to call createInvitationMutation.mutate"
+    );
+    createInvitationMutation.mutate(invitationData);
+    console.log("🔍 InviteUserForm - createInvitationMutation.mutate called");
   };
 
   // Handle send invitation
@@ -256,8 +371,8 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
     const expiresAtFormatted = formData.expiresAt!.toLocaleString();
     const invitationUrl = `https://fullbor.ai/accept_invitation/${invitationCode}`;
 
-    const subject = `Invitation to join ${selectedClientGroup?.name} on fullbor.ai`;
-    const body = `You have been invited to join "${selectedClientGroup?.name}" on fullbor.ai.
+    const subject = `Invitation to join ${selectedClientGroup?.client_group_name} on fullbor.ai`;
+    const body = `You have been invited to join "${selectedClientGroup?.client_group_name}" on fullbor.ai.
 
 This invitation will expire at ${expiresAtFormatted}.
 
@@ -302,6 +417,16 @@ If you have any questions, please contact the person at your firm who administer
     !!formData.expiresAt &&
     validationErrors.length === 0;
 
+  // Debug the button state
+  console.log("🔍 InviteUserForm - Button state:", {
+    canGenerateInvitation,
+    clientGroupId: formData.clientGroupId,
+    email: formData.email,
+    expiresAt: formData.expiresAt,
+    validationErrorsLength: validationErrors.length,
+    isGenerating,
+  });
+
   return (
     <Dialog
       open={open}
@@ -315,6 +440,14 @@ If you have any questions, please contact the person at your firm who administer
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 1 }}>
           {/* Client Group Selection */}
+          {console.log("🔍 InviteUserForm - Current form state:", {
+            formData: {
+              clientGroupId: formData.clientGroupId,
+              clientGroupName: formData.clientGroupName,
+            },
+            clientGroupsCount: clientGroups.length,
+            currentUserPrimaryId: currentUser?.primary_client_group_id,
+          })}
           <FormControl fullWidth error={!!getFieldError("clientGroupId")}>
             <InputLabel>Invite To Join</InputLabel>
             <Select
@@ -332,16 +465,37 @@ If you have any questions, please contact the person at your firm who administer
               }}
               label="Invite To Join"
             >
-              {clientGroups.map((group) => (
-                <MenuItem
-                  key={group.client_group_id}
-                  value={group.client_group_id}
-                >
-                  {group.name}
-                  {group.client_group_id ===
-                    currentUser?.primary_client_group_id && " (Primary)"}
+              {clientGroups.length === 0 ? (
+                <MenuItem disabled>
+                  {currentUser
+                    ? "Loading client groups..."
+                    : "No client groups available"}
                 </MenuItem>
-              ))}
+              ) : (
+                clientGroups.map((group) => {
+                  const isPrimary =
+                    group.client_group_id ===
+                    currentUser?.primary_client_group_id;
+                  console.log("🔍 InviteUserForm - Rendering group:", {
+                    group: {
+                      client_group_id: group.client_group_id,
+                      client_group_name: group.client_group_name,
+                    },
+                    isPrimary,
+                    currentUserPrimaryId: currentUser?.primary_client_group_id,
+                  });
+
+                  return (
+                    <MenuItem
+                      key={group.client_group_id}
+                      value={group.client_group_id}
+                    >
+                      {group.client_group_name}
+                      {isPrimary && " (Primary)"}
+                    </MenuItem>
+                  );
+                })
+              )}
             </Select>
             {getFieldError("clientGroupId") && (
               <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>

@@ -5,17 +5,15 @@ import {
   Typography,
   TextField,
   Button,
-  IconButton,
   Alert,
   Autocomplete,
   ToggleButton,
   ToggleButtonGroup,
-  Chip,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as apiService from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import FormHeader from "./FormHeader";
 
 interface UserFormProps {
   onClose: () => void;
@@ -214,38 +212,21 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
   return (
     <Paper sx={containerSx}>
       {/* Header */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          p: 2,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-          zIndex: 1,
+      <FormHeader
+        title="User"
+        isEditing={!!editingUser}
+        email={editingUser?.email}
+        sub={editingUser?.sub}
+        onClose={onClose}
+        onEmailChange={(newEmail) => {
+          setEmail(newEmail);
         }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h5" component="h2">
-            {editingUser?.email || "Create New User"}
-          </Typography>
-          {editingUser?.sub && (
-            <Chip
-              label={`Sub: ${editingUser.sub}`}
-              size="small"
-              variant="outlined"
-            />
-          )}
-        </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
+        onDirtyChange={() => {
+          // UserForm doesn't use dirty state - button is only disabled during mutation
+        }}
+        isEmailEditDisabled={mutation.isPending}
+        editable={false}
+      />
 
       {/* Scrollable Content */}
       <Box

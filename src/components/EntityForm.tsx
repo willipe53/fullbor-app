@@ -3,9 +3,7 @@ import {
   Paper,
   Box,
   Typography,
-  IconButton,
   Button,
-  Chip,
   TextField,
   Autocomplete,
   Alert,
@@ -15,13 +13,21 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import FormJsonToggle from "./FormJsonToggle";
-import CloseIcon from "@mui/icons-material/Close";
+import FormHeader from "./FormHeader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as apiService from "../services/api";
 
 interface EntityFormProps {
   onClose: () => void;
-  editingEntity?: any;
+  editingEntity?: apiService.Entity;
+}
+
+interface SchemaField {
+  key: string;
+  label: string;
+  type: string;
+  description: string;
+  isCustom: boolean;
 }
 
 const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
@@ -29,8 +35,9 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
 
   // State for form fields
   const [name, setName] = useState(editingEntity?.entity_name || "");
-  const [selectedEntityType, setSelectedEntityType] = useState<any>(null);
-  const [attributes, setAttributes] = useState<Record<string, any>>({});
+  const [selectedEntityType, setSelectedEntityType] =
+    useState<apiService.EntityType | null>(null);
+  const [attributes, setAttributes] = useState<apiService.JSONValue>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -57,7 +64,9 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
 
   // Create/Update entity mutation
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (
+      data: apiService.CreateEntityRequest | apiService.UpdateEntityRequest
+    ) => {
       console.log("Mutation function called with data:", data);
       console.log("Editing entity:", editingEntity);
 
@@ -67,11 +76,16 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
           "Calling updateEntity with name:",
           editingEntity.entity_name
         );
-        return await apiService.updateEntity(editingEntity.entity_name, data);
+        return await apiService.updateEntity(
+          editingEntity.entity_name,
+          data as apiService.UpdateEntityRequest
+        );
       } else {
         // Create new entity
         console.log("Calling createEntity");
-        return await apiService.createEntity(data);
+        return await apiService.createEntity(
+          data as apiService.CreateEntityRequest
+        );
       }
     },
     onSuccess: (result) => {
@@ -90,6 +104,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   // Delete entity mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      if (!editingEntity?.entity_name) throw new Error("No entity to delete");
       console.log("Deleting entity:", editingEntity.entity_name);
       return await apiService.deleteEntity(editingEntity.entity_name);
     },
@@ -116,9 +131,12 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       if (entityTypesData && editingEntity.entity_type_name) {
         const data = Array.isArray(entityTypesData)
           ? entityTypesData
-          : entityTypesData.data || [];
+          : entityTypesData && "data" in entityTypesData
+          ? entityTypesData.data
+          : [];
         const entityType = data.find(
-          (et: any) => et.entity_type_name === editingEntity.entity_type_name
+          (et: apiService.EntityType) =>
+            et.entity_type_name === editingEntity.entity_type_name
         );
         setSelectedEntityType(entityType || null);
       }
@@ -131,26 +149,26 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   }, [editingEntity, entityTypesData]);
 
   // Handle entity type change
-  const handleEntityTypeChange = useCallback((newValue: any) => {
-    setSelectedEntityType(newValue);
-    setIsDirty(true);
-  }, []);
-
-  // Handle name change
-  const handleNameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setName(e.target.value);
+  const handleEntityTypeChange = useCallback(
+    (newValue: apiService.EntityType | null) => {
+      setSelectedEntityType(newValue);
       setIsDirty(true);
     },
     []
   );
 
   // Handle attribute change
-  const handleAttributeChange = useCallback((key: string, value: any) => {
-    setAttributes((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const handleAttributeChange = useCallback((key: string, value: unknown) => {
+    setAttributes((prev) => {
+      const prevObj =
+        typeof prev === "object" && prev !== null
+          ? (prev as Record<string, unknown>)
+          : {};
+      return {
+        ...prevObj,
+        [key]: value,
+      } as apiService.JSONValue;
+    });
     setIsDirty(true);
   }, []);
 
@@ -167,14 +185,14 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       } else {
         setAttributes({});
       }
-    } catch (error) {
+    } catch {
       setJsonError("Invalid JSON format");
     }
   }, []);
 
   // Handle mode change
   const handleModeChange = useCallback(
-    (_, newMode: "form" | "json" | null) => {
+    (_: unknown, newMode: "form" | "json" | null) => {
       if (newMode !== null) {
         setAttributesMode(newMode);
 
@@ -193,7 +211,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       const parsed = JSON.parse(jsonAttributes);
       setJsonAttributes(JSON.stringify(parsed, null, 2));
       setJsonError(null);
-    } catch (error) {
+    } catch {
       setJsonError("Invalid JSON format");
     }
   }, [jsonAttributes]);
@@ -236,9 +254,11 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       setErrors({});
 
       // Prepare the data for API call
-      const entityData = {
+      const entityData:
+        | apiService.CreateEntityRequest
+        | apiService.UpdateEntityRequest = {
         entity_name: name.trim(),
-        entity_type_name: selectedEntityType.entity_type_name,
+        entity_type_name: selectedEntityType?.entity_type_name || "",
         attributes: attributes,
       };
 
@@ -248,32 +268,60 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
 
       mutation.mutate(entityData);
     },
-    [name, selectedEntityType, attributes, jsonError, mutation]
+    [
+      name,
+      selectedEntityType,
+      attributes,
+      jsonError,
+      mutation,
+      editingEntity?.entity_id,
+    ]
   );
 
   // Get schema fields for the selected entity type
-  const schemaFields = useMemo(() => {
+  const schemaFields = useMemo((): SchemaField[] => {
     if (!selectedEntityType?.attributes_schema) return [];
 
     const schema = selectedEntityType.attributes_schema;
-    const attributeKeys = Object.keys(attributes);
+    const attributeKeys = Object.keys(
+      typeof attributes === "object" && attributes !== null
+        ? (attributes as Record<string, unknown>)
+        : {}
+    );
 
     // Extract properties from JSON schema
     let schemaKeys: string[] = [];
-    if (schema.properties) {
-      schemaKeys = Object.keys(schema.properties);
+    let schemaProperties: Record<string, unknown> = {};
+
+    if (
+      typeof schema === "object" &&
+      schema !== null &&
+      "properties" in schema
+    ) {
+      const properties = (schema as { properties: Record<string, unknown> })
+        .properties;
+      if (typeof properties === "object" && properties !== null) {
+        schemaProperties = properties;
+        schemaKeys = Object.keys(properties);
+      }
     }
 
     // Create a superset of all keys from both schema properties and existing attributes
     const allKeys = [...new Set([...schemaKeys, ...attributeKeys])];
 
-    return allKeys.map((key) => {
-      const fieldDef = schema.properties?.[key] || {};
+    return allKeys.map((key): SchemaField => {
+      const fieldDef = schemaProperties[key] || {};
+      const fieldDefObj =
+        typeof fieldDef === "object" && fieldDef !== null
+          ? (fieldDef as Record<string, unknown>)
+          : {};
       return {
         key,
-        ...fieldDef,
+        label: (fieldDefObj.label as string) || key,
+        type: (fieldDefObj.type as string) || "text",
+        description: (fieldDefObj.description as string) || "",
         // If it's not in the schema properties, it's a custom attribute
-        isCustom: !schema.properties?.[key],
+        isCustom: !schemaProperties[key],
       };
     });
   }, [selectedEntityType, attributes]);
@@ -281,39 +329,18 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   return (
     <Paper sx={containerSx}>
       {/* Header */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          p: 2,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-          zIndex: 1,
+      <FormHeader
+        title="Entity"
+        isEditing={!!editingEntity}
+        name={editingEntity?.entity_name}
+        id={editingEntity?.entity_id}
+        onClose={onClose}
+        onNameChange={(newName) => {
+          setName(newName);
         }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h5" component="h2">
-            {editingEntity?.entity_name || "Create New Entity"}
-          </Typography>
-          {editingEntity?.entity_id && (
-            <Chip
-              label={`ID: ${editingEntity.entity_id}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-        </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
+        onDirtyChange={() => setIsDirty(true)}
+        isNameEditDisabled={mutation.isPending}
+      />
 
       {/* Scrollable Content */}
       <Box
@@ -335,24 +362,14 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
             </Alert>
           )}
 
-          {/* Entity Name */}
-          <TextField
-            fullWidth
-            label="Entity Name *"
-            value={name}
-            onChange={handleNameChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            sx={{ mb: 3 }}
-            required
-          />
-
           {/* Entity Type */}
           <Autocomplete
             options={
               Array.isArray(entityTypesData)
                 ? entityTypesData
-                : entityTypesData?.data || []
+                : entityTypesData && "data" in entityTypesData
+                ? entityTypesData.data
+                : []
             }
             getOptionLabel={(option) => option.entity_type_name || ""}
             getOptionKey={(option) => option.entity_type_name}
@@ -405,7 +422,11 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
                       <TextField
                         fullWidth
                         label={field.label || field.key}
-                        value={attributes[field.key] || ""}
+                        value={
+                          (typeof attributes === "object" && attributes !== null
+                            ? (attributes as Record<string, unknown>)[field.key]
+                            : undefined) || ""
+                        }
                         onChange={(e) =>
                           handleAttributeChange(field.key, e.target.value)
                         }

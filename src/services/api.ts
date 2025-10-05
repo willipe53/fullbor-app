@@ -1,14 +1,25 @@
 import { userPool } from "../config/cognito";
+import { CognitoUserSession } from "amazon-cognito-identity-js";
 
 // Use proxy in development, direct API in production
 const API_BASE_URL = import.meta.env.DEV
   ? "/api" // Development: use Vite proxy
   : "https://api.fullbor.ai/v2"; // Production: direct API Pathway
 
+// JSON Value type for better type safety
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
 // Client Groups - Updated to match FullBor API spec
 export interface ClientGroup {
+  client_group_id: number;
   client_group_name: string;
-  preferences?: any;
+  preferences?: JSONValue;
   entities?: Entity[];
   users?: User[];
   update_date?: string;
@@ -25,21 +36,23 @@ const getAuthToken = (): Promise<string | null> => {
       return;
     }
 
-    currentUser.getSession((err: any, session: any) => {
-      if (err) {
-        console.log("❌ getAuthToken - Session error:", err);
-        resolve(null);
-        return;
-      }
-      if (!session || !session.isValid()) {
-        console.log("❌ getAuthToken - Invalid session");
-        resolve(null);
-        return;
-      }
+    currentUser.getSession(
+      (err: Error | null, session: CognitoUserSession | null) => {
+        if (err) {
+          console.log("❌ getAuthToken - Session error:", err);
+          resolve(null);
+          return;
+        }
+        if (!session || !session.isValid()) {
+          console.log("❌ getAuthToken - Invalid session");
+          resolve(null);
+          return;
+        }
 
-      const idToken = session.getIdToken().getJwtToken();
-      resolve(idToken);
-    });
+        const idToken = session.getIdToken().getJwtToken();
+        resolve(idToken);
+      }
+    );
   });
 };
 
@@ -53,16 +66,18 @@ const getCurrentUserId = (): Promise<string | null> => {
     }
 
     // Extract sub from Cognito token
-    currentUser.getSession((err: any, session: any) => {
-      if (err || !session || !session.isValid()) {
-        resolve(null);
-        return;
-      }
+    currentUser.getSession(
+      (err: Error | null, session: CognitoUserSession | null) => {
+        if (err || !session || !session.isValid()) {
+          resolve(null);
+          return;
+        }
 
-      const idToken = session.getIdToken();
-      const payload = idToken.decodePayload();
-      resolve(payload?.sub || null);
-    });
+        const idToken = session.getIdToken();
+        const payload = idToken.decodePayload();
+        resolve(payload?.sub || null);
+      }
+    );
   });
 };
 
@@ -71,7 +86,7 @@ const apiCall = async <T>(
   endpoint: string,
   options: {
     method?: "GET" | "POST" | "PUT" | "DELETE";
-    data?: any;
+    data?: unknown;
     searchParams?: Record<string, string>;
   } = {}
 ): Promise<T> => {
@@ -126,7 +141,7 @@ const apiCall = async <T>(
   try {
     const result = JSON.parse(text);
     return result;
-  } catch (error) {
+  } catch {
     console.error("Failed to parse JSON response:", text);
     throw new Error(`Invalid JSON response: ${text}`);
   }
@@ -134,8 +149,9 @@ const apiCall = async <T>(
 
 // Entity Types - Updated to match FullBor API spec
 export interface EntityType {
+  entity_type_id: number;
   entity_type_name: string;
-  attributes_schema?: any;
+  attributes_schema?: JSONValue;
   short_label?: string;
   label_color?: string;
   entity_category?: string;
@@ -148,7 +164,7 @@ export interface Entity {
   entity_id: number;
   entity_name: string;
   entity_type_name: string;
-  attributes?: any;
+  attributes?: JSONValue;
   update_date?: string;
   updated_by_user_name?: string;
 }
@@ -156,19 +172,20 @@ export interface Entity {
 export interface CreateEntityRequest {
   entity_name: string;
   entity_type_name: string;
-  attributes?: any;
+  attributes?: JSONValue;
 }
 
 export interface UpdateEntityRequest {
   entity_name: string;
   entity_type_name: string;
-  attributes?: any;
+  attributes?: JSONValue;
 }
 
 export interface QueryEntitiesRequest {
   entity_type_name?: string;
   entity_category?: string;
   client_group_name?: string;
+  client_group_id?: number;
   count?: boolean;
   limit?: number;
   offset?: number;
@@ -270,7 +287,7 @@ export const deleteEntity = async (entityName: string): Promise<void> => {
 
 // Legacy delete record function - deprecated, use specific delete functions
 export const deleteRecord = async (
-  recordId: number | string,
+  _recordId: number | string,
   recordType: string
 ): Promise<{ success: boolean; message: string }> => {
   // This function is deprecated - new FullBor API uses specific delete endpoints
@@ -284,7 +301,7 @@ export interface User {
   user_id: number;
   sub: string;
   email: string;
-  preferences?: any;
+  preferences?: JSONValue;
   primary_client_group_id?: number;
   update_date?: string;
 }
@@ -292,19 +309,25 @@ export interface User {
 export interface CreateUserRequest {
   sub: string;
   email: string;
-  preferences?: any;
+  preferences?: JSONValue;
   primary_client_group_id?: number;
 }
 
 export interface UpdateUserRequest {
+  user_id?: number;
   email?: string;
   sub?: string;
-  preferences?: any;
+  preferences?: JSONValue;
   primary_client_group_id?: number;
 }
 
 export interface QueryUsersRequest {
+  sub?: string;
+  email?: string;
+  client_group_name?: string;
   count?: boolean;
+  limit?: number;
+  offset?: number;
 }
 
 export type QueryUsersResponse = User[] | { count: number };
@@ -313,16 +336,21 @@ export type QueryUsersResponse = User[] | { count: number };
 
 export interface CreateClientGroupRequest {
   client_group_name: string;
-  preferences?: any;
+  preferences?: JSONValue;
+  client_group_id?: number;
+  user_id?: number;
 }
 
 export interface UpdateClientGroupRequest {
   client_group_name: string;
-  preferences?: any;
+  preferences?: JSONValue;
+  client_group_id?: number;
+  user_id?: number;
 }
 
 export interface QueryClientGroupsRequest {
   entity_name?: string;
+  email?: string;
   count?: boolean;
   limit?: number;
   offset?: number;
@@ -341,14 +369,38 @@ export type QueryClientGroupsResponse =
 export const queryUsers = async (
   data: QueryUsersRequest = {}
 ): Promise<QueryUsersResponse> => {
+  console.log("🔍 API - queryUsers called with data:", data);
+
   // Remove unsupported parameters
   const cleanParams: Record<string, string> = {};
   if (data.count) cleanParams.count = String(data.count);
+  if (data.sub) cleanParams.sub = data.sub;
+  if (data.email) cleanParams.email = data.email;
+  if (data.client_group_name)
+    cleanParams.client_group_name = data.client_group_name;
+  if (data.limit) cleanParams.limit = String(data.limit);
+  if (data.offset) cleanParams.offset = String(data.offset);
 
-  return apiCall<QueryUsersResponse>("/users", {
+  console.log("🔍 API - queryUsers cleanParams:", cleanParams);
+
+  const result = await apiCall<QueryUsersResponse>("/users", {
     method: "GET",
     searchParams: cleanParams,
   });
+
+  console.log("🔍 API - queryUsers result:", result);
+  return result;
+};
+
+export const getUserBySub = async (sub: string): Promise<User> => {
+  console.log("🔍 API - getUserBySub called with sub:", sub);
+
+  const result = await apiCall<User>(`/users/${sub}`, {
+    method: "GET",
+  });
+
+  console.log("🔍 API - getUserBySub result:", result);
+  return result;
 };
 
 export const createUser = async (data: CreateUserRequest): Promise<void> => {
@@ -431,6 +483,7 @@ export interface QueryInvitationsRequest {
   client_group_name?: string;
   filter?: "unexpired";
   count?: boolean;
+  redeemed?: boolean;
 }
 
 export type QueryInvitationsResponse = Invitation[] | { count: number };
@@ -493,9 +546,11 @@ export const queryClientGroupEntities = async (
   const clientGroups = await queryClientGroups({});
   const clientGroupArray = Array.isArray(clientGroups)
     ? clientGroups
-    : clientGroups.data || [];
+    : clientGroups && typeof clientGroups === "object" && "data" in clientGroups
+    ? (clientGroups as { data: ClientGroup[] }).data
+    : [];
   const clientGroup = clientGroupArray.find(
-    (cg: any) => cg.client_group_id === data.client_group_id
+    (cg: ClientGroup) => cg.client_group_id === data.client_group_id
   );
 
   if (!clientGroup) {
@@ -519,9 +574,11 @@ export const modifyClientGroupEntities = async (
   const clientGroups = await queryClientGroups({});
   const clientGroupArray = Array.isArray(clientGroups)
     ? clientGroups
-    : clientGroups.data || [];
+    : clientGroups && typeof clientGroups === "object" && "data" in clientGroups
+    ? (clientGroups as { data: ClientGroup[] }).data
+    : [];
   const clientGroup = clientGroupArray.find(
-    (cg: any) => cg.client_group_id === data.client_group_id
+    (cg: ClientGroup) => cg.client_group_id === data.client_group_id
   );
 
   if (!clientGroup) {
@@ -605,9 +662,19 @@ export const queryInvitations = async (
 
 export const createInvitation = async (
   data: CreateInvitationRequest
-): Promise<void> => {
-  return apiCall<void>("/invitations", {
+): Promise<Invitation> => {
+  return apiCall<Invitation>("/invitations", {
     method: "POST",
+    data,
+  });
+};
+
+export const updateInvitation = async (
+  invitationId: number,
+  data: { expires_at?: string }
+): Promise<void> => {
+  return apiCall<void>(`/invitations/${invitationId}`, {
+    method: "PUT",
     data,
   });
 };
@@ -701,7 +768,7 @@ export const parseApiError = (error: Error): string => {
           }
         }
       }
-    } catch (parseError) {
+    } catch {
       // If we can't parse the JSON, fall back to basic cleanup
     }
   }
@@ -718,14 +785,16 @@ export const parseApiError = (error: Error): string => {
 // Transaction Types
 // Transaction Types - Updated for FullBor API spec
 export interface TransactionType {
+  transaction_type_id: number;
   transaction_type_name: string;
-  properties?: any;
+  properties?: JSONValue;
   update_date?: string;
   updated_by_user_name?: string;
 }
 
 // Transaction Statuses - Updated for FullBor API spec
 export interface TransactionStatus {
+  transaction_status_id: number;
   transaction_status_name: string;
   update_date?: string;
   updated_by_user_name?: string;
@@ -739,7 +808,7 @@ export interface Transaction {
   instrument_entity_name?: string;
   transaction_status_name: string;
   transaction_type_name: string;
-  properties?: any;
+  properties?: JSONValue;
   update_date?: string;
   updated_by_user_name?: string;
 }
@@ -750,7 +819,7 @@ export interface CreateTransactionRequest {
   instrument_entity_name?: string;
   transaction_status_name: string;
   transaction_type_name: string;
-  properties?: any;
+  properties?: JSONValue;
 }
 
 export interface UpdateTransactionRequest extends CreateTransactionRequest {
@@ -939,6 +1008,7 @@ export const apiService = {
   // Users
   createUser,
   queryUsers,
+  getUserBySub,
   updateUser,
   deleteUser,
 
@@ -946,6 +1016,7 @@ export const apiService = {
   createInvitation,
   queryInvitations,
   queryClientGroupInvitations,
+  updateInvitation,
   deleteInvitation,
   redeemInvitation,
 

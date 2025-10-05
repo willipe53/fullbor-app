@@ -5,22 +5,20 @@ info:
   x-logo:
     url: https://docs.fullbor.ai/boar34black_small.png
     altText: Fullbor.ai
-  description:
-    'FullBor v2 API (API Gateway + Lambda). All endpoints require the current
-    user context via `X-Current-User-Id` header which constrains the data that the user
-    can access. For referential fields (client group,
-    entity type, transaction type/status, entities, etc.) the API expects and returns
-    **string names** rather than integer IDs. Association "set" endpoints optionally
-    accept ID arrays in addition to name arrays for convenience.
+  description: |
+    FullBor v2 API (API Gateway + Lambda).  
+    All endpoints require the current user context via `X-Current-User-Id` header which constrains the data that the user can access.
 
-    All get endpoints return a count of the total number of results and a limit and offset
-    that can be used to paginate the results.
+    For referential fields (client group, entity type, transaction type/status, entities, etc.) the API expects and returns **string names** rather than integer IDs.  
+    Association "set" endpoints optionally accept ID arrays in addition to name arrays for convenience.
 
-    OVERVIEW
-    --------
+    All GET endpoints return a count of the total number of results and a limit and offset that can be used to paginate the results.
+
+    **OVERVIEW**
+    ------------
     The API has 42 endpoints across 9 main resource areas:
 
-    CLIENT GROUPS (8 endpoints):
+    **CLIENT GROUPS (8 endpoints):**
     - GET    /client-groups
     - GET    /client-groups/{client_group_name}
     - POST   /client-groups
@@ -30,57 +28,56 @@ info:
     - PUT    /client-groups/{client_group_name}/users:set
     - GET    /client-groups/{client_group_name}/entities
 
-    ENTITIES (5 endpoints):
+    **ENTITIES (5 endpoints):**
     - GET    /entities
     - GET    /entities/{entity_name}
     - POST   /entities
     - PUT    /entities/{entity_name}
     - DELETE /entities/{entity_name}
 
-    ENTITY TYPES (5 endpoints):
+    **ENTITY TYPES (5 endpoints):**
     - GET    /entity-types
     - GET    /entity-types/{entity_type_name}
     - POST   /entity-types
     - PUT    /entity-types/{entity_type_name}
     - DELETE /entity-types/{entity_type_name}
 
-    TRANSACTIONS (5 endpoints):
+    **TRANSACTIONS (5 endpoints):**
     - GET    /transactions
     - GET    /transactions/{transaction_id}
     - POST   /transactions
     - PUT    /transactions/{transaction_id}
     - DELETE /transactions/{transaction_id}
 
-    TRANSACTION TYPES (5 endpoints):
+    **TRANSACTION TYPES (5 endpoints):**
     - GET    /transaction-types
     - GET    /transaction-types/{transaction_type_name}
     - POST   /transaction-types
     - PUT    /transaction-types/{transaction_type_name}
     - DELETE /transaction-types/{transaction_type_name}
 
-    TRANSACTION STATUSES (1 endpoint):
+    **TRANSACTION STATUSES (1 endpoint):**
     - GET    /transaction-statuses
 
-    POSITION KEEPER (2 endpoints):
+    **POSITION KEEPER (2 endpoints):**
     - POST   /position-keeper/start
     - POST   /position-keeper/stop
 
-    USERS (5 endpoints):
+    **USERS (5 endpoints):**
     - GET    /users
     - GET    /users/{sub}
     - POST   /users
     - PUT    /users/{sub}
     - DELETE /users/{sub}
 
-    INVITATIONS (6 endpoints):
-    - GET    /invitations
+    **INVITATIONS (6 endpoints):**
+    - GET    /invitations (supports ?redeemed filter)
     - GET    /invitations/{invitation_id}
     - POST   /invitations
     - PUT    /invitations/{invitation_id}
     - DELETE /invitations/{invitation_id}
     - POST   /invitations/redeem/{code}
 
-    '
 servers:
   - url: https://api.fullbor.ai/v2
 tags:
@@ -2684,6 +2681,80 @@ paths:
                 properties:
                   error:
                     type: string
+    put:
+      tags:
+        - Invitations
+      summary: Update an invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invitation"
+            examples:
+              update_invitation:
+                summary: Update Invitation Expiration
+                value:
+                  expires_at: "2025-12-31T23:59:59Z"
+                  client_group_name: "Byrde Family Foundation"
+                  email_sent_to: "test@example.com"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                success:
+                  summary: Invitation updated successfully
+                  value:
+                    message: "Invitation updated successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                invalid_data:
+                  summary: Invalid invitation data
+                  value:
+                    error: "Invalid invitation data provided"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                unauthorized:
+                  summary: User not found
+                  value:
+                    error: "User not found"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                access_denied:
+                  summary: Access denied
+                  value:
+                    error: "Invitation not found or access denied"
     delete:
       tags:
         - Invitations

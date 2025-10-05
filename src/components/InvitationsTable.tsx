@@ -9,6 +9,7 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
+  Alert,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
@@ -25,100 +26,60 @@ const InvitationsTable: React.FC = () => {
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
   const [filter, setFilter] = useState<"unexpired" | "all">("unexpired");
 
-  // Get current user's database ID
-  const { data: currentUser } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
-    enabled: !!userId,
-    select: (data) => data[0], // Get first user from array
-  });
-
-  // Get all client groups the user belongs to for debugging
-  const { data: userClientGroups } = useQuery({
-    queryKey: ["client-groups", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryClientGroups({ user_id: currentUser!.user_id }),
-    enabled: !!currentUser?.user_id,
-  });
-
-  // Get primary client group details (including name)
-  const { data: primaryClientGroup } = useQuery({
-    queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
-    enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0], // Get first group from array
-  });
-
-  // Debug: Try fetching invitations for ALL the user's client groups
-  const { data: debugInvitations } = useQuery({
-    queryKey: ["debug-all-invitations", userClientGroups],
-    queryFn: async () => {
-      if (!userClientGroups || userClientGroups.length === 0) return [];
-
-      const allInvitations = [];
-      for (const group of userClientGroups) {
-        try {
-          const invitations = await apiService.queryClientGroupInvitations(
-            group.client_group_name,
-            {}
-          );
-
-          // Handle paginated response format
-          const invitationsArray = invitations.data || invitations;
-          if (Array.isArray(invitationsArray)) {
-            allInvitations.push(
-              ...invitationsArray.map((inv) => ({
-                ...inv,
-                group_name: group.client_group_name,
-              }))
-            );
-          } else if (invitationsArray) {
-            allInvitations.push({
-              ...invitationsArray,
-              group_name: group.client_group_name,
-            });
-          }
-        } catch (error) {
-          console.error(
-            `Error fetching invitations for group ${group.client_group_id}:`,
-            error
-          );
-        }
-      }
-      return allInvitations;
-    },
-    enabled: !!userClientGroups && userClientGroups.length > 0,
-  });
-
-  // Fetch invitations for the user's client group
+  // Fetch all invitations for the current user
   const {
     data: rawInvitationsData,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["invitations", currentUser?.primary_client_group_id],
-    queryFn: () => {
-      return apiService.queryClientGroupInvitations(
-        primaryClientGroup?.client_group_name!,
-        {}
+    queryKey: ["all-invitations", filter],
+    queryFn: async () => {
+      console.log(
+        "🔍 InvitationsTable - Fetching invitations with filter:",
+        filter
       );
+
+      try {
+        const invitations = await apiService.queryInvitations({
+          redeemed: filter === "unexpired" ? false : undefined,
+        });
+
+        console.log(
+          "🔍 InvitationsTable - Raw invitations response:",
+          invitations
+        );
+
+        // Handle paginated response format
+        const invitationList = Array.isArray(invitations)
+          ? invitations
+          : invitations.data || [];
+
+        console.log(
+          "🔍 InvitationsTable - Processed invitation list:",
+          invitationList
+        );
+        return invitationList;
+      } catch (error) {
+        console.error(
+          "🔍 InvitationsTable - Error fetching invitations:",
+          error
+        );
+        return [];
+      }
     },
     staleTime: 30 * 1000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    enabled:
-      !!currentUser?.primary_client_group_id &&
-      !!primaryClientGroup?.client_group_name,
+    enabled: !!userId, // Only need userId for authentication
   });
 
   // Mutation to expire an invitation
   const expireInvitationMutation = useMutation({
     mutationFn: (invitationId: number) => {
-      return apiService.deleteInvitation(invitationId);
+      // Set expiration date to current time
+      const now = new Date().toISOString();
+      return apiService.updateInvitation(invitationId, { expires_at: now });
     },
     onSuccess: () => {
       // Refresh the invitations list
@@ -135,23 +96,9 @@ const InvitationsTable: React.FC = () => {
     },
   });
 
-  // Create client groups map for O(1) lookups
-  const clientGroupsMap = useMemo(() => {
-    if (!userClientGroups) return new Map();
-    return new Map(
-      userClientGroups.map((group) => [group.client_group_id, group.name])
-    );
-  }, [userClientGroups]);
-
   // Transform array data to proper format
   const invitationsData = useMemo(() => {
-    // For now, use debugInvitations (all groups) if rawInvitationsData is empty
-    const sourceData =
-      rawInvitationsData &&
-      Array.isArray(rawInvitationsData) &&
-      rawInvitationsData.length > 0
-        ? rawInvitationsData
-        : debugInvitations || [];
+    const sourceData = rawInvitationsData || [];
 
     if (!sourceData || (Array.isArray(sourceData) && sourceData.length === 0)) {
       return [];
@@ -166,11 +113,8 @@ const InvitationsTable: React.FC = () => {
       const now = new Date();
       const isExpired = expiresAt < now;
 
-      // Find the group name if not already included
-      const groupName =
-        invitation.group_name ||
-        clientGroupsMap.get(invitation.client_group_id) ||
-        "Unknown";
+      // Use the client group name from the invitation data
+      const groupName = invitation.client_group_name || "Unknown";
 
       return {
         id: invitation.invitation_id,
@@ -192,7 +136,7 @@ const InvitationsTable: React.FC = () => {
         : processed;
 
     return filteredProcessed;
-  }, [rawInvitationsData, debugInvitations, clientGroupsMap, filter]);
+  }, [rawInvitationsData, filter]);
 
   const handleExpireInvitation = useCallback(
     (invitationId: number) => {
@@ -310,6 +254,14 @@ const InvitationsTable: React.FC = () => {
     );
   }
 
+  // Debug logging
+  console.log("🔍 InvitationsTable - Render data:", {
+    rawInvitationsData,
+    isLoading,
+    error,
+    invitationsData,
+  });
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
@@ -361,20 +313,12 @@ const InvitationsTable: React.FC = () => {
         {invitationsData.length === 0 && !isLoading ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              {!currentUser?.primary_client_group_id ? (
-                "User doesn't have a primary client group set"
-              ) : (
-                <>
-                  No {filter === "unexpired" ? "unexpired " : ""}invitations
-                  found
-                  <br />
-                  No {filter === "unexpired" ? "unexpired " : ""}invitations
-                  exist for {primaryClientGroup?.name || "this client group"}
-                  <br />
-                  Click "New" to invite a user to join{" "}
-                  {primaryClientGroup?.name || "this client group"} via email.
-                </>
-              )}
+              <>
+                No {filter === "unexpired" ? "unexpired " : ""}invitations found
+                <br />
+                Click "New" to create an invitation for a user to join your
+                organization.
+              </>
             </Typography>
           </Box>
         ) : (
