@@ -21,6 +21,7 @@ import {
   Stack,
   Switch,
   FormControlLabel,
+  Chip,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -35,6 +36,7 @@ import {
   parseFormattedNumber,
   formatPriceForDisplay,
   parseNumericShortcut,
+  formatDatabaseTimestamp,
 } from "../utils";
 import EntityForm from "./EntityForm";
 
@@ -64,6 +66,8 @@ interface FormData {
   instrument_entity_id: string;
   transaction_type_id: string;
   contra_entity_id: string;
+  trade_date: string;
+  settle_date: string;
   properties: Record<string, any>;
 }
 
@@ -80,6 +84,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       instrument_entity_id: "",
       transaction_type_id: "",
       contra_entity_id: "",
+      trade_date: "",
+      settle_date: "",
       properties: {},
     });
 
@@ -239,21 +245,80 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           }
         }
 
+        // Look up entity IDs from names if we have names but not IDs
+        console.log(
+          "🔍 Initializing transaction form with:",
+          editingTransaction
+        );
+        console.log("🔍 Available entities:", entities);
+        console.log("🔍 Available transaction types:", transactionTypes);
+
+        const portfolioId =
+          editingTransaction.portfolio_entity_id?.toString() ||
+          entities
+            ?.find(
+              (e) => e.entity_name === editingTransaction.portfolio_entity_name
+            )
+            ?.entity_id.toString() ||
+          "";
+        const instrumentId =
+          editingTransaction.instrument_entity_id?.toString() ||
+          entities
+            ?.find(
+              (e) => e.entity_name === editingTransaction.instrument_entity_name
+            )
+            ?.entity_id.toString() ||
+          "";
+        const contraId =
+          editingTransaction.contra_entity_id?.toString() ||
+          entities
+            ?.find(
+              (e) => e.entity_name === editingTransaction.contra_entity_name
+            )
+            ?.entity_id.toString() ||
+          "";
+        const transactionTypeId =
+          editingTransaction.transaction_type_id?.toString() ||
+          transactionTypes
+            ?.find(
+              (tt) =>
+                tt.transaction_type_name ===
+                editingTransaction.transaction_type_name
+            )
+            ?.transaction_type_id.toString() ||
+          "";
+
+        console.log(
+          "🔍 Resolved IDs - portfolio:",
+          portfolioId,
+          "instrument:",
+          instrumentId,
+          "type:",
+          transactionTypeId,
+          "contra:",
+          contraId
+        );
+
+        const tradeDate = editingTransaction.trade_date
+          ? editingTransaction.trade_date.split("T")[0]
+          : "";
+        const settleDate = editingTransaction.settle_date
+          ? editingTransaction.settle_date.split("T")[0]
+          : "";
+
         setFormData({
-          portfolio_entity_id:
-            editingTransaction.portfolio_entity_id.toString(),
-          instrument_entity_id:
-            editingTransaction.instrument_entity_id.toString(),
-          transaction_type_id:
-            editingTransaction.transaction_type_id.toString(),
-          contra_entity_id:
-            editingTransaction.contra_entity_id?.toString() || "",
+          portfolio_entity_id: portfolioId,
+          instrument_entity_id: instrumentId,
+          transaction_type_id: transactionTypeId,
+          contra_entity_id: contraId,
+          trade_date: tradeDate,
+          settle_date: settleDate,
           properties: parsedProperties,
         });
         // Mark as having unsaved changes when editing an existing transaction
         setHasUnsavedChanges(true);
       }
-    }, [editingTransaction]);
+    }, [editingTransaction, entities, transactionTypes]);
 
     // Calculate current step when editing an existing transaction
     React.useEffect(() => {
@@ -304,38 +369,63 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     // Create entity type maps for O(1) lookups
     const entityTypeMap = useMemo(() => {
       if (!entityTypes) return new Map();
-      return new Map(entityTypes.map((et) => [et.name, et.entity_type_id]));
+      return new Map(
+        entityTypes.map((et) => [et.entity_type_name, et.entity_type_id])
+      );
     }, [entityTypes]);
 
     // Filter entities by type
     const portfolioEntities = useMemo(() => {
-      if (!entities || !entityTypeMap.has("Portfolio")) return [];
-      const portfolioTypeId = entityTypeMap.get("Portfolio");
-      return entities.filter(
-        (entity) => entity.entity_type_id === portfolioTypeId
+      if (!entities || !entityTypeMap.has("Portfolio")) {
+        console.log(
+          "🔍 portfolioEntities - no entities or Portfolio type not in map"
+        );
+        console.log("🔍 entityTypeMap:", entityTypeMap);
+        return [];
+      }
+      // Filter by entity_type_name instead of entity_type_id since the API returns names
+      const filtered = entities.filter(
+        (entity) => entity.entity_type_name === "Portfolio"
       );
+      return filtered;
     }, [entities, entityTypeMap]);
 
     // Get selected portfolio entity
     const selectedPortfolio = useMemo(() => {
-      if (!formData.portfolio_entity_id || !portfolioEntities) return null;
-      return portfolioEntities.find(
+      if (!formData.portfolio_entity_id || !portfolioEntities) {
+        console.log(
+          "🔍 No portfolio selected - formData.portfolio_entity_id:",
+          formData.portfolio_entity_id,
+          "portfolioEntities:",
+          portfolioEntities
+        );
+        return null;
+      }
+      const found = portfolioEntities.find(
         (e) => e.entity_id.toString() === formData.portfolio_entity_id
       );
+      console.log(
+        "🔍 Looking for portfolio with ID:",
+        formData.portfolio_entity_id,
+        "Found:",
+        found
+      );
+      return found;
     }, [formData.portfolio_entity_id, portfolioEntities]);
 
     const instrumentEntities = useMemo(() => {
       if (!entities || !entityTypes) return [];
 
-      const instrumentTypes = entityTypes.filter(
-        (et) => et.entity_category === "Instrument"
-      );
-      const instrumentTypeIds = new Set(
-        instrumentTypes.map((et) => et.entity_type_id)
+      // Get instrument type names from entityTypes with category "Instrument"
+      const instrumentTypeNames = new Set(
+        entityTypes
+          .filter((et) => et.entity_category === "Instrument")
+          .map((et) => et.entity_type_name)
       );
 
+      // Filter entities by entity_type_name since API returns names, not IDs
       return entities.filter((entity) =>
-        instrumentTypeIds.has(entity.entity_type_id)
+        instrumentTypeNames.has(entity.entity_type_name)
       );
     }, [entities, entityTypes]);
 
@@ -407,7 +497,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       if (!selectedInstrument || !entityTypes) return [];
 
       const instrumentType = entityTypes.find(
-        (et) => et.entity_type_id === selectedInstrument.entity_type_id
+        (et) => et.entity_type_name === selectedInstrument.entity_type_name
       );
       if (!instrumentType?.short_label) return [];
 
@@ -442,12 +532,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           validContraGroups.includes(et.short_label || "")
         );
 
-        const validEntityTypeIds = new Set(
-          validEntityTypes.map((et) => et.entity_type_id)
+        const validEntityTypeNames = new Set(
+          validEntityTypes.map((et) => et.entity_type_name)
         );
 
         return entities.filter((entity) =>
-          validEntityTypeIds.has(entity.entity_type_id)
+          validEntityTypeNames.has(entity.entity_type_name)
         );
       }
 
@@ -455,7 +545,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       if (!selectedInstrument) return [];
 
       const instrumentType = entityTypes.find(
-        (et) => et.entity_type_id === selectedInstrument.entity_type_id
+        (et) => et.entity_type_name === selectedInstrument.entity_type_name
       );
       if (!instrumentType?.short_label) return [];
 
@@ -466,12 +556,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       const validEntityTypes = entityTypes.filter((et) =>
         validContraGroups.includes(et.short_label || "")
       );
-      const validEntityTypeIds = new Set(
-        validEntityTypes.map((et) => et.entity_type_id)
+      const validEntityTypeNames = new Set(
+        validEntityTypes.map((et) => et.entity_type_name)
       );
 
       return entities.filter((entity) =>
-        validEntityTypeIds.has(entity.entity_type_id)
+        validEntityTypeNames.has(entity.entity_type_name)
       );
     }, [
       entities,
@@ -551,20 +641,39 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     // Handle form submission (Create Transaction button - saves as QUEUED)
     const handleSubmit = () => {
-      if (!currentUser?.user_id) return;
+      // Find the entity names from the IDs
+      const portfolioEntity = entities?.find(
+        (e) => e.entity_id === parseInt(formData.portfolio_entity_id)
+      );
+      const contraEntity = formData.contra_entity_id
+        ? entities?.find(
+            (e) => e.entity_id === parseInt(formData.contra_entity_id)
+          )
+        : null;
+      const instrumentEntity = formData.instrument_entity_id
+        ? entities?.find(
+            (e) => e.entity_id === parseInt(formData.instrument_entity_id)
+          )
+        : null;
+      const transactionType = transactionTypes?.find(
+        (tt) =>
+          tt.transaction_type_id === parseInt(formData.transaction_type_id)
+      );
+
+      if (!portfolioEntity || !transactionType) {
+        console.error("Missing required entity or transaction type");
+        return;
+      }
 
       const submitData: apiService.CreateTransactionRequest = {
-        user_id: currentUser.user_id,
-        portfolio_entity_id: parseInt(formData.portfolio_entity_id),
-        instrument_entity_id: isInvestorTransaction
-          ? 0 // NULL for investor transactions
-          : parseInt(formData.instrument_entity_id),
-        transaction_type_id: parseInt(formData.transaction_type_id),
-        contra_entity_id: isContraRequired
-          ? parseInt(formData.contra_entity_id)
-          : 0, // Use 0 or a default value when not required
+        portfolio_entity_name: portfolioEntity.entity_name,
+        contra_entity_name: contraEntity?.entity_name,
+        instrument_entity_name: instrumentEntity?.entity_name,
+        transaction_status_name: "QUEUED",
+        transaction_type_name: transactionType.transaction_type_name,
+        trade_date: formData.trade_date,
+        settle_date: formData.settle_date,
         properties: formData.properties,
-        transaction_status_id: 2, // QUEUED
       };
 
       mutation.mutate(submitData);
@@ -782,6 +891,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         formData.portfolio_entity_id &&
         (isInvestorTransaction || formData.instrument_entity_id) && // Skip instrument requirement for investor transactions
         formData.transaction_type_id &&
+        formData.trade_date && // Mandatory
+        formData.settle_date && // Mandatory
         transactionSchema &&
         (!transactionSchema.required ||
           transactionSchema.required.length === 0 ||
@@ -1166,14 +1277,17 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               <Autocomplete
                 key={propertyName}
                 options={categoryData.entities || []}
-                getOptionLabel={(option) => option.name}
+                getOptionLabel={(option) => option.entity_name}
                 value={
                   categoryData.entities?.find(
-                    (entity) => entity.name === value
+                    (entity) => entity.entity_name === value
                   ) || null
                 }
                 onChange={(_, newValue) =>
-                  handlePropertyChange(propertyName, newValue?.name || "")
+                  handlePropertyChange(
+                    propertyName,
+                    newValue?.entity_name || ""
+                  )
                 }
                 loading={categoryData.loading}
                 renderInput={(params) => (
@@ -1345,12 +1459,41 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
             height: "100%",
           }}
         >
-          <Typography variant="h5" gutterBottom sx={{ flexShrink: 0 }}>
-            {editingTransaction ? "Edit Transaction" : "Create Transaction"}
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 1,
+              flexShrink: 0,
+            }}
+          >
+            <Typography variant="h5">
+              {editingTransaction ? "Edit Transaction" : "Create Transaction"}
+            </Typography>
+            {editingTransaction && (
+              <Chip
+                label={`ID: ${editingTransaction.transaction_id}`}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+          </Box>
+
+          {/* Audit Trail */}
+          {editingTransaction?.update_date &&
+            editingTransaction?.updated_by_user_name && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Last updated by {editingTransaction.updated_by_user_name} on{" "}
+                  {formatDatabaseTimestamp(editingTransaction.update_date)}.
+                </Typography>
+              </Box>
+            )}
 
           {/* Scrollable Content */}
-          <Box sx={{ flex: 1, overflow: "auto", pb: 2 }}>
+          <Box sx={{ flex: 1, overflow: "auto", pb: "100px" }}>
             <Stepper activeStep={currentStep} sx={{ mb: 3 }}>
               <Step>
                 <StepLabel>Portfolio</StepLabel>
@@ -1380,7 +1523,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 <Stack direction="row" spacing={2} alignItems="flex-start">
                   <Autocomplete
                     options={portfolioEntities || []}
-                    getOptionLabel={(option) => option.name}
+                    getOptionLabel={(option) => option.entity_name}
                     value={
                       portfolioEntities?.find(
                         (e) =>
@@ -1477,8 +1620,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                             (et) => et.entity_type_id === option.entity_type_id
                           );
                           return entityType
-                            ? `${option.name} (${entityType.name})`
-                            : option.name;
+                            ? `${option.entity_name} (${entityType.entity_type_name})`
+                            : option.entity_name;
                         }}
                         value={
                           instrumentEntities?.find(
@@ -1528,7 +1671,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   </Typography>
                   <Autocomplete
                     options={validTransactionTypes || []}
-                    getOptionLabel={(option) => option.name}
+                    getOptionLabel={(option) => option.transaction_type_name}
                     value={
                       validTransactionTypes?.find(
                         (tt) =>
@@ -1575,7 +1718,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                     <Box>
                       <Typography variant="body1" sx={{ mb: 2 }}>
                         Currency amount will be reduced in{" "}
-                        <strong>{selectedPortfolio?.name}</strong>.
+                        <strong>{selectedPortfolio?.entity_name}</strong>.
                       </Typography>
                       <Button
                         variant="outlined"
@@ -1590,7 +1733,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Autocomplete
                         options={validCounterparties || []}
-                        getOptionLabel={(option) => option.name}
+                        getOptionLabel={(option) => option.entity_name}
                         value={
                           validCounterparties?.find(
                             (e) =>
@@ -1638,16 +1781,133 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               </Card>
             )}
 
-            {/* Step 5: Dynamic Properties */}
+            {/* Trade Date and Settle Date - Mandatory Fields */}
             {formData.transaction_type_id &&
-              transactionSchema &&
               (formData.contra_entity_id || !isContraRequired) && (
                 <Card sx={{ mb: 2 }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       {isContraRequired
-                        ? "5. Transaction Properties"
-                        : "4. Transaction Properties"}
+                        ? "5. Transaction Dates"
+                        : "4. Transaction Dates"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      Enter the trade date and settlement date for this
+                      transaction.
+                    </Typography>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      {/* Trade Date */}
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="flex-start"
+                      >
+                        <TextField
+                          label="Trade Date *"
+                          type="date"
+                          value={formData.trade_date}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              trade_date: e.target.value,
+                            });
+                            setHasUnsavedChanges(true);
+                          }}
+                          fullWidth
+                          required
+                          InputLabelProps={{ shrink: true }}
+                          helperText="Date the transaction was executed"
+                          sx={{ flexGrow: 1 }}
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            const today = new Date();
+                            const todayString = today
+                              .toISOString()
+                              .split("T")[0];
+                            setFormData({
+                              ...formData,
+                              trade_date: todayString,
+                            });
+                            setHasUnsavedChanges(true);
+                          }}
+                          sx={{ minWidth: "auto", px: 2, mt: 1 }}
+                        >
+                          Today
+                        </Button>
+                      </Stack>
+
+                      {/* Settle Date */}
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="flex-start"
+                      >
+                        <TextField
+                          label="Settle Date *"
+                          type="date"
+                          value={formData.settle_date}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              settle_date: e.target.value,
+                            });
+                            setHasUnsavedChanges(true);
+                          }}
+                          fullWidth
+                          required
+                          InputLabelProps={{ shrink: true }}
+                          helperText="Date the transaction settles"
+                          sx={{ flexGrow: 1 }}
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            const baseDate = formData.trade_date
+                              ? new Date(formData.trade_date)
+                              : new Date();
+                            const tPlus3 = new Date(baseDate);
+                            tPlus3.setDate(baseDate.getDate() + 3);
+                            const tPlus3String = tPlus3
+                              .toISOString()
+                              .split("T")[0];
+                            setFormData({
+                              ...formData,
+                              settle_date: tPlus3String,
+                            });
+                            setHasUnsavedChanges(true);
+                          }}
+                          sx={{ minWidth: "auto", px: 2, mt: 1 }}
+                        >
+                          T+3
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+            {/* Step 6: Dynamic Properties */}
+            {formData.transaction_type_id &&
+              transactionSchema &&
+              (formData.contra_entity_id || !isContraRequired) &&
+              formData.trade_date &&
+              formData.settle_date && (
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {isContraRequired
+                        ? "6. Transaction Properties"
+                        : "5. Transaction Properties"}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -1679,6 +1939,9 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               borderColor: "divider",
               backgroundColor: "background.paper",
               flexShrink: 0,
+              position: "sticky",
+              bottom: 0,
+              zIndex: 1000,
             }}
           >
             {onClose && (
@@ -1729,7 +1992,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   {editingTransaction ? "Updating..." : "Creating..."}
                 </>
               ) : editingTransaction ? (
-                "Update Transaction"
+                "Update"
               ) : (
                 "Create Transaction"
               )}
@@ -1843,7 +2106,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                         const entityType = entityTypes?.find(
                           (et) => et.entity_type_id === inst.entity_type_id
                         );
-                        return entityType?.name || "";
+                        return entityType?.entity_type_name || "";
                       })
                       .filter(Boolean)}
                     disableDialog={true}
@@ -1904,8 +2167,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                                 et.short_label || ""
                               )
                             )
-                            .map((et) => et.name) || []
-                        : entityTypes?.map((et) => et.name) || [] // Allow all entity types if no valid_contra_groups
+                            .map((et) => et.entity_type_name) || []
+                        : entityTypes?.map((et) => et.entity_type_name) || [] // Allow all entity types if no valid_contra_groups
                     }
                     disableDialog={true}
                   />

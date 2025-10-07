@@ -111,6 +111,42 @@ def lambda_handler(event, context):
                     "body": json.dumps({"error": "Method not allowed. Use POST for redemption."}),
                     "headers": {"Content-Type": "application/json"}
                 }
+            elif '/invitations/validate/' in path:
+                # Public endpoint to validate invitation by code: /invitations/validate/{code}
+                # No authorization required - anyone with the code can access this
+                code = path_parameters.get('code')
+                if not code:
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": "Invitation code is required"}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
+
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to, 
+                               cg.client_group_name, i.updated_user_id
+                        FROM invitations i
+                        JOIN client_groups cg ON i.client_group_id = cg.client_group_id
+                        WHERE i.code = %s
+                    """, (code,))
+                    result = cursor.fetchone()
+
+                    if not result:
+                        return {
+                            "statusCode": 404,
+                            "body": json.dumps({"error": "Invitation not found"}),
+                            "headers": {"Content-Type": "application/json"}
+                        }
+
+                    response = {
+                        "invitation_id": result[0],
+                        "code": result[1],
+                        "expires_at": result[2].isoformat() + "Z" if result[2] else None,
+                        "email_sent_to": result[3],
+                        "client_group_name": result[4],
+                        "updated_by_user_name": str(result[5]) if result[5] else None
+                    }
             elif 'invitation_id' in path_parameters:
                 # Get invitation by ID: /invitations/{invitation_id}
                 invitation_id = path_parameters['invitation_id']
@@ -136,7 +172,7 @@ def lambda_handler(event, context):
                 with connection.cursor() as cursor:
                     cursor.execute("""
                         SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to, 
-                               cg.name as client_group_name, i.updated_user_id
+                               cg.client_group_name, i.updated_user_id
                         FROM invitations i
                         JOIN client_groups cg ON i.client_group_id = cg.client_group_id
                         WHERE i.invitation_id = %s AND i.client_group_id IN ({})
@@ -203,7 +239,7 @@ def lambda_handler(event, context):
 
                     # Add client group filter if specified
                     if client_group_name:
-                        base_query += " AND cg.name = %s"
+                        base_query += " AND cg.client_group_name = %s"
                         query_params.append(client_group_name)
 
                     # Add expiration filter if specified
@@ -220,7 +256,7 @@ def lambda_handler(event, context):
                         # Return invitations data
                         data_query = f"""
                             SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to,
-                                   cg.name as client_group_name, i.updated_user_id
+                                   cg.client_group_name, i.updated_user_id
                             {base_query}
                             ORDER BY i.invitation_id DESC
                         """
@@ -250,23 +286,60 @@ def lambda_handler(event, context):
                         "headers": {"Content-Type": "application/json"}
                     }
 
-                with connection.cursor() as cursor:
-                    # Update expires_at to now() (effectively expiring the invitation)
-                    cursor.execute("""
-                        UPDATE invitations 
-                        SET expires_at = NOW(), updated_user_id = %s
-                        WHERE code = %s AND expires_at > NOW()
-                    """, (current_user_id, code))
+                # Get user_id from sub
+                user_id = get_user_id_from_sub(connection, current_user_id)
+                if not user_id:
+                    return {
+                        "statusCode": 403,
+                        "body": json.dumps({"error": "User not found. Please ensure you are logged in."}),
+                        "headers": {"Content-Type": "application/json"}
+                    }
 
-                    if cursor.rowcount == 0:
+                with connection.cursor() as cursor:
+                    # First, get the invitation details including client_group_id
+                    cursor.execute("""
+                        SELECT client_group_id, email_sent_to
+                        FROM invitations 
+                        WHERE code = %s AND expires_at > NOW()
+                    """, (code,))
+
+                    invitation_result = cursor.fetchone()
+                    if not invitation_result:
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "Invitation not found or already expired"}),
                             "headers": {"Content-Type": "application/json"}
                         }
 
+                    client_group_id = invitation_result[0]
+
+                    # Check if user is already a member of this client group
+                    cursor.execute("""
+                        SELECT COUNT(*) FROM client_group_users 
+                        WHERE client_group_id = %s AND user_id = %s
+                    """, (client_group_id, user_id))
+
+                    already_member = cursor.fetchone()[0] > 0
+
+                    # Add user to client group if not already a member
+                    if not already_member:
+                        cursor.execute("""
+                            INSERT INTO client_group_users (client_group_id, user_id)
+                            VALUES (%s, %s)
+                        """, (client_group_id, user_id))
+
+                    # Mark invitation as expired
+                    cursor.execute("""
+                        UPDATE invitations 
+                        SET expires_at = NOW(), updated_user_id = %s
+                        WHERE code = %s
+                    """, (user_id, code))
+
                     connection.commit()
-                    response = {"message": "Invitation redeemed successfully"}
+                    response = {
+                        "message": "Invitation redeemed successfully",
+                        "already_member": already_member
+                    }
             else:
                 # Create new invitation: /invitations
                 try:
@@ -319,7 +392,7 @@ def lambda_handler(event, context):
                     # Get client_group_id from client_group_name and verify user has access
                     cursor.execute("""
                         SELECT client_group_id FROM client_groups 
-                        WHERE name = %s AND client_group_id IN ({})
+                        WHERE client_group_name = %s AND client_group_id IN ({})
                     """.format(','.join(['%s'] * len(user_client_groups))),
                         [client_group_name] + user_client_groups)
                     client_group_result = cursor.fetchone()
@@ -350,7 +423,7 @@ def lambda_handler(event, context):
                     # Get the created invitation with generated code
                     cursor.execute("""
                         SELECT i.invitation_id, i.code, i.expires_at, i.email_sent_to,
-                               cg.name as client_group_name, i.updated_user_id
+                               cg.client_group_name, i.updated_user_id
                         FROM invitations i
                         JOIN client_groups cg ON i.client_group_id = cg.client_group_id
                         WHERE i.invitation_id = %s
@@ -445,7 +518,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Get invitation details and check access
                 access_query = """
-                    SELECT i.invitation_id, cg.name as client_group_name
+                    SELECT i.invitation_id, cg.client_group_name
                     FROM invitations i
                     JOIN client_groups cg ON i.client_group_id = cg.client_group_id
                     JOIN client_group_users cgu ON cg.client_group_id = cgu.client_group_id
@@ -493,7 +566,7 @@ def lambda_handler(event, context):
                         SELECT cg.client_group_id 
                         FROM client_groups cg
                         JOIN client_group_users cgu ON cg.client_group_id = cgu.client_group_id
-                        WHERE cg.name = %s AND cgu.user_id = %s
+                        WHERE cg.client_group_name = %s AND cgu.user_id = %s
                     """
                     cursor.execute(cg_access_query,
                                    (client_group_name, user_id))

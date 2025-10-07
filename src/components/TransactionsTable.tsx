@@ -9,11 +9,9 @@ import {
   Box,
   Typography,
   CircularProgress,
-  TextField,
   Button,
   Chip,
   Modal,
-  Autocomplete,
   Tooltip,
   IconButton,
   Alert,
@@ -37,6 +35,7 @@ import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
 import TransactionForm from "./TransactionForm";
 import TransactionTypesTable from "./TransactionTypesTable";
+import TableFilter from "./TableFilter";
 
 // Helper function for formatting properties
 const formatProperties = (properties: unknown) => {
@@ -80,20 +79,63 @@ const TransactionsTable: React.FC = () => {
   // Get current user's database ID
   const { data: currentUser } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({ sub: userId! }),
+    queryFn: async () => {
+      const result = await apiService.queryUsers({ sub: userId! });
+      console.log("🔍 queryUsers result:", result);
+      return result;
+    },
     enabled: !!userId,
-    select: (data) => data[0], // Get first user from array
+    select: (data) => {
+      console.log("🔍 queryUsers select, data:", data);
+      // Handle both array and paginated response
+      let usersArray: apiService.User[];
+      if (Array.isArray(data)) {
+        usersArray = data;
+      } else if ("data" in data && Array.isArray(data.data)) {
+        usersArray = data.data as apiService.User[];
+      } else {
+        usersArray = [];
+      }
+      // Find the user that matches the current userId (sub)
+      const user = usersArray.find((u) => u.sub === userId);
+      console.log("🔍 Selected user:", user);
+      return user;
+    },
   });
+
+  console.log("🔍 currentUser:", currentUser, "userId:", userId);
+  console.log(
+    "🔍 currentUser?.primary_client_group_id:",
+    currentUser?.primary_client_group_id
+  );
 
   // Get primary client group for display
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
+    queryFn: async () => {
+      const result = await apiService.queryClientGroups({});
+      console.log("🔍 queryClientGroups result:", result);
+      return result;
+    },
     enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
+    select: (data) => {
+      console.log("🔍 queryClientGroups select, data:", data);
+      // Handle both array and paginated response
+      let groupsArray: apiService.ClientGroup[];
+      if (Array.isArray(data)) {
+        groupsArray = data;
+      } else if ("data" in data && Array.isArray(data.data)) {
+        groupsArray = data.data as apiService.ClientGroup[];
+      } else {
+        groupsArray = [];
+      }
+      // Find the group that matches the primary_client_group_id
+      const group = groupsArray.find(
+        (g) => g.client_group_id === currentUser?.primary_client_group_id
+      );
+      console.log("🔍 Selected primary client group:", group);
+      return group;
+    },
   });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -102,10 +144,7 @@ const TransactionsTable: React.FC = () => {
   >(undefined);
   const [isTransactionTypesModalOpen, setIsTransactionTypesModalOpen] =
     useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTransactionType, setSelectedTransactionType] = useState<
-    number | null
-  >(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [positionKeeperMessage, setPositionKeeperMessage] =
     useState<string>("");
   const [positionKeeperSeverity, setPositionKeeperSeverity] = useState<
@@ -113,11 +152,29 @@ const TransactionsTable: React.FC = () => {
   >("success");
   const [isPollingActive, setIsPollingActive] = useState(false);
 
+  // Helper function to get field values for filtering
+  const getFieldValue = (transaction: any, field: string): string => {
+    switch (field) {
+      case "Portfolio":
+        return transaction.portfolio_entity_name || "";
+      case "Contra":
+        return transaction.contra_entity_name || "";
+      case "Instrument":
+        return transaction.instrument_entity_name || "";
+      case "Type":
+        return transaction.transaction_type_name || "";
+      case "Status":
+        return transaction.transaction_status_name || "";
+      default:
+        return "";
+    }
+  };
+
   // Position keeper mutation
   const queryClient = useQueryClient();
   const runPositionKeeperMutation = useMutation({
-    mutationFn: apiService.runPositionKeeper,
-    onSuccess: (data) => {
+    mutationFn: apiService.startPositionKeeper,
+    onSuccess: (data: any) => {
       setPositionKeeperMessage(
         data.message || "Position keeper executed successfully"
       );
@@ -144,20 +201,17 @@ const TransactionsTable: React.FC = () => {
       "transactions",
       "client-group",
       currentUser?.primary_client_group_id,
-      searchTerm,
-      selectedTransactionType,
     ],
     queryFn: async () => {
+      console.log("🔍 Fetching transactions, currentUser:", currentUser);
       if (!currentUser?.user_id) {
         throw new Error("No user ID available");
       }
 
-      const queryParams = {
-        user_id: currentUser.user_id,
-        client_group_id: currentUser.primary_client_group_id,
-      };
-
-      return await apiService.queryTransactions(queryParams as any);
+      // Don't send any query parameters - backend filters by X-Current-User-Id header
+      const result = await apiService.queryTransactions({});
+      console.log("🔍 Transactions API result:", result);
+      return result;
     },
     enabled: !!currentUser?.user_id && !!currentUser?.primary_client_group_id,
     staleTime: 30 * 1000, // 30 seconds - more responsive
@@ -165,107 +219,84 @@ const TransactionsTable: React.FC = () => {
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
-  // Fetch transaction types for filter
-  const { data: transactionTypes } = useQuery({
-    queryKey: ["transaction-types"],
-    queryFn: () => apiService.queryTransactionTypes({}),
-  });
-
-  // Fetch entities for display
-  const { data: entities } = useQuery({
-    queryKey: ["entities", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryEntities({
-        user_id: currentUser!.user_id,
-        client_group_id: currentUser!.primary_client_group_id,
-      } as any),
-    enabled: !!currentUser?.user_id && !!currentUser?.primary_client_group_id,
-  });
-
-  // Create lookup maps for O(1) access
-  const entityMap = useMemo(() => {
-    if (!entities) return new Map();
-    return new Map(entities.map((entity) => [entity.entity_id, entity]));
-  }, [entities]);
-
-  const transactionTypeMap = useMemo(() => {
-    if (!transactionTypes) return new Map();
-    return new Map(
-      transactionTypes.map((type) => [type.transaction_type_id, type])
-    );
-  }, [transactionTypes]);
+  console.log(
+    "🔍 Query state - isLoading:",
+    isLoading,
+    "error:",
+    error,
+    "data:",
+    rawTransactionsData
+  );
 
   // Process transactions data with O(1) lookups
   const transactionsData = useMemo(() => {
-    if (!rawTransactionsData || !entities) return [];
+    console.log("🔍 rawTransactionsData:", rawTransactionsData);
+    if (!rawTransactionsData) return [];
 
-    let processedData = rawTransactionsData.map((transaction) => {
-      // O(1) lookups instead of O(n) searches
-      const portfolioEntity = entityMap.get(transaction.portfolio_entity_id);
-      const contraEntity = entityMap.get(transaction.contra_entity_id);
-      const instrumentEntity = entityMap.get(transaction.instrument_entity_id);
-      const transactionType = transactionTypeMap.get(
-        transaction.transaction_type_id
-      );
+    // Handle both array and paginated response formats
+    let transactionsArray: apiService.Transaction[];
+    if (Array.isArray(rawTransactionsData)) {
+      transactionsArray = rawTransactionsData;
+    } else if (
+      "data" in rawTransactionsData &&
+      Array.isArray(rawTransactionsData.data)
+    ) {
+      transactionsArray = rawTransactionsData.data as apiService.Transaction[];
+    } else {
+      transactionsArray = [];
+    }
 
-      return {
-        id: transaction.transaction_id,
-        transaction_id: transaction.transaction_id,
-        portfolio_entity_id: transaction.portfolio_entity_id,
-        portfolio_entity_name:
-          portfolioEntity?.name || `Entity ${transaction.portfolio_entity_id}`,
-        contra_entity_id: transaction.contra_entity_id,
-        contra_entity_name:
-          contraEntity?.name || `Entity ${transaction.contra_entity_id}`,
-        instrument_entity_id: transaction.instrument_entity_id,
-        instrument_entity_name:
-          instrumentEntity?.name ||
-          `Entity ${transaction.instrument_entity_id}`,
-        properties: transaction.properties,
-        transaction_type_id: transaction.transaction_type_id,
-        transaction_type_name:
-          transactionType?.name || `Type ${transaction.transaction_type_id}`,
-        transaction_status_id: transaction.transaction_status_id,
-        update_date: transaction.update_date,
-        updated_user_id: transaction.updated_user_id,
-      };
-    });
+    console.log(
+      "🔍 transactionsArray:",
+      transactionsArray,
+      "length:",
+      transactionsArray.length
+    );
+
+    let processedData = transactionsArray.map(
+      (transaction: apiService.Transaction) => {
+        return {
+          id: transaction.transaction_id,
+          transaction_id: transaction.transaction_id,
+          portfolio_entity_name: transaction.portfolio_entity_name,
+          contra_entity_name: transaction.contra_entity_name,
+          instrument_entity_name: transaction.instrument_entity_name,
+          properties: transaction.properties,
+          transaction_type_name: transaction.transaction_type_name,
+          transaction_status_name: transaction.transaction_status_name,
+          trade_date: transaction.trade_date,
+          settle_date: transaction.settle_date,
+          update_date: transaction.update_date,
+          updated_by_user_name: transaction.updated_by_user_name,
+        };
+      }
+    );
 
     // Apply filters
-    if (searchTerm) {
-      processedData = processedData.filter(
-        (transaction) =>
-          transaction.portfolio_entity_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          transaction.contra_entity_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          transaction.instrument_entity_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          transaction.transaction_type_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (selectedTransactionType) {
-      processedData = processedData.filter(
-        (transaction) =>
-          transaction.transaction_type_id === selectedTransactionType
-      );
-    }
+    Object.entries(filters).forEach(([field, value]) => {
+      if (value && value.trim() !== "") {
+        console.log(`Applying filter: ${field} = "${value}"`);
+        const beforeCount = processedData.length;
+        processedData = processedData.filter((transaction: any) => {
+          const fieldValue = getFieldValue(transaction, field);
+          const matches =
+            fieldValue &&
+            fieldValue.toLowerCase().includes(value.toLowerCase());
+          if (!matches) {
+            console.log(
+              `Filtered out: ${fieldValue} (doesn't contain "${value}")`
+            );
+          }
+          return matches;
+        });
+        console.log(
+          `Filter ${field}="${value}": ${beforeCount} -> ${processedData.length} rows`
+        );
+      }
+    });
 
     return processedData;
-  }, [
-    rawTransactionsData,
-    entityMap,
-    transactionTypeMap,
-    searchTerm,
-    selectedTransactionType,
-    entities,
-  ]);
+  }, [rawTransactionsData, filters]);
 
   // Polling logic for QUEUED transactions
   useEffect(() => {
@@ -276,7 +307,8 @@ const TransactionsTable: React.FC = () => {
       intervalId = setInterval(() => {
         if (transactionsData && transactionsData.length > 0) {
           const queuedTransactions = transactionsData.filter(
-            (transaction) => transaction.transaction_status_id === 2 // QUEUED
+            (transaction: any) =>
+              transaction.transaction_status_name === "QUEUED"
           );
 
           if (queuedTransactions.length > 0) {
@@ -341,33 +373,29 @@ const TransactionsTable: React.FC = () => {
         field: "portfolio_entity_name",
         headerName: "Portfolio",
         width: 150,
-        align: "center",
-        headerAlign: "center",
-        cellClassName: "centered-cell",
+        align: "left",
+        headerAlign: "left",
       },
       {
         field: "contra_entity_name",
         headerName: "Contra",
         width: 150,
-        align: "center",
-        headerAlign: "center",
-        cellClassName: "centered-cell",
+        align: "left",
+        headerAlign: "left",
       },
       {
         field: "instrument_entity_name",
         headerName: "Instrument",
         width: 150,
-        align: "center",
-        headerAlign: "center",
-        cellClassName: "centered-cell",
+        align: "left",
+        headerAlign: "left",
       },
       {
         field: "transaction_type_name",
         headerName: "Type",
         width: 120,
-        align: "center",
-        headerAlign: "center",
-        cellClassName: "centered-cell",
+        align: "left",
+        headerAlign: "left",
         renderCell: (params: GridRenderCellParams) => (
           <Chip
             label={params.value}
@@ -385,8 +413,13 @@ const TransactionsTable: React.FC = () => {
         headerAlign: "center",
         cellClassName: "centered-cell",
         renderCell: (params: GridRenderCellParams) => {
-          const statusId = params.row.transaction_status_id;
-          const statusInfo = STATUS_MAP[statusId] || STATUS_MAP[1]; // Default to INCOMPLETE
+          const statusName = params.row.transaction_status_name;
+
+          // Find status info by name instead of ID
+          const statusInfo =
+            Object.values(STATUS_MAP).find(
+              (status) => status.name === statusName
+            ) || STATUS_MAP[1]; // Default to INCOMPLETE
 
           return (
             <Chip
@@ -402,11 +435,18 @@ const TransactionsTable: React.FC = () => {
         field: "properties",
         headerName: "Properties",
         width: 200,
-        align: "center",
-        headerAlign: "center",
-        cellClassName: "centered-cell",
+        align: "left",
+        headerAlign: "left",
         renderCell: (params: GridRenderCellParams) => (
-          <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "0.75rem",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              lineHeight: 1.2,
+            }}
+          >
             {formatProperties(params.value)}
           </Typography>
         ),
@@ -443,7 +483,7 @@ const TransactionsTable: React.FC = () => {
   }
 
   const primaryClientGroupName =
-    primaryClientGroup?.name || "this client group";
+    primaryClientGroup?.client_group_name || "this client group";
 
   return (
     <Box sx={{ p: 3 }}>
@@ -567,36 +607,22 @@ const TransactionsTable: React.FC = () => {
       </Box>
 
       {/* Filters */}
-      <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
-        <TextField
-          label="Search transactions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          sx={{ minWidth: 200 }}
-        />
-        <Autocomplete
-          size="small"
-          options={transactionTypes || []}
-          getOptionLabel={(option) => option.name}
-          value={
-            selectedTransactionType
-              ? transactionTypeMap.get(selectedTransactionType) || null
-              : null
+      <TableFilter
+        filters={["Portfolio", "Contra", "Instrument", "Type", "Status"]}
+        data={(() => {
+          if (!rawTransactionsData) return [];
+          if (Array.isArray(rawTransactionsData)) return rawTransactionsData;
+          if (
+            "data" in rawTransactionsData &&
+            Array.isArray(rawTransactionsData.data)
+          ) {
+            return rawTransactionsData.data as apiService.Transaction[];
           }
-          onChange={(_, newValue) =>
-            setSelectedTransactionType(newValue?.transaction_type_id || null)
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Transaction Type"
-              sx={{ minWidth: 150 }}
-            />
-          )}
-          sx={{ minWidth: 200 }}
-        />
-      </Box>
+          return [];
+        })()}
+        onFilterChange={setFilters}
+        getFieldValue={getFieldValue}
+      />
 
       {/* Data Grid */}
       <Box>
@@ -619,19 +645,17 @@ const TransactionsTable: React.FC = () => {
             },
             "& .MuiDataGrid-columnHeader": {
               backgroundColor: "#f5f5f5 !important",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+            },
+            "& .MuiDataGrid-row": {
+              "&:hover": {
+                backgroundColor: "rgba(25, 118, 210, 0.04) !important",
+              },
             },
             "& .MuiDataGrid-cell": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            },
-            "& .centered-cell": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              borderBottom: "1px solid rgba(224, 224, 224, 1) !important",
+              padding: "8px !important",
+              display: "flex !important",
+              alignItems: "center !important",
             },
           }}
           slots={{

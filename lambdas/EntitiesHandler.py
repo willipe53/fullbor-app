@@ -127,11 +127,11 @@ def get_client_group_id_by_name(connection, client_group_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT client_group_id FROM client_groups WHERE name = %s", (client_group_name,))
+                "SELECT client_group_id FROM client_groups WHERE client_group_name = %s", (client_group_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting client group ID by name: {e}")
+        print(f"Error getting client group ID by client_group_name: {e}")
         return None
 
 
@@ -140,11 +140,11 @@ def get_entity_type_id_by_name(connection, entity_type_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT entity_type_id FROM entity_types WHERE name = %s", (entity_type_name,))
+                "SELECT entity_type_id FROM entity_types WHERE entity_type_name = %s", (entity_type_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity type ID by name: {e}")
+        print(f"Error getting entity type ID by entity_type_name: {e}")
         return None
 
 
@@ -153,11 +153,11 @@ def get_entity_id_by_name(connection, entity_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT entity_id FROM entities WHERE name = %s", (entity_name,))
+                "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity ID by name: {e}")
+        print(f"Error getting entity ID by entity_name: {e}")
         return None
 
 
@@ -170,7 +170,7 @@ def get_user_name_by_id(connection, user_id):
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting user name by ID: {e}")
+        print(f"Error getting email by ID: {e}")
         return None
 
 
@@ -194,16 +194,16 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
     if '/entities:set' in path and path.startswith('/entities/'):
         return {"error": "Method not allowed. Use POST for setting entities."}
     elif 'entity_name' in path_parameters:
-        # Get single entity by name: /entities/{entity_name}
+        # Get single entity by entity_name: /entities/{entity_name}
         entity_name = unquote(path_parameters['entity_name'])
 
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT e.entity_id, e.name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
-                       et.name as entity_type_name
+                SELECT e.entity_id, e.entity_name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
+                       et.entity_type_name
                 FROM entities e
                 JOIN entity_types et ON e.entity_type_id = et.entity_type_id
-                WHERE e.name = %s AND e.entity_id IN ({})
+                WHERE e.entity_name = %s AND e.entity_id IN ({})
             """.format(','.join(['%s'] * len(valid_entity_ids))),
                 [entity_name] + valid_entity_ids)
             result = cursor.fetchone()
@@ -246,7 +246,7 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
 
     # Add filters
     if entity_type_name_filter:
-        base_query += " AND et.name = %s"
+        base_query += " AND et.entity_type_name = %s"
         params.append(entity_type_name_filter)
 
     if client_group_name_filter:
@@ -254,7 +254,7 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
             SELECT cge.entity_id 
             FROM client_group_entities cge 
             JOIN client_groups cg ON cge.client_group_id = cg.client_group_id 
-            WHERE cg.name = %s
+            WHERE cg.client_group_name = %s
         )"""
         params.append(client_group_name_filter)
 
@@ -271,10 +271,10 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
 
     # Get entities with pagination
     query = f"""
-        SELECT DISTINCT e.entity_id, e.name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
-               et.name as entity_type_name
+        SELECT DISTINCT e.entity_id, e.entity_name, e.entity_type_id, e.attributes, e.update_date, e.updated_user_id,
+               et.entity_type_name
         {base_query}
-        ORDER BY e.name
+        ORDER BY e.entity_name
     """
 
     with connection.cursor() as cursor:
@@ -344,12 +344,12 @@ def handle_set_client_group_entities(connection, path_parameters, body, current_
     # Convert entity names to IDs if needed
     final_entity_ids = []
     if entity_names:
-        for name in entity_names:
-            entity_id = get_entity_id_by_name(connection, name)
+        for entity_name in entity_names:
+            entity_id = get_entity_id_by_name(connection, entity_name)
             if entity_id:
                 final_entity_ids.append(entity_id)
             else:
-                return {"error": f"Entity '{name}' not found"}
+                return {"error": f"Entity '{entity_name}' not found"}
     else:
         final_entity_ids = entity_ids
 
@@ -398,7 +398,7 @@ def handle_create_entity(connection, body, current_user_id):
     with connection.cursor() as cursor:
         # Check if entity already exists
         cursor.execute(
-            "SELECT entity_id FROM entities WHERE name = %s", (entity_name,))
+            "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
         existing = cursor.fetchone()
 
         if existing:
@@ -424,7 +424,7 @@ def handle_create_entity(connection, body, current_user_id):
         else:
             # Insert new entity
             cursor.execute("""
-                INSERT INTO entities (name, entity_type_id, attributes, updated_user_id)
+                INSERT INTO entities (entity_name, entity_type_id, attributes, updated_user_id)
                 VALUES (%s, %s, %s, %s)
             """, (entity_name, entity_type_id, attributes_json, user_id))
 
@@ -499,7 +499,7 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
         # Check if entity exists and current user can modify it
         cursor.execute("""
             SELECT entity_id FROM entities 
-            WHERE name = %s AND entity_id IN ({})
+            WHERE entity_name = %s AND entity_id IN ({})
         """.format(','.join(['%s'] * len(valid_entity_ids))),
             [entity_name] + valid_entity_ids)
         existing = cursor.fetchone()
@@ -512,6 +512,12 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
         # Update entity (only update provided fields)
         update_fields = []
         update_params = []
+
+        # Check if entity_name is being updated
+        new_entity_name = request_data.get('entity_name')
+        if new_entity_name and new_entity_name != entity_name:
+            update_fields.append("entity_name = %s")
+            update_params.append(new_entity_name)
 
         if entity_type_id is not None:
             update_fields.append("entity_type_id = %s")
@@ -550,7 +556,7 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
         # Check if entity exists and current user can modify it
         cursor.execute("""
             SELECT entity_id FROM entities 
-            WHERE name = %s AND entity_id IN ({})
+            WHERE entity_name = %s AND entity_id IN ({})
         """.format(','.join(['%s'] * len(valid_entity_ids))),
             [entity_name] + valid_entity_ids)
         existing = cursor.fetchone()

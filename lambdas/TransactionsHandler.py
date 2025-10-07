@@ -111,11 +111,11 @@ def get_entity_id_by_name(connection, entity_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT entity_id FROM entities WHERE name = %s", (entity_name,))
+                "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity ID by name: {e}")
+        print(f"Error getting entity ID by entity_name: {e}")
         return None
 
 
@@ -124,11 +124,11 @@ def get_entity_name_by_id(connection, entity_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM entities WHERE entity_id = %s", (entity_id,))
+                "SELECT entity_name FROM entities WHERE entity_id = %s", (entity_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity name by ID: {e}")
+        print(f"Error getting entity_name by ID: {e}")
         return None
 
 
@@ -137,11 +137,12 @@ def get_transaction_type_id_by_name(connection, transaction_type_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                "SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = %s", (transaction_type_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting transaction type ID by name: {e}")
+        print(
+            f"Error getting transaction type ID by transaction_type_name: {e}")
         return None
 
 
@@ -150,11 +151,12 @@ def get_transaction_status_id_by_name(connection, transaction_status_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT transaction_status_id FROM transaction_statuses WHERE name = %s", (transaction_status_name,))
+                "SELECT transaction_status_id FROM transaction_statuses WHERE transaction_status_name = %s", (transaction_status_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting transaction status ID by name: {e}")
+        print(
+            f"Error getting transaction status ID by transaction_status_name: {e}")
         return None
 
 
@@ -163,11 +165,11 @@ def get_transaction_type_name_by_id(connection, transaction_type_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM transaction_types WHERE transaction_type_id = %s", (transaction_type_id,))
+                "SELECT transaction_type_name FROM transaction_types WHERE transaction_type_id = %s", (transaction_type_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting transaction type name by ID: {e}")
+        print(f"Error getting transaction_type_name by ID: {e}")
         return None
 
 
@@ -176,11 +178,11 @@ def get_transaction_status_name_by_id(connection, transaction_status_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM transaction_statuses WHERE transaction_status_id = %s", (transaction_status_id,))
+                "SELECT transaction_status_name FROM transaction_statuses WHERE transaction_status_id = %s", (transaction_status_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting transaction status name by ID: {e}")
+        print(f"Error getting transaction_status_name by ID: {e}")
         return None
 
 
@@ -193,7 +195,7 @@ def get_user_name_by_id(connection, user_id):
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting user name by ID: {e}")
+        print(f"Error getting email by ID: {e}")
         return None
 
 
@@ -294,8 +296,9 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
             cursor.execute("""
                 SELECT t.transaction_id, t.portfolio_entity_id, t.contra_entity_id, t.instrument_entity_id,
                        t.properties, t.transaction_status_id, t.transaction_type_id, t.update_date, t.updated_user_id,
-                       pe.name as portfolio_entity_name, ce.name as contra_entity_name, ie.name as instrument_entity_name,
-                       ts.name as transaction_status_name, tt.name as transaction_type_name
+                       pe.entity_name as portfolio_entity_name, ce.entity_name as contra_entity_name, ie.entity_name as instrument_entity_name,
+                       ts.transaction_status_name as transaction_status_name, tt.transaction_type_name as transaction_type_name,
+                       t.trade_date, t.settle_date
                 FROM transactions t
                 LEFT JOIN entities pe ON t.portfolio_entity_id = pe.entity_id
                 LEFT JOIN entities ce ON t.contra_entity_id = ce.entity_id
@@ -322,6 +325,8 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
                 "instrument_entity_name": result[11],
                 "transaction_status_name": result[12],
                 "transaction_type_name": result[13],
+                "trade_date": result[14].isoformat() if result[14] else None,
+                "settle_date": result[15].isoformat() if result[15] else None,
                 "properties": properties,
                 "update_date": result[7].isoformat() + "Z" if result[7] else None,
                 "updated_by_user_name": updated_by_user_name
@@ -360,23 +365,23 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
 
     # Add filters
     if portfolio_entity_name_filter:
-        base_query += " AND pe.name = %s"
+        base_query += " AND pe.entity_name = %s"
         params.append(portfolio_entity_name_filter)
 
     if contra_entity_name_filter:
-        base_query += " AND ce.name = %s"
+        base_query += " AND ce.entity_name = %s"
         params.append(contra_entity_name_filter)
 
     if instrument_entity_name_filter:
-        base_query += " AND ie.name = %s"
+        base_query += " AND ie.entity_name = %s"
         params.append(instrument_entity_name_filter)
 
     if transaction_status_name_filter:
-        base_query += " AND ts.name = %s"
+        base_query += " AND ts.transaction_status_name = %s"
         params.append(transaction_status_name_filter)
 
     if transaction_type_name_filter:
-        base_query += " AND tt.name = %s"
+        base_query += " AND tt.transaction_type_name = %s"
         params.append(transaction_type_name_filter)
 
     if count_only:
@@ -391,8 +396,9 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
     query = f"""
         SELECT t.transaction_id, t.portfolio_entity_id, t.contra_entity_id, t.instrument_entity_id,
                t.properties, t.transaction_status_id, t.transaction_type_id, t.update_date, t.updated_user_id,
-               pe.name as portfolio_entity_name, ce.name as contra_entity_name, ie.name as instrument_entity_name,
-               ts.name as transaction_status_name, tt.name as transaction_type_name
+               pe.entity_name as portfolio_entity_name, ce.entity_name as contra_entity_name, ie.entity_name as instrument_entity_name,
+               ts.transaction_status_name as transaction_status_name, tt.transaction_type_name as transaction_type_name,
+               t.trade_date, t.settle_date
         {base_query}
         ORDER BY t.transaction_id DESC
     """
@@ -421,6 +427,8 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
                 "instrument_entity_name": result[11],
                 "transaction_status_name": result[12],
                 "transaction_type_name": result[13],
+                "trade_date": result[14].isoformat() if result[14] else None,
+                "settle_date": result[15].isoformat() if result[15] else None,
                 "properties": properties,
                 "update_date": result[7].isoformat() + "Z" if result[7] else None,
                 "updated_by_user_name": updated_by_user_name
@@ -443,9 +451,11 @@ def handle_post_operations(connection, path, path_parameters, body, current_user
     portfolio_entity_name = request_data.get('portfolio_entity_name')
     transaction_status_name = request_data.get('transaction_status_name')
     transaction_type_name = request_data.get('transaction_type_name')
+    trade_date = request_data.get('trade_date')
+    settle_date = request_data.get('settle_date')
 
-    if not portfolio_entity_name or not transaction_status_name or not transaction_type_name:
-        return {"error": "portfolio_entity_name, transaction_status_name, and transaction_type_name are required"}
+    if not portfolio_entity_name or not transaction_status_name or not transaction_type_name or not trade_date or not settle_date:
+        return {"error": "portfolio_entity_name, transaction_status_name, transaction_type_name, trade_date, and settle_date are required"}
 
     # Get user ID for tracking
     user_id = get_user_id_from_sub(connection, current_user_id)
@@ -495,10 +505,11 @@ def handle_post_operations(connection, path, path_parameters, body, current_user
         # Insert new transaction
         cursor.execute("""
             INSERT INTO transactions (portfolio_entity_id, contra_entity_id, instrument_entity_id, 
-                                    properties, transaction_status_id, transaction_type_id, updated_user_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                    properties, transaction_status_id, transaction_type_id, 
+                                    trade_date, settle_date, updated_user_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (portfolio_entity_id, contra_entity_id, instrument_entity_id, properties_json,
-              transaction_status_id, transaction_type_id, user_id))
+              transaction_status_id, transaction_type_id, trade_date, settle_date, user_id))
 
         new_transaction_id = cursor.lastrowid
         connection.commit()
@@ -601,6 +612,18 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
             properties_json = json.dumps(properties) if properties else None
             update_fields.append("properties = %s")
             update_params.append(properties_json)
+
+        # Handle trade_date
+        trade_date = request_data.get('trade_date')
+        if trade_date is not None:
+            update_fields.append("trade_date = %s")
+            update_params.append(trade_date)
+
+        # Handle settle_date
+        settle_date = request_data.get('settle_date')
+        if settle_date is not None:
+            update_fields.append("settle_date = %s")
+            update_params.append(settle_date)
 
         if user_id is not None:
             update_fields.append("updated_user_id = %s")

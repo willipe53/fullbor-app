@@ -12,7 +12,6 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
-import { parseServerDate } from "../utils";
 import LoginDialog from "./LoginDialog";
 import SignupDialog from "./SignupDialog";
 import ErrorSnackbar from "./ErrorSnackbar";
@@ -32,9 +31,7 @@ const AcceptInvitation: React.FC = () => {
   const [showSignupDialog, setShowSignupDialog] = useState(false);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [invitation, setInvitation] = useState<apiService.Invitation | null>(
-    null
-  );
+  const [invitation] = useState<apiService.Invitation | null>(null);
 
   // Store invitation code in localStorage when component mounts
   useEffect(() => {
@@ -73,8 +70,16 @@ const AcceptInvitation: React.FC = () => {
         try {
           const usersBySub = await apiService.queryUsers({ sub: userId });
           console.log("User query by sub response:", usersBySub);
-          if (usersBySub.length > 0) {
-            return usersBySub[0];
+          let usersArray: apiService.User[];
+          if (Array.isArray(usersBySub)) {
+            usersArray = usersBySub;
+          } else if ("data" in usersBySub && Array.isArray(usersBySub.data)) {
+            usersArray = usersBySub.data as apiService.User[];
+          } else {
+            usersArray = [];
+          }
+          if (usersArray.length > 0) {
+            return usersArray[0];
           }
         } catch (error) {
           console.error("User query by sub failed:", error);
@@ -88,8 +93,19 @@ const AcceptInvitation: React.FC = () => {
             email: userEmail,
           });
           console.log("User query by email response:", usersByEmail);
-          if (usersByEmail.length > 0) {
-            return usersByEmail[0];
+          let usersArray: apiService.User[];
+          if (Array.isArray(usersByEmail)) {
+            usersArray = usersByEmail;
+          } else if (
+            "data" in usersByEmail &&
+            Array.isArray(usersByEmail.data)
+          ) {
+            usersArray = usersByEmail.data as apiService.User[];
+          } else {
+            usersArray = [];
+          }
+          if (usersArray.length > 0) {
+            return usersArray[0];
           }
         } catch (error) {
           console.error("User query by email failed:", error);
@@ -125,13 +141,16 @@ const AcceptInvitation: React.FC = () => {
       if (!currentUser.primary_client_group_id) {
         console.log("Setting primary_client_group_id for user...");
         // We need to get client group ID first
-        const groups = await apiService.queryClientGroups({
-          client_group_name: invitation.client_group_name,
-        });
-        const clientGroupData = groups.data || groups;
-        const clientGroup = Array.isArray(clientGroupData)
-          ? clientGroupData[0]
-          : clientGroupData;
+        const groups = await apiService.queryClientGroups({});
+        const clientGroupData = Array.isArray(groups)
+          ? groups
+          : "data" in groups
+          ? groups.data
+          : [];
+        const clientGroup = clientGroupData.find(
+          (cg: apiService.ClientGroup) =>
+            cg.client_group_name === invitation.client_group_name
+        );
 
         if (clientGroup?.client_group_id) {
           await apiService.updateUser(currentUser.sub!, {
@@ -151,8 +170,13 @@ const AcceptInvitation: React.FC = () => {
       return invitation.client_group_name;
     },
     onSuccess: (clientGroupName) => {
-      const clientGroup = clientGroups?.find(
-        (cg) => cg.client_group_name === clientGroupName
+      const clientGroupsArray = Array.isArray(clientGroups)
+        ? clientGroups
+        : clientGroups && "data" in clientGroups
+        ? clientGroups.data
+        : [];
+      const clientGroup = clientGroupsArray.find(
+        (cg: apiService.ClientGroup) => cg.client_group_name === clientGroupName
       );
       console.log("Workflow completed successfully!");
 
@@ -161,7 +185,7 @@ const AcceptInvitation: React.FC = () => {
 
       setSuccessMessage(
         `${userEmail} has been successfully added to client group ${
-          clientGroup?.name || "Unknown"
+          clientGroup?.client_group_name || "Unknown"
         }`
       );
       // Redirect to main app after 3 seconds
@@ -205,58 +229,51 @@ const AcceptInvitation: React.FC = () => {
         currentUserError: !!currentUserError,
       });
 
-      // Step 1: If there's a pending invitation and we haven't validated it yet
-      if (pendingInvitationCode && !invitation) {
+      // Step 1: If there's a pending invitation and user data is loaded, process it directly
+      if (pendingInvitationCode && !invitation && !currentUserLoading) {
         console.log(
-          "🚀 User authenticated, validating pending invitation:",
+          "🚀 User authenticated, processing invitation:",
           pendingInvitationCode
         );
 
-        // Update the mutation to use the localStorage code
-        const validateInvitation = async () => {
+        // Skip validation - just try to redeem and let the backend handle validation
+        // Create a minimal invitation object to trigger the workflow
+        const processInvitation = async () => {
           try {
-            // Query all invitations and filter by code
-            const result = await apiService.queryInvitations({});
-
-            // Handle paginated response format
-            const invitations = result.data || result;
-            const foundInvitation = invitations.find(
-              (inv: apiService.Invitation) => inv.code === pendingInvitationCode
+            console.log("Attempting to redeem invitation...");
+            // Try to redeem the invitation - this will fail if invalid/expired
+            const redeemResult = await apiService.redeemInvitation(
+              pendingInvitationCode
             );
+            console.log("Redeem result:", redeemResult);
 
-            if (foundInvitation) {
-              // Validate invitation (check if expired/redeemed)
-              const now = new Date();
-              const expiresAt = parseServerDate(foundInvitation.expires_at);
+            // If redeem succeeded, show success and redirect
+            setSuccessMessage(
+              "Invitation accepted successfully! Redirecting..."
+            );
+            localStorage.removeItem("pendingInvitationCode");
 
-              if (now >= expiresAt) {
-                setError(
-                  "This invitation has expired or has already been used"
-                );
-                localStorage.removeItem("pendingInvitationCode");
-                return;
-              }
-
-              console.log("🎉 Invitation is valid, proceeding with workflow");
-              setInvitation(foundInvitation);
-            } else {
-              setError("Invalid invitation code");
-              localStorage.removeItem("pendingInvitationCode");
-            }
-          } catch (error) {
-            console.error("❌ Failed to validate invitation:", error);
-            setError("Failed to validate invitation. Please try again.");
+            // Redirect to main app after 2 seconds
+            setTimeout(() => {
+              navigate("/");
+            }, 2000);
+          } catch (error: any) {
+            console.error("❌ Failed to redeem invitation:", error);
+            const errorMessage =
+              error?.message ||
+              "Failed to accept invitation. The invitation may be invalid, expired, or already used.";
+            setError(errorMessage);
             localStorage.removeItem("pendingInvitationCode");
           }
         };
 
-        validateInvitation();
+        processInvitation();
         return;
       }
 
-      // Step 2: Once invitation is validated, proceed with workflow
+      // Legacy workflow support (if invitation object exists)
       if (invitation && !currentUserLoading) {
-        console.log("Processing authenticated user workflow...");
+        console.log("Processing legacy authenticated user workflow...");
 
         // Step 2a: Ensure user record exists in database and update sub field
         if (!currentUser && !currentUserError) {
@@ -268,7 +285,7 @@ const AcceptInvitation: React.FC = () => {
           console.log("Creating user with data:", createUserData);
 
           apiService
-            .updateUser(createUserData)
+            .updateUser(userId!, createUserData)
             .then(() => {
               console.log("User created, refetching user data...");
               refetchUser();
@@ -284,7 +301,7 @@ const AcceptInvitation: React.FC = () => {
         if (currentUser && !currentUser.sub && userId) {
           console.log("User exists but sub field is missing, updating...");
           apiService
-            .updateUser({
+            .updateUser(userId, {
               user_id: currentUser.user_id,
               sub: userId,
               email: userEmail!,
@@ -302,14 +319,20 @@ const AcceptInvitation: React.FC = () => {
         // Step 2b: User exists, proceed with invitation workflow
         if (currentUser) {
           console.log("User exists in database, showing invitation prompt");
-          const clientGroup = clientGroups?.find(
-            (cg) => cg.client_group_id === invitation.client_group_id
+          const clientGroupsArray = Array.isArray(clientGroups)
+            ? clientGroups
+            : clientGroups && "data" in clientGroups
+            ? clientGroups.data
+            : [];
+          const clientGroup = clientGroupsArray.find(
+            (cg: apiService.ClientGroup) =>
+              cg.client_group_name === invitation.client_group_name
           );
 
           // Show confirmation prompt
           setSuccessMessage(
             `You have been invited to join ${
-              clientGroup?.name || "a client organization"
+              clientGroup?.client_group_name || "a client organization"
             }. Accepting invitation...`
           );
 

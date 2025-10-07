@@ -43,7 +43,7 @@ const PortfolioSelectionStep: React.FC<PortfolioSelectionStepProps> = ({
       <Stack direction="row" spacing={2} alignItems="flex-start">
         <Autocomplete
           options={portfolioEntities || []}
-          getOptionLabel={(option) => option.name}
+          getOptionLabel={(option) => option.entity_name}
           value={selectedPortfolio || null}
           onChange={(_, newValue) =>
             onPortfolioChange(newValue?.entity_id.toString() || "")

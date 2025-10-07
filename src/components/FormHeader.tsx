@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Typography, IconButton, TextField, Chip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
@@ -59,19 +59,34 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   updated_by_user_name,
 }) => {
   const [isEditingName, setIsEditingName] = useState(!name); // Start editing if no name (new object)
-  const [isEditingEmail, setIsEditingEmail] = useState(!email); // Start editing if no email (new user)
+  const [isEditingEmail, setIsEditingEmail] = useState(
+    !email && email !== undefined
+  ); // Start editing if no email (new user)
   const [tempName, setTempName] = useState(name || "");
   const [tempEmail, setTempEmail] = useState(email || "");
+
+  // Update editing states when name/email props change
+  useEffect(() => {
+    setIsEditingName(!name);
+    setTempName(name || "");
+  }, [name]);
+
+  useEffect(() => {
+    setIsEditingEmail(!email && email !== undefined);
+    setTempEmail(email || "");
+  }, [email]);
 
   // Query to get user information for audit trail (only if we have user_id but not user_name)
   const { data: updatedUserData } = useQuery({
     queryKey: ["user", updated_user_id],
-    queryFn: () => apiService.queryUsers({ user_id: updated_user_id! }),
+    queryFn: () => apiService.queryUsers({}),
     enabled: !!updated_user_id && !updated_by_user_name,
   });
 
   const updatedUser =
-    updatedUserData && updatedUserData.length > 0 ? updatedUserData[0] : null;
+    updatedUserData && Array.isArray(updatedUserData)
+      ? updatedUserData.find((user) => user.user_id === updated_user_id)
+      : null;
 
   // Determine the display name for audit trail
   const auditTrailUserName = updated_by_user_name || updatedUser?.email;
@@ -135,10 +150,9 @@ const FormHeader: React.FC<FormHeaderProps> = ({
     }
   };
 
-  // Determine the main display value and label
+  // Determine the main display value
   const isUserForm = email !== undefined;
   const displayValue = isUserForm ? email : name;
-  const label = isUserForm ? "Email" : "Name";
   const secondaryValue = isUserForm ? sub : id;
 
   return (

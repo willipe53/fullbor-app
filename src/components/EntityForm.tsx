@@ -33,6 +33,9 @@ interface SchemaField {
 const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   const queryClient = useQueryClient();
 
+  // Keep track of the original entity name for API calls (URL path)
+  const originalEntityName = editingEntity?.entity_name;
+
   // State for form fields
   const [name, setName] = useState(editingEntity?.entity_name || "");
   const [selectedEntityType, setSelectedEntityType] =
@@ -73,11 +76,13 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       if (editingEntity?.entity_id) {
         // Update existing entity
         console.log(
-          "Calling updateEntity with name:",
-          editingEntity.entity_name
+          "Calling updateEntity with original name:",
+          originalEntityName,
+          "new data:",
+          data
         );
         return await apiService.updateEntity(
-          editingEntity.entity_name,
+          originalEntityName!,
           data as apiService.UpdateEntityRequest
         );
       } else {
@@ -90,9 +95,12 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
     },
     onSuccess: (result) => {
       console.log("Mutation successful:", result);
-      // Invalidate and refetch entities
+      // Invalidate and refetch entities - invalidate all entity-related queries
       queryClient.invalidateQueries({ queryKey: ["entities"] });
       queryClient.invalidateQueries({ queryKey: ["entityTypes"] });
+      queryClient.invalidateQueries({ queryKey: ["entity-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["client-group-entities"] });
+      queryClient.invalidateQueries({ queryKey: ["client-group-entity-ids"] });
       onClose();
     },
     onError: (error) => {
@@ -587,7 +595,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
             {mutation.isPending
               ? "Saving..."
               : editingEntity?.entity_id
-              ? "Update Entity"
+              ? "Update"
               : "Create Entity"}
           </Button>
         </Box>

@@ -68,7 +68,7 @@ tests:
   - name: "Clear entities for client group (remove all)"
     request:
       method: PUT
-      url: "/client-groups/Byrde Family Foundation/entities:set"
+      url: "/client-groups/Test Client Group {{timestamp}}/entities:set"
       json:
         entity_ids: []
     expect:
@@ -81,7 +81,7 @@ tests:
   - name: "Set entities for client group"
     request:
       method: PUT
-      url: "/client-groups/Byrde Family Foundation/entities:set"
+      url: "/client-groups/Test Client Group {{timestamp}}/entities:set"
       json:
         entity_ids: [1, 2, 4, 5, 6]
     expect:
@@ -94,7 +94,7 @@ tests:
   - name: "Get entities for client group"
     request:
       method: GET
-      url: "/client-groups/Byrde Family Foundation/entities"
+      url: "/client-groups/Test Client Group {{timestamp}}/entities"
     expect:
       status: 200
       json:
@@ -109,9 +109,9 @@ tests:
   - name: "Set users for client group"
     request:
       method: PUT
-      url: "/client-groups/Byrde Family Foundation/users:set"
+      url: "/client-groups/Test Client Group {{timestamp}}/users:set"
       json:
-        sub_values: ["11111111-2222-3333-4444-555555555555"]
+        sub_values: ["81fb55e0-e0b1-704a-3aad-791c0788d612"]
     expect:
       status: 200
       json:

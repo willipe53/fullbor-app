@@ -44,18 +44,13 @@ const InstrumentSelectionStep: React.FC<InstrumentSelectionStepProps> = ({
       <Stack direction="row" spacing={2} alignItems="flex-start">
         <Autocomplete
           options={instrumentEntities || []}
-          getOptionLabel={(option) => option.name}
+          getOptionLabel={(option) => option.entity_name}
           value={selectedInstrument || null}
           onChange={(_, newValue) =>
             onInstrumentChange(newValue?.entity_id.toString() || "")
           }
           renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Instrument *"
-              required
-              fullWidth
-            />
+            <TextField {...params} label="Instrument *" required fullWidth />
           )}
           disabled={isLoading}
           sx={{ flex: 1 }}
@@ -75,4 +70,3 @@ const InstrumentSelectionStep: React.FC<InstrumentSelectionStepProps> = ({
 };
 
 export default InstrumentSelectionStep;
-

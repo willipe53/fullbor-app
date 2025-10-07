@@ -1,0 +1,76 @@
+{
+  "backup_timestamp": "20251006T191722",
+  "database": "onebor",
+  "tables_count": 11,
+  "total_rows": 655,
+  "total_bytes": 116219,
+  "tables": [
+    {
+      "table": "client_group_entities",
+      "s3_key": "20251006T191722/client_group_entities.bcp",
+      "size_bytes": 281,
+      "row_count": 8
+    },
+    {
+      "table": "client_group_users",
+      "s3_key": "20251006T191722/client_group_users.bcp",
+      "size_bytes": 168,
+      "row_count": 5
+    },
+    {
+      "table": "client_groups",
+      "s3_key": "20251006T191722/client_groups.bcp",
+      "size_bytes": 227,
+      "row_count": 2
+    },
+    {
+      "table": "entities",
+      "s3_key": "20251006T191722/entities.bcp",
+      "size_bytes": 87068,
+      "row_count": 568
+    },
+    {
+      "table": "entity_types",
+      "s3_key": "20251006T191722/entity_types.bcp",
+      "size_bytes": 5364,
+      "row_count": 16
+    },
+    {
+      "table": "invitations",
+      "s3_key": "20251006T191722/invitations.bcp",
+      "size_bytes": 411,
+      "row_count": 5
+    },
+    {
+      "table": "lambda_locks",
+      "s3_key": "20251006T191722/lambda_locks.bcp",
+      "size_bytes": 26,
+      "row_count": 0
+    },
+    {
+      "table": "transaction_statuses",
+      "s3_key": "20251006T191722/transaction_statuses.bcp",
+      "size_bytes": 191,
+      "row_count": 4
+    },
+    {
+      "table": "transaction_types",
+      "s3_key": "20251006T191722/transaction_types.bcp",
+      "size_bytes": 18678,
+      "row_count": 24
+    },
+    {
+      "table": "transactions",
+      "s3_key": "20251006T191722/transactions.bcp",
+      "size_bytes": 3193,
+      "row_count": 18
+    },
+    {
+      "table": "users",
+      "s3_key": "20251006T191722/users.bcp",
+      "size_bytes": 612,
+      "row_count": 5
+    }
+  ],
+  "errors": []
+}

@@ -83,15 +83,16 @@ def lambda_handler(event, context):
         if http_method == 'GET':
             # Handle GET operations
             if 'transaction_type_name' in path_parameters:
-                # Get single transaction type by name: /transaction-types/{transaction_type_name}
+                # Get single transaction type by transaction_type_name: /transaction-types/{transaction_type_name}
                 transaction_type_name = unquote(
                     path_parameters['transaction_type_name'])
 
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        SELECT name, properties, update_date, updated_user_id
-                        FROM transaction_types
-                        WHERE name = %s
+                        SELECT tt.transaction_type_id, tt.transaction_type_name, tt.properties, tt.update_date, u.email
+                        FROM transaction_types tt
+                        LEFT JOIN users u ON tt.updated_user_id = u.user_id
+                        WHERE tt.transaction_type_name = %s
                     """, (transaction_type_name,))
                     result = cursor.fetchone()
 
@@ -103,13 +104,14 @@ def lambda_handler(event, context):
                         }
 
                     # Map database fields to OpenAPI schema
-                    properties = json.loads(result[1]) if result[1] else {}
+                    properties = json.loads(result[2]) if result[2] else {}
 
                     response = {
-                        "transaction_type_name": result[0],
+                        "transaction_type_id": result[0],
+                        "transaction_type_name": result[1],
                         "properties": properties,
-                        "update_date": result[2].isoformat() + "Z" if result[2] else None,
-                        "updated_by_user_name": str(result[3]) if result[3] else None
+                        "update_date": result[3].isoformat() + "Z" if result[3] else None,
+                        "updated_by_user_name": result[4] if result[4] else None
                     }
             else:
                 # List all transaction types: /transaction-types
@@ -126,9 +128,10 @@ def lambda_handler(event, context):
                     else:
                         # Return transaction types data
                         cursor.execute("""
-                            SELECT name, properties, update_date, updated_user_id
-                            FROM transaction_types
-                            ORDER BY name
+                            SELECT tt.transaction_type_id, tt.transaction_type_name, tt.properties, tt.update_date, u.email
+                            FROM transaction_types tt
+                            LEFT JOIN users u ON tt.updated_user_id = u.user_id
+                            ORDER BY tt.transaction_type_name
                         """)
                         results = cursor.fetchall()
 
@@ -136,13 +139,14 @@ def lambda_handler(event, context):
                         for result in results:
                             # Map database fields to OpenAPI schema
                             properties = json.loads(
-                                result[1]) if result[1] else {}
+                                result[2]) if result[2] else {}
 
                             response.append({
-                                "transaction_type_name": result[0],
+                                "transaction_type_id": result[0],
+                                "transaction_type_name": result[1],
                                 "properties": properties,
-                                "update_date": result[2].isoformat() + "Z" if result[2] else None,
-                                "updated_by_user_name": str(result[3]) if result[3] else None
+                                "update_date": result[3].isoformat() + "Z" if result[3] else None,
+                                "updated_by_user_name": result[4] if result[4] else None
                             })
 
         elif http_method == 'POST':
@@ -174,7 +178,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Check if transaction type already exists
                 cursor.execute(
-                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                    "SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = %s", (transaction_type_name,))
                 existing = cursor.fetchone()
 
                 if existing:
@@ -182,7 +186,7 @@ def lambda_handler(event, context):
                     cursor.execute("""
                         UPDATE transaction_types 
                         SET properties = %s, update_date = NOW(), updated_user_id = %s
-                        WHERE name = %s
+                        WHERE transaction_type_name = %s
                     """, (properties_json, user_id, transaction_type_name))
                     connection.commit()
                     response = {
@@ -190,7 +194,7 @@ def lambda_handler(event, context):
                 else:
                     # Insert new transaction type
                     cursor.execute("""
-                        INSERT INTO transaction_types (name, properties, updated_user_id)
+                        INSERT INTO transaction_types (transaction_type_name, properties, updated_user_id)
                         VALUES (%s, %s, %s)
                     """, (transaction_type_name, properties_json, user_id))
                     connection.commit()
@@ -224,10 +228,14 @@ def lambda_handler(event, context):
             properties = request_data.get('properties', {})
             properties_json = json.dumps(properties) if properties else None
 
+            # Get the new transaction_type_name if it's being changed
+            new_transaction_type_name = request_data.get(
+                'transaction_type_name')
+
             with connection.cursor() as cursor:
                 # Check if transaction type exists
                 cursor.execute(
-                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                    "SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = %s", (transaction_type_name,))
                 existing = cursor.fetchone()
 
                 if not existing:
@@ -237,12 +245,19 @@ def lambda_handler(event, context):
                         "headers": {"Content-Type": "application/json"}
                     }
 
-                # Update transaction type
-                cursor.execute("""
-                    UPDATE transaction_types 
-                    SET properties = %s, update_date = NOW(), updated_user_id = %s
-                    WHERE name = %s
-                """, (properties_json, user_id, transaction_type_name))
+                # Update transaction type (including transaction_type_name if provided)
+                if new_transaction_type_name and new_transaction_type_name != transaction_type_name:
+                    cursor.execute("""
+                        UPDATE transaction_types 
+                        SET transaction_type_name = %s, properties = %s, update_date = NOW(), updated_user_id = %s
+                        WHERE transaction_type_name = %s
+                    """, (new_transaction_type_name, properties_json, user_id, transaction_type_name))
+                else:
+                    cursor.execute("""
+                        UPDATE transaction_types 
+                        SET properties = %s, update_date = NOW(), updated_user_id = %s
+                        WHERE transaction_type_name = %s
+                    """, (properties_json, user_id, transaction_type_name))
                 connection.commit()
                 response = {"message": "Transaction type updated successfully"}
 
@@ -264,7 +279,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Check if transaction type exists
                 cursor.execute(
-                    "SELECT transaction_type_id FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                    "SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = %s", (transaction_type_name,))
                 existing = cursor.fetchone()
 
                 if not existing:
@@ -276,7 +291,7 @@ def lambda_handler(event, context):
 
                 # Delete transaction type
                 cursor.execute(
-                    "DELETE FROM transaction_types WHERE name = %s", (transaction_type_name,))
+                    "DELETE FROM transaction_types WHERE transaction_type_name = %s", (transaction_type_name,))
                 connection.commit()
                 response = {"message": "Transaction type deleted successfully"}
 

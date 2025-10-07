@@ -68,7 +68,7 @@ def lambda_handler(event, context):
                 else:
                     # List all transaction statuses
                     cursor.execute(
-                        "SELECT name, update_date, updated_user_id FROM transaction_statuses ORDER BY name"
+                        "SELECT transaction_status_name, update_date, updated_user_id FROM transaction_statuses ORDER BY transaction_status_name"
                     )
                     results = cursor.fetchall()
 

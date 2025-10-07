@@ -58,6 +58,21 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = @saved_cs_client;
 
 --
+-- Temporary view structure for view `client_group_user_view`
+--
+
+DROP TABLE IF EXISTS `client_group_user_view`;
+/*!50001 DROP VIEW IF EXISTS `client_group_user_view`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `client_group_user_view` AS SELECT 
+ 1 AS `client_group_id`,
+ 1 AS `client_group_name`,
+ 1 AS `user_id`,
+ 1 AS `email`*/;
+SET character_set_client = @saved_cs_client;
+
+--
 -- Table structure for table `client_group_users`
 --
 
@@ -76,21 +91,6 @@ CREATE TABLE `client_group_users` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Temporary view structure for view `client_group_users_view`
---
-
-DROP TABLE IF EXISTS `client_group_users_view`;
-/*!50001 DROP VIEW IF EXISTS `client_group_users_view`*/;
-SET @saved_cs_client     = @@character_set_client;
-/*!50503 SET character_set_client = utf8mb4 */;
-/*!50001 CREATE VIEW `client_group_users_view` AS SELECT 
- 1 AS `client_group_id`,
- 1 AS `client_group_name`,
- 1 AS `user_id`,
- 1 AS `email`*/;
-SET character_set_client = @saved_cs_client;
-
---
 -- Table structure for table `client_groups`
 --
 
@@ -105,7 +105,7 @@ CREATE TABLE `client_groups` (
   `updated_user_id` int DEFAULT NULL,
   PRIMARY KEY (`client_group_id`),
   UNIQUE KEY `client_group_name` (`client_group_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=512 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=504 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -125,7 +125,7 @@ CREATE TABLE `entities` (
   PRIMARY KEY (`entity_id`),
   KEY `fk_entities_entity_type` (`entity_type_id`),
   CONSTRAINT `fk_entities_entity_type` FOREIGN KEY (`entity_type_id`) REFERENCES `entity_types` (`entity_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=705 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=698 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -143,7 +143,7 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `entity_type_id`,
  1 AS `update_date`,
  1 AS `updated_user_id`,
- 1 AS `email`,
+ 1 AS `updated_user_email`,
  1 AS `attributes`*/;
 SET character_set_client = @saved_cs_client;
 
@@ -165,7 +165,7 @@ CREATE TABLE `entity_types` (
   `entity_category` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`entity_type_id`),
   UNIQUE KEY `entity_type_name` (`entity_type_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=316 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=307 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -184,8 +184,26 @@ CREATE TABLE `invitations` (
   `email_sent_to` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`invitation_id`),
   UNIQUE KEY `uq_invitations_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=117 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Temporary view structure for view `invitations_view`
+--
+
+DROP TABLE IF EXISTS `invitations_view`;
+/*!50001 DROP VIEW IF EXISTS `invitations_view`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `invitations_view` AS SELECT 
+ 1 AS `invitation_id`,
+ 1 AS `email_sent_to`,
+ 1 AS `primary_client_group_name`,
+ 1 AS `client_group_id`,
+ 1 AS `expires_at`,
+ 1 AS `code`,
+ 1 AS `updated_user_id`*/;
+SET character_set_client = @saved_cs_client;
 
 --
 -- Table structure for table `lambda_locks`
@@ -232,7 +250,7 @@ CREATE TABLE `transaction_types` (
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_user_id` int DEFAULT NULL,
   PRIMARY KEY (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -252,8 +270,6 @@ CREATE TABLE `transactions` (
   `transaction_type_id` int NOT NULL,
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_user_id` int DEFAULT NULL,
-  `trade_date` datetime NOT NULL,
-  `settle_date` datetime NOT NULL,
   PRIMARY KEY (`transaction_id`),
   KEY `fk_trans_trans_type` (`transaction_type_id`),
   KEY `fk_trans_trans_status` (`transaction_status_id`),
@@ -265,7 +281,7 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_party_entity` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_trans_trans_status` FOREIGN KEY (`transaction_status_id`) REFERENCES `transaction_statuses` (`transaction_status_id`),
   CONSTRAINT `fk_trans_trans_type` FOREIGN KEY (`transaction_type_id`) REFERENCES `transaction_types` (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -288,8 +304,6 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `transaction_status_id`,
  1 AS `transaction_type`,
  1 AS `transaction_type_id`,
- 1 AS `trade_date`,
- 1 AS `settle_date`,
  1 AS `properties`,
  1 AS `update_date`,
  1 AS `updated_user_id`*/;
@@ -311,7 +325,7 @@ CREATE TABLE `users` (
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=242 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=240 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -408,7 +422,7 @@ BEGIN
       ev.entity_name,
       ev.entity_type_name,
       ev.entity_type_id,
-      ev.email,
+      ev.updated_user_email,
       ev.updated_user_id
   FROM entities_view ev
   WHERE NOT EXISTS (
@@ -417,7 +431,6 @@ BEGIN
     WHERE cge.entity_id = ev.entity_id
   )
   ORDER BY ev.entity_id;
-
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -473,16 +486,15 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `client_group_entities_view` AS select `cge`.`client_group_id` AS `client_group_id`,`cg`.`client_group_name` AS `client_group_name`,`cge`.`entity_id` AS `entity_id`,`en`.`entity_name` AS `entity_name` from ((`client_group_entities` `cge` left join `entities` `en` on((`en`.`entity_id` = `cge`.`entity_id`))) left join `client_groups` `cg` on((`cg`.`client_group_id` = `cge`.`client_group_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
 
 --
--- Final view structure for view `client_group_users_view`
+-- Final view structure for view `client_group_user_view`
 --
 
-/*!50001 DROP VIEW IF EXISTS `client_group_users_view`*/;
+/*!50001 DROP VIEW IF EXISTS `client_group_user_view`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
 /*!50001 SET @saved_cs_results         = @@character_set_results */;
 /*!50001 SET @saved_col_connection     = @@collation_connection */;
@@ -491,7 +503,24 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `client_group_users_view` AS select `cgu`.`client_group_id` AS `client_group_id`,`cg`.`client_group_name` AS `client_group_name`,`cgu`.`user_id` AS `user_id`,`us`.`email` AS `email` from ((`client_group_users` `cgu` left join `client_groups` `cg` on((`cg`.`client_group_id` = `cgu`.`client_group_id`))) left join `users` `us` on((`us`.`user_id` = `cgu`.`user_id`))) */;
+/*!50001 VIEW `client_group_user_view` AS select `cgu`.`client_group_id` AS `client_group_id`,`cg`.`client_group_name` AS `client_group_name`,`cgu`.`user_id` AS `user_id`,`us`.`email` AS `email` from ((`client_group_users` `cgu` join `client_groups` `cg` on((`cgu`.`client_group_id` = `cg`.`client_group_id`))) join `users` `us` on((`cgu`.`user_id` = `us`.`user_id`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `currencies`
+--
+
+/*!50001 DROP VIEW IF EXISTS `currencies`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -509,7 +538,40 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `entities_view` AS select `en`.`entity_id` AS `entity_id`,`en`.`entity_name` AS `entity_name`,`et`.`entity_type_name` AS `entity_type_name`,`en`.`entity_type_id` AS `entity_type_id`,`en`.`update_date` AS `update_date`,`en`.`updated_user_id` AS `updated_user_id`,`u`.`email` AS `email`,`en`.`attributes` AS `attributes` from ((`entities` `en` left join `entity_types` `et` on((`en`.`entity_type_id` = `et`.`entity_type_id`))) left join `users` `u` on((`en`.`updated_user_id` = `u`.`user_id`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `instruments`
+--
+
+/*!50001 DROP VIEW IF EXISTS `instruments`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `invitations_view`
+--
+
+/*!50001 DROP VIEW IF EXISTS `invitations_view`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -527,7 +589,6 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `transactions_view` AS select `tr`.`transaction_id` AS `transaction_id`,`en1`.`entity_name` AS `portfolio_name`,`tr`.`portfolio_entity_id` AS `portfolio_entity_id`,`en2`.`entity_name` AS `contra_name`,`tr`.`contra_entity_id` AS `contra_entity_id`,`en3`.`entity_name` AS `instrument_name`,`tr`.`instrument_entity_id` AS `instrument_entity_id`,`ts`.`transaction_status_name` AS `transaction_status`,`tr`.`transaction_status_id` AS `transaction_status_id`,`tt`.`transaction_type_name` AS `transaction_type`,`tr`.`transaction_type_id` AS `transaction_type_id`,`tr`.`trade_date` AS `trade_date`,`tr`.`settle_date` AS `settle_date`,`tr`.`properties` AS `properties`,`tr`.`update_date` AS `update_date`,`tr`.`updated_user_id` AS `updated_user_id` from (((((`transactions` `tr` left join `entities` `en1` on((`tr`.`portfolio_entity_id` = `en1`.`entity_id`))) left join `entities` `en2` on((`tr`.`contra_entity_id` = `en2`.`entity_id`))) left join `entities` `en3` on((`tr`.`instrument_entity_id` = `en3`.`entity_id`))) left join `transaction_statuses` `ts` on((`tr`.`transaction_status_id` = `ts`.`transaction_status_id`))) left join `transaction_types` `tt` on((`tr`.`transaction_type_id` = `tt`.`transaction_type_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -545,7 +606,6 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `users_view` AS select `us`.`user_id` AS `user_id`,`us`.`email` AS `email`,`cg`.`client_group_name` AS `primary_client_group_name`,`us`.`primary_client_group_id` AS `primary_client_group_id`,`us`.`update_date` AS `update_date`,`us`.`sub` AS `sub`,`us`.`preferences` AS `preferences` from (`users` `us` left join `client_groups` `cg` on((`us`.`primary_client_group_id` = `cg`.`client_group_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -560,10 +620,10 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-07 15:25:43
+-- Dump completed on 2025-10-04 14:42:33
 -- =============================================================================
 -- OneBor Database Schema Export
--- Generated on: 2025-10-07 15:25:34
+-- Generated on: 2025-10-04 14:42:22
 -- Database: onebor
 -- Host: panda-db.cnqay066ma0a.us-east-2.rds.amazonaws.com:3306
 -- 

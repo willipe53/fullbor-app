@@ -1,0 +1,19 @@
+transaction_id	portfolio_entity_id	contra_entity_id	instrument_entity_id	properties	transaction_status_id	transaction_type_id	update_date	updated_user_id
+11	636	641	635	"{""amount"": 1000000, ""post_date"": ""2025-10-31"", ""currency_code"": ""Swedish Krona""}"	3	47	2025-09-29T13:50:08	234
+12	636	642	632	"{""amount"": 5000000, ""currency_code"": ""US Dollar"", ""expected_years"": 50, ""expected_percent"": ""80%""}"	4	41	2025-09-28T15:31:03	10
+13	636	636	30	"{""price"": 23.3, ""amount"": ""10000000"", ""trade_date"": ""2025-09-27"", ""settle_date"": ""2025-09-30"", ""settle_currency"": ""US Dollar""}"	3	37	2025-09-28T15:31:01	10
+16	636		30	"{""ratio"": 1, ""post_date"": ""2025-10-07"", ""record_date"": ""2025-09-27""}"	3	55	2025-09-28T15:31:01	10
+17	643	643	30	"{""price"": 45, ""amount"": 1000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	53	2025-09-28T15:31:01	10
+18	643	643	30	"{""price"": 45, ""amount"": 1000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	53	2025-09-28T15:31:02	10
+19	643	643	30	"{""price"": 451, ""amount"": 1100000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	53	2025-09-28T15:31:02	10
+20	636	636	29	"{""price"": 23.4, ""amount"": 3000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	53	2025-09-28T15:36:52	10
+21	636	636	28	"{""price"": 23.2, ""amount"": 1000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	37	2025-09-28T15:38:49	10
+22	636	636	30	"{""price"": 123.45, ""amount"": 23000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""US Dollar""}"	3	53	2025-09-28T15:59:52	10
+23	643	643	27	"{""amount"": 1000000, ""post_date"": ""2025-10-08"", ""currency_code"": ""Japanese Yen"", ""expected_date"": ""2025-10-29""}"	3	58	2025-09-28T16:06:45	10
+24	24	24	30	"{""price"": 23.456, ""amount"": 1123100000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""Pound Sterling""}"	3	43	2025-09-28T17:34:20	10
+25	643	643	26	"{""amount"": 456456, ""post_date"": ""2025-10-08"", ""currency_code"": ""Swiss Franc"", ""expected_date"": ""2025-10-07""}"	3	58	2025-09-28T17:28:58	10
+26	636	636	30	"{""price"": 23.3, ""amount"": 1000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""Swiss Franc""}"	3	43	2025-09-28T17:28:18	10
+27	643	643	30	"{""price"": 23.567, ""amount"": 1000000, ""trade_date"": ""2025-09-28"", ""settle_date"": ""2025-10-01"", ""settle_currency"": ""Swiss Franc""}"	3	53	2025-09-28T20:29:48	10
+28	636		30	"{""ratio"": 2, ""post_date"": ""2025-10-09"", ""record_date"": ""2025-09-26""}"	3	55	2025-09-29T13:50:08	234
+29	24	24	30	"{""price"": 23.45, ""amount"": 6000000, ""trade_date"": ""2025-09-29"", ""settle_date"": ""2025-10-02"", ""settle_currency"": ""US Dollar""}"	3	54	2025-09-29T13:51:39	10
+38	636	641	637	"{""amount"": 1000.0, ""fee_period"": ""monthly"", ""created_via"": ""api_test""}"	2	47	2025-10-02T19:21:40	10

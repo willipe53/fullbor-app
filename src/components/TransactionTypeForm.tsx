@@ -2,31 +2,29 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
-  TextField,
   Button,
-  Paper,
   Alert,
   CircularProgress,
   FormControl,
   FormLabel,
   Snackbar,
-  Chip,
 } from "@mui/material";
 import AceEditor from "react-ace";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as apiService from "../services/api";
+import FormHeader from "./FormHeader";
 
 // Import JSON mode and theme for ace editor
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import * as apiService from "../services/api";
 
 interface TransactionType {
   transaction_type_id: number;
-  name: string;
+  transaction_type_name: string;
   properties?: object | string;
   update_date?: string;
-  updated_user_id?: number;
+  updated_by_user_name?: string;
 }
 
 interface TransactionTypeFormProps {
@@ -38,13 +36,17 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
   editingTransactionType,
   onClose,
 }) => {
-  const [name, setName] = useState("");
+  // Keep track of the original transaction type name for API calls (URL path)
+  const originalTransactionTypeName =
+    editingTransactionType?.transaction_type_name;
+
+  const [transactionTypeName, setTransactionTypeName] = useState("");
   const [properties, setProperties] = useState("{}");
   const [jsonError, setJsonError] = useState("");
   const [showSuccessSnackbar, setShowSuccessSnackbar] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [initialFormState, setInitialFormState] = useState<{
-    name: string;
+    transactionTypeName: string;
     properties: string;
   } | null>(null);
 
@@ -55,15 +57,16 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
     if (!initialFormState) return false;
 
     const currentState = {
-      name,
+      transactionTypeName,
       properties,
     };
 
     return (
-      currentState.name !== initialFormState.name ||
+      currentState.transactionTypeName !==
+        initialFormState.transactionTypeName ||
       currentState.properties !== initialFormState.properties
     );
-  }, [name, properties, initialFormState]);
+  }, [transactionTypeName, properties, initialFormState]);
 
   // Update dirty state whenever form values change
   useEffect(() => {
@@ -73,7 +76,9 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
   // Populate form when editing a transaction type
   useEffect(() => {
     if (editingTransactionType) {
-      setName(editingTransactionType.name || "");
+      setTransactionTypeName(
+        editingTransactionType.transaction_type_name || ""
+      );
 
       // Set properties string - always format when editing
       if (editingTransactionType.properties) {
@@ -111,11 +116,9 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
         if (editingTransactionType.properties) {
           try {
             if (typeof editingTransactionType.properties === "string") {
-              // If it's already a string, parse it first then format it
               const parsed = JSON.parse(editingTransactionType.properties);
               propertiesStr = JSON.stringify(parsed, null, 2);
             } else {
-              // If it's an object, format it directly
               propertiesStr = JSON.stringify(
                 editingTransactionType.properties,
                 null,
@@ -130,7 +133,8 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
         }
 
         setInitialFormState({
-          name: editingTransactionType.name || "",
+          transactionTypeName:
+            editingTransactionType.transaction_type_name || "",
           properties: propertiesStr,
         });
         setIsDirty(false); // Reset dirty state when loading existing transaction type
@@ -138,7 +142,7 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
     } else {
       // For new transaction types, set initial state immediately
       setInitialFormState({
-        name: "",
+        transactionTypeName: "",
         properties: "{}",
       });
       setIsDirty(false);
@@ -146,11 +150,28 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
   }, [editingTransactionType]);
 
   const mutation = useMutation({
-    mutationFn: apiService.updateTransactionType,
+    mutationFn: async (data: apiService.TransactionType) => {
+      if (editingTransactionType) {
+        return await apiService.updateTransactionType(
+          originalTransactionTypeName!,
+          data
+        );
+      } else {
+        await apiService.createTransactionType(data);
+        // Return a mock TransactionType for create operations to satisfy TypeScript
+        return {
+          transaction_type_id: 0,
+          transaction_type_name: data.transaction_type_name,
+          properties: data.properties,
+          update_date: new Date().toISOString(),
+          updated_by_user_name: undefined,
+        } as apiService.TransactionType;
+      }
+    },
     onSuccess: () => {
       if (!editingTransactionType) {
         // Reset form only for create mode
-        setName("");
+        setTransactionTypeName("");
         setProperties("{}");
         setJsonError("");
       }
@@ -207,18 +228,12 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
         propertiesObject = JSON.parse(properties);
       }
 
-      const requestData: apiService.CreateTransactionTypeRequest & {
-        transaction_type_id?: number;
-      } = {
-        name,
+      const requestData: apiService.TransactionType = {
+        transaction_type_id: editingTransactionType?.transaction_type_id || 0,
+        transaction_type_name: transactionTypeName,
         ...(propertiesObject && { properties: propertiesObject }),
       };
 
-      // Add transaction_type_id for updates
-      if (editingTransactionType) {
-        requestData.transaction_type_id =
-          editingTransactionType.transaction_type_id;
-      }
       mutation.mutate(requestData);
     } catch (error) {
       console.error("Error preparing request:", error);
@@ -257,54 +272,43 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
   };
 
   const canSubmit =
-    name.trim() &&
+    transactionTypeName.trim() &&
     !jsonError &&
     !mutation.isPending &&
     (editingTransactionType?.transaction_type_id ? isDirty : true); // For existing types, require dirty; for new types, always allow
 
   return (
     <Box
-      sx={{ height: "100%", display: "flex", flexDirection: "column", p: 3 }}
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
     >
-      <Paper
-        elevation={3}
+      {/* Header */}
+      <FormHeader
+        title="Transaction Type"
+        name={editingTransactionType?.transaction_type_name}
+        onNameChange={(newName) => {
+          setTransactionTypeName(newName);
+        }}
+        isEditing={true}
+        update_date={editingTransactionType?.update_date}
+        updated_by_user_name={editingTransactionType?.updated_by_user_name}
+        onDirtyChange={() => setIsDirty(true)}
+        onClose={onClose || (() => {})}
+      />
+
+      {/* Body */}
+      <Box
         sx={{
-          p: 4,
           flex: 1,
-          display: "flex",
-          flexDirection: "column",
           overflow: "auto",
-          maxHeight: "90vh",
+          minHeight: 0,
+          p: 3,
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h4">
-            {editingTransactionType
-              ? "Edit Transaction Type"
-              : "Create Transaction Type"}
-          </Typography>
-          {editingTransactionType && (
-            <Chip
-              label={`ID: ${editingTransactionType.transaction_type_id}`}
-              size="small"
-              variant="outlined"
-              sx={{
-                backgroundColor: "rgba(25, 118, 210, 0.1)",
-                borderColor: "rgba(25, 118, 210, 0.5)",
-                color: "primary.main",
-                fontWeight: "500",
-              }}
-            />
-          )}
-        </Box>
-
         {mutation.isError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             Error:{" "}
@@ -344,15 +348,6 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
               pb: 2,
             }}
           >
-            <TextField
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              fullWidth
-              disabled={mutation.isPending}
-            />
-
             <FormControl fullWidth>
               <Box
                 sx={{
@@ -423,78 +418,77 @@ const TransactionTypeForm: React.FC<TransactionTypeFormProps> = ({
               </Typography>
             </FormControl>
           </Box>
-
-          {/* Fixed Footer with Action Buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              p: 2,
-              borderTop: "1px solid",
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-              flexShrink: 0,
-            }}
-          >
-            {/* Delete button - only show when editing */}
-            {editingTransactionType && (
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Are you sure you want to delete "${editingTransactionType.name}"?\n\nThis action cannot be undone and may affect related transactions.`
-                    )
-                  ) {
-                    deleteMutation.mutate();
-                  }
-                }}
-                disabled={mutation.isPending || deleteMutation.isPending}
-                sx={{ minWidth: "auto" }}
-              >
-                {deleteMutation.isPending ? (
-                  <>
-                    <CircularProgress size={16} sx={{ mr: 1 }} />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </Button>
-            )}
-
-            <Box sx={{ display: "flex", gap: 2 }}>
-              {editingTransactionType && onClose && (
-                <Button
-                  variant="outlined"
-                  onClick={onClose}
-                  disabled={mutation.isPending || deleteMutation.isPending}
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!canSubmit || deleteMutation.isPending}
-              >
-                {mutation.isPending ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    {editingTransactionType ? "Updating..." : "Creating..."}
-                  </>
-                ) : editingTransactionType?.transaction_type_id ? (
-                  `Update ${editingTransactionType.name}`
-                ) : (
-                  "Create Transaction Type"
-                )}
-              </Button>
-            </Box>
-          </Box>
         </form>
-      </Paper>
+      </Box>
+
+      {/* Footer */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "background.paper",
+          flexShrink: 0,
+        }}
+      >
+        {/* Delete button - only show when editing existing transaction type */}
+        {editingTransactionType && (
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to delete "${editingTransactionType.transaction_type_name}"?\n\nThis action cannot be undone and may affect related transactions.`
+                )
+              ) {
+                deleteMutation.mutate();
+              }
+            }}
+            disabled={mutation.isPending || deleteMutation.isPending}
+            sx={{ minWidth: "auto" }}
+          >
+            {deleteMutation.isPending ? (
+              <>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
+          </Button>
+        )}
+
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {onClose && (
+            <Button
+              variant="outlined"
+              onClick={onClose}
+              disabled={mutation.isPending || deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={!canSubmit || deleteMutation.isPending}
+            onClick={handleSubmit}
+          >
+            {mutation.isPending ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                {editingTransactionType ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              "Update"
+            )}
+          </Button>
+        </Box>
+      </Box>
 
       {/* Success notification */}
       <Snackbar

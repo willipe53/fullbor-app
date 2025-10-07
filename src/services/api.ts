@@ -515,7 +515,17 @@ export const getClientGroupUsers = async (clientGroupName: string) => {
     `/client-groups/${clientGroupName}/users`
   );
   // Handle both response formats: direct array or paginated object
-  return Array.isArray(result) ? result : result.data;
+  if (Array.isArray(result)) {
+    return result;
+  }
+  if (result && "data" in result && Array.isArray(result.data)) {
+    return result.data;
+  }
+  // Always return an array, never undefined
+  console.warn(
+    "getClientGroupUsers: Unexpected response format, returning empty array"
+  );
+  return [];
 };
 
 export const setClientGroupUsers = async (
@@ -579,6 +589,8 @@ export const getClientGroupEntityCount = async (
     }
   );
   console.log("🔍 API: Count result:", result);
+  console.log("🔍 API: Count result.count:", result.count);
+  console.log("🔍 API: Returning:", result.count);
   return result.count;
 };
 
@@ -853,6 +865,8 @@ export interface Transaction {
   instrument_entity_name?: string;
   transaction_status_name: string;
   transaction_type_name: string;
+  trade_date: string;
+  settle_date: string;
   properties?: JSONValue;
   update_date?: string;
   updated_by_user_name?: string;
@@ -864,6 +878,8 @@ export interface CreateTransactionRequest {
   instrument_entity_name?: string;
   transaction_status_name: string;
   transaction_type_name: string;
+  trade_date: string;
+  settle_date: string;
   properties?: JSONValue;
 }
 

@@ -131,7 +131,7 @@ const TransactionTypesTable: React.FC = () => {
         ),
       },
       {
-        field: "name",
+        field: "transaction_type_name",
         headerName: "Name",
         flex: 1,
         minWidth: 200,

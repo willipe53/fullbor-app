@@ -95,32 +95,42 @@ const ClientGroupsTable: React.FC = () => {
   const { data: entityCountsData } = useQuery({
     queryKey: ["entity-counts", currentUser?.user_id],
     queryFn: async () => {
-      if (!currentUser?.user_id || !clientGroupsData.length) return {};
+      console.log(
+        "🔍 Fetching entity counts for client groups:",
+        clientGroupsData
+      );
+      if (!currentUser?.user_id || !clientGroupsData.length) {
+        console.log("🔍 Skipping entity counts - no user or no groups");
+        return {};
+      }
 
       const counts: Record<number, number> = {};
 
-      // Fetch entity count for each client group
+      // Fetch entity count for each client group using the client group entities endpoint
       for (const group of clientGroupsData) {
         try {
-          const response = await apiService.queryEntities({
-            client_group_id: group.client_group_id,
-            count: true,
-          });
-          counts[group.client_group_id] = response.count || 0;
+          const count = await apiService.getClientGroupEntityCount(
+            group.client_group_name
+          );
+          console.log(`🔍 Entity count for ${group.client_group_name}:`, count);
+          counts[group.client_group_id] = count;
         } catch (error) {
           console.error(
-            `Failed to fetch entity count for group ${group.client_group_id}:`,
+            `Failed to fetch entity count for group ${group.client_group_name}:`,
             error
           );
           counts[group.client_group_id] = 0;
         }
       }
 
+      console.log("🔍 Final entity counts:", counts);
       return counts;
     },
     enabled: !!currentUser?.user_id && clientGroupsData.length > 0,
     staleTime: 30 * 1000, // 30 seconds
   });
+
+  console.log("🔍 entityCountsData:", entityCountsData);
 
   const formatPreferences = (preferences: any) => {
     if (!preferences) return "None";
@@ -275,15 +285,29 @@ const ClientGroupsTable: React.FC = () => {
 
     // Invalidate all related caches to refresh the table
     queryClient.invalidateQueries({ queryKey: ["client-groups"] });
-    queryClient.invalidateQueries({ queryKey: ["entity-counts", currentUser?.user_id] });
-    
+    queryClient.invalidateQueries({
+      queryKey: ["entity-counts", currentUser?.user_id],
+    });
+
     // Also invalidate the specific client group entity queries
     if (entityEditorClientGroup) {
-      queryClient.invalidateQueries({ 
-        queryKey: ["client-group-entity-ids", entityEditorClientGroup.client_group_name] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          "client-group-entity-ids",
+          entityEditorClientGroup.client_group_name,
+        ],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ["client-group-entities", entityEditorClientGroup.client_group_name] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          "client-group-entities",
+          entityEditorClientGroup.client_group_name,
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "client-group-entity-count",
+          entityEditorClientGroup.client_group_name,
+        ],
       });
     }
 
@@ -379,10 +403,10 @@ const ClientGroupsTable: React.FC = () => {
               No client groups found
               <br />
               No client groups exist for{" "}
-              {primaryClientGroup?.name || "this organization"}
+              {primaryClientGroup?.client_group_name || "this organization"}
               <br />
               Click "New" to create one for{" "}
-              {primaryClientGroup?.name || "this organization"}.
+              {primaryClientGroup?.client_group_name || "this organization"}.
             </Typography>
           </Box>
         ) : (

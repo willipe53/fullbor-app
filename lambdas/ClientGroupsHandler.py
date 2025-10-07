@@ -103,11 +103,11 @@ def get_client_group_id_by_name(connection, client_group_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT client_group_id FROM client_groups WHERE name = %s", (client_group_name,))
+                "SELECT client_group_id FROM client_groups WHERE client_group_name = %s", (client_group_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting client group ID by name: {e}")
+        print(f"Error getting client group ID by client_group_name: {e}")
         return None
 
 
@@ -116,11 +116,11 @@ def get_client_group_name_by_id(connection, client_group_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
+                "SELECT client_group_name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting client group name by ID: {e}")
+        print(f"Error getting client group client_group_name by ID: {e}")
         return None
 
 
@@ -129,11 +129,11 @@ def get_entity_id_by_name(connection, entity_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT entity_id FROM entities WHERE name = %s", (entity_name,))
+                "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity ID by name: {e}")
+        print(f"Error getting entity ID by entity_name: {e}")
         return None
 
 
@@ -142,11 +142,11 @@ def get_entity_name_by_id(connection, entity_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM entities WHERE entity_id = %s", (entity_id,))
+                "SELECT entity_name FROM entities WHERE entity_id = %s", (entity_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting entity name by ID: {e}")
+        print(f"Error getting entity_name by ID: {e}")
         return None
 
 
@@ -159,7 +159,7 @@ def get_user_id_by_name(connection, user_name):
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting user ID by name: {e}")
+        print(f"Error getting user ID by entity_name: {e}")
         return None
 
 
@@ -172,7 +172,7 @@ def get_user_name_by_id(connection, user_id):
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting user name by ID: {e}")
+        print(f"Error getting user entity_name by ID: {e}")
         return None
 
 
@@ -272,7 +272,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
         elif path.endswith('/users'):
             return handle_get_client_group_users(connection, client_group_name, query_parameters, user_client_groups)
         else:
-            # Get single client group by name: /client-groups/{client_group_name}
+            # Get single client group by client_group_name: /client-groups/{client_group_name}
             # Check if user has access to this client group
             client_group_id = get_client_group_id_by_name(
                 connection, client_group_name)
@@ -281,7 +281,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT client_group_id, name, preferences, update_date, updated_user_id
+                    SELECT client_group_id, client_group_name, preferences, update_date, updated_user_id
                     FROM client_groups
                     WHERE client_group_id = %s
                 """, (client_group_id,))
@@ -309,11 +309,11 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
 
 def handle_get_client_group_entities(connection, client_group_name, query_parameters, user_client_groups):
     """Handle getting entities for a specific client group."""
-    # Check if user has access to this client group
+    # Get client group ID (no authorization check - users can query any group's entities)
     client_group_id = get_client_group_id_by_name(
         connection, client_group_name)
-    if not client_group_id or client_group_id not in user_client_groups:
-        return {"error": "Client group not found or access denied"}
+    if not client_group_id:
+        return {"error": "Client group not found"}
 
     # Get query parameters
     count_only = query_parameters.get('count', 'false').lower() == 'true'
@@ -333,13 +333,13 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
         else:
             # Return entities with pagination
             cursor.execute("""
-                SELECT e.entity_id, e.name, et.name as entity_type_name, et.entity_category,
+                SELECT e.entity_id, e.entity_name, et.entity_type_name, et.entity_category,
                        e.update_date, e.updated_user_id
                 FROM entities e
                 INNER JOIN client_group_entities cge ON e.entity_id = cge.entity_id
                 INNER JOIN entity_types et ON e.entity_type_id = et.entity_type_id
                 WHERE cge.client_group_id = %s
-                ORDER BY e.name
+                ORDER BY e.entity_name
             """, (client_group_id))
             entities = cursor.fetchall()
 
@@ -375,11 +375,11 @@ def handle_get_client_group_entities(connection, client_group_name, query_parame
 
 def handle_get_client_group_users(connection, client_group_name, query_parameters, user_client_groups):
     """Handle getting users for a specific client group."""
-    # Check if user has access to this client group
+    # Get client group ID (no authorization check - users can query any group's members)
     client_group_id = get_client_group_id_by_name(
         connection, client_group_name)
-    if not client_group_id or client_group_id not in user_client_groups:
-        return {"error": "Client group not found or access denied"}
+    if not client_group_id:
+        return {"error": "Client group not found"}
 
     # Get query parameters
     count_only = query_parameters.get('count', 'false').lower() == 'true'
@@ -488,9 +488,9 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
 
     # Get client groups with pagination
     query = f"""
-        SELECT DISTINCT cg.client_group_id, cg.name, cg.preferences, cg.update_date, cg.updated_user_id
+        SELECT DISTINCT cg.client_group_id, cg.client_group_name, cg.preferences, cg.update_date, cg.updated_user_id
         {base_query}
-        ORDER BY cg.name
+        ORDER BY cg.client_group_name
     """
 
     with connection.cursor() as cursor:
@@ -553,6 +553,11 @@ def handle_create_client_group(connection, body, current_user_id_db):
     if existing_id:
         return {"error": f"Client group '{client_group_name}' already exists"}
 
+    # Validate we have a current user to associate
+    if current_user_id_db is None:
+        print("WARNING: Creating client group without current_user_id_db - no user association will be created")
+        return {"error": "Unable to determine current user. Please ensure you are properly authenticated."}
+
     # Extract preferences
     preferences = request_data.get('preferences', {})
     preferences_json = json.dumps(preferences) if preferences else None
@@ -560,18 +565,21 @@ def handle_create_client_group(connection, body, current_user_id_db):
     with connection.cursor() as cursor:
         # Insert new client group
         cursor.execute("""
-            INSERT INTO client_groups (name, preferences, updated_user_id)
+            INSERT INTO client_groups (client_group_name, preferences, updated_user_id)
             VALUES (%s, %s, %s)
         """, (client_group_name, preferences_json, current_user_id_db))
 
         new_client_group_id = cursor.lastrowid
+        print(
+            f"Created client group {client_group_name} with ID {new_client_group_id}")
 
         # Associate the creating user with the new client group
-        if current_user_id_db is not None:
-            cursor.execute("""
-                INSERT INTO client_group_users (client_group_id, user_id)
-                VALUES (%s, %s)
-            """, (new_client_group_id, current_user_id_db))
+        cursor.execute("""
+            INSERT INTO client_group_users (client_group_id, user_id)
+            VALUES (%s, %s)
+        """, (new_client_group_id, current_user_id_db))
+        print(
+            f"Associated user {current_user_id_db} with client group {new_client_group_id}")
 
         connection.commit()
 
@@ -606,14 +614,14 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
     update_fields = []
     update_params = []
 
-    # Handle name change
+    # Handle client_group_name change
     new_name = request_data.get('client_group_name')
     if new_name and new_name != client_group_name:
-        # Check if new name already exists
+        # Check if new client_group_name already exists
         existing_id = get_client_group_id_by_name(connection, new_name)
         if existing_id:
             return {"error": f"Client group '{new_name}' already exists"}
-        update_fields.append("name = %s")
+        update_fields.append("client_group_name = %s")
         update_params.append(new_name)
 
     # Handle preferences

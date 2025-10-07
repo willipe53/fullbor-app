@@ -1,0 +1,5 @@
+user_id	sub	email	preferences	primary_client_group_id	update_date
+8	d1fb5580-10b1-70f6-f6fe-8b6e27ab4f68	peter@ditchnavigation.com	"{""setting_1"": ""value12""}"		2025-10-05T20:23:35
+9	01cbe5c0-7051-7090-1987-0d3bd63bc597	test2@extentdevices.com	"{""setting_1"": ""sss""}"	422	2025-09-26T16:41:47
+10	81fb55e0-e0b1-704a-3aad-791c0788d612	willipe53+test@gmail.com	"{""a"": ""ccc""}"	19	2025-10-05T15:04:39
+234	a14bf500-8061-7092-be3c-5881f576731f	mark.r.dandrea@outlook.com	"{""setting_1"": ""12345""}"	19	2025-09-28T21:29:26

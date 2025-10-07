@@ -1,0 +1,565 @@
+entity_id	entity_name	entity_type_id	attributes	update_date	updated_user_id
+1	Peter Williams	1	"{""hair"": true, ""email"": ""willipe53@gmail.com"", ""breath"": ""bad breath"", ""legal_name"": """"}"	2025-09-28T21:28:40	10
+2	Mark D'Andrea	1	"{""email"": ""mark.r.dandrea@outlook.com"", ""phone"": ""(908) 656-4318"", ""genius"": true, ""last_name"": ""D'Andrea"", ""first_name"": ""Mark"", ""accreditation_status"": ""Accredited""}"	2025-09-28T14:07:54	10
+4	US Dollar	9	"{""democracy"": true, ""currency_code"": ""USD"", ""issue_country"": ""United States""}"	2025-10-02T17:55:38	10
+5	Euro	9	"{""zz"": ""zzz"", ""country"": ""Eurozone (multiple countries)"", ""currency_code"": ""EUR"", ""issue_country"": ""EU"", ""now you see it"": ""now you don't.""}"	2025-09-29T13:32:42	10
+6	Japanese Yen	9	"{""country"": ""Japan"", ""currency_code"": ""JPY""}"	2025-10-02T17:55:38	10
+7	Pound Sterling	9	"{""another"": ""arrghhh"", ""country"": ""United Kingdom"", ""currency_code"": ""GBP"", ""issue_country"": ""UK""}"	2025-09-28T20:28:51	10
+8	Australian Dollar	9	"{""country"": ""Australia"", ""currency_code"": ""AUD""}"	2025-10-02T17:55:38	10
+9	Canadian Dollar	9	"{""country"": ""Canada"", ""currency_code"": ""CAD""}"	2025-10-02T17:55:38	10
+10	Swiss Franc	9	"{""country"": ""Switzerland, Liechtenstein"", ""currency_code"": ""CHF""}"	2025-10-02T17:55:38	10
+11	Yuan Renminbi	9	"{""country"": ""China"", ""currency_code"": ""CNY""}"	2025-10-02T17:55:38	10
+12	Swedish Krona	9	"{""country"": ""Sweden"", ""currency_code"": ""SEK""}"	2025-10-02T17:55:38	10
+13	New Zealand Dollar	9	"{""country"": ""New Zealand"", ""currency_code"": ""NZD""}"	2025-10-02T17:55:38	10
+14	Mexican Peso	9	"{""country"": ""Mexico"", ""currency_code"": ""MXN""}"	2025-10-02T17:55:38	10
+15	Singapore Dollar	9	"{""country"": ""Singapore"", ""currency_code"": ""SGD""}"	2025-10-02T17:55:38	10
+16	Hong Kong Dollar	9	"{""country"": ""Hong Kong"", ""currency_code"": ""HKD""}"	2025-10-02T17:55:38	10
+17	Norwegian Krone	9	"{""country"": ""Norway"", ""currency_code"": ""NOK""}"	2025-10-02T17:55:38	10
+18	South Korean Won	9	"{""country"": ""South Korea"", ""currency_code"": ""KRW""}"	2025-10-02T17:55:38	10
+19	Turkish Lira	9	"{""country"": ""Türkiye"", ""currency_code"": ""TRY""}"	2025-10-02T17:55:38	10
+20	Russian Ruble	9	"{""country"": ""Russia"", ""currency_code"": ""RUB""}"	2025-10-02T17:55:38	10
+21	Indian Rupee	9	"{""country"": ""India"", ""currency_code"": ""INR""}"	2025-10-02T17:55:38	10
+22	Brazilian Real	9	"{""country"": ""Brazil"", ""currency_code"": ""BRL""}"	2025-10-02T17:55:38	10
+23	South African Rand	9	"{""country"": ""South Africa"", ""currency_code"": ""ZAR""}"	2025-10-02T17:55:38	10
+24	Well Endowment Master Fund	4	"{""inception_date"": ""2025-09-15""}"	2025-10-02T17:55:38	10
+25	U.S. Treasury Note 10-Year 0.625% May 15, 2030	3	"{""isin"": ""US912828ZQ64"", ""name"": ""U.S. Treasury Note 10-Year 0.625% May 15, 2030"", ""cusip"": ""912828ZQ64"", ""issuer"": ""United States of America"", ""ticker"": ""T 0.625 05/15/30"", ""bond_type"": ""Treasury Note"", ""day_count"": ""Actual/Actual (US)"", ""face_value"": ""100"", ""issue_date"": ""2020-05-16"", ""coupon_rate"": ""0.625"", ""coupon_type"": ""Fixed"", ""issue_country"": ""US"", ""maturity_date"": ""2030-05-15"", ""issue_currency"": ""USD"", ""coupon_frequency"": ""Semi-annual""}"	2025-10-02T17:55:38	10
+26	Blackstone Capital Partners VIII	5	"{""description"": ""A flagship buyout fund managed by Blackstone, focused on large-scale leveraged buyouts, corporate carve-outs, and strategic investments in North America, Europe, and Asia."", ""inception_date"": ""2019""}"	2025-10-02T17:55:38	10
+27	KKR Americas Fund XII	5	"{""description"": ""KKR’s twelfth North American private equity fund, investing in healthcare, technology, consumer, and industrial sectors through leveraged buyouts and growth capital."", ""inception_date"": ""2017""}"	2025-10-02T17:55:38	10
+28	Agilent Technologies	6	"{""issuer"": ""Agilent Technologies"", ""ticker"": ""A"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+29	Apple Inc.	6	"{""issuer"": ""Apple Inc."", ""ticker"": ""AAPL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+30	AbbVie	6	"{""issuer"": ""AbbVie"", ""ticker"": ""ABBV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+31	Airbnb	6	"{""issuer"": ""Airbnb"", ""ticker"": ""ABNB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+32	Abbott Laboratories	6	"{""a"": ""Bccc"", ""issuer"": ""Abbott Laboratories"", ""ticker"": ""ABT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-05T16:09:22	10
+33	Arch Capital Group	6	"{""issuer"": ""Arch Capital Group"", ""ticker"": ""ACGL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+34	Accenture	6	"{""issuer"": ""Accenture"", ""ticker"": ""ACN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+35	Adobe Inc.	6	"{""issuer"": ""Adobe Inc."", ""ticker"": ""ADBE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+36	Analog Devices	6	"{""issuer"": ""Analog Devices"", ""ticker"": ""ADI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+37	Archer Daniels Midland	6	"{""issuer"": ""Archer Daniels Midland"", ""ticker"": ""ADM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+38	Automatic Data Processing	6	"{""issuer"": ""Automatic Data Processing"", ""ticker"": ""ADP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+39	Autodesk	6	"{""issuer"": ""Autodesk"", ""ticker"": ""ADSK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+40	Ameren	6	"{""issuer"": ""Ameren"", ""ticker"": ""AEE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+41	American Electric Power	6	"{""issuer"": ""American Electric Power"", ""ticker"": ""AEP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+42	AES Corporation	6	"{""aum"": 7500000, ""issuer"": ""AES Corporation"", ""ticker"": ""AES"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+43	Aflac	6	"{""issuer"": ""Aflac"", ""ticker"": ""AFL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+44	American International Group	6	"{""issuer"": ""American International Group"", ""ticker"": ""AIG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+45	Assurant	6	"{""issuer"": ""Assurant"", ""ticker"": ""AIZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+46	Arthur J. Gallagher & Co.	6	"{""issuer"": ""Arthur J. Gallagher & Co."", ""ticker"": ""AJG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+47	Akamai Technologies	6	"{""issuer"": ""Akamai Technologies"", ""ticker"": ""AKAM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+48	Albemarle Corporation	6	"{""issuer"": ""Albemarle Corporation"", ""ticker"": ""ALB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+49	Align Technology	6	"{""issuer"": ""Align Technology"", ""ticker"": ""ALGN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+50	Allstate	6	"{""issuer"": ""Allstate"", ""ticker"": ""ALL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+51	Allegion	6	"{""issuer"": ""Allegion"", ""ticker"": ""ALLE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+52	Applied Materials	6	"{""issuer"": ""Applied Materials"", ""ticker"": ""AMAT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+53	Amcor	6	"{""issuer"": ""Amcor"", ""ticker"": ""AMCR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+54	Advanced Micro Devices	6	"{""issuer"": ""Advanced Micro Devices"", ""ticker"": ""AMD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+55	Ametek	6	"{""issuer"": ""Ametek"", ""ticker"": ""AME"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+56	Amgen	6	"{""issuer"": ""Amgen"", ""ticker"": ""AMGN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+57	Ameriprise Financial	6	"{""issuer"": ""Ameriprise Financial"", ""ticker"": ""AMP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+58	American Tower	6	"{""issuer"": ""American Tower"", ""ticker"": ""AMT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+59	Amazon	6	"{""issuer"": ""Amazon"", ""ticker"": ""AMZN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+60	Arista Networks	6	"{""issuer"": ""Arista Networks"", ""ticker"": ""ANET"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+61	Aon	6	"{""issuer"": ""Aon"", ""ticker"": ""AON"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+62	A. O. Smith	6	"{""isin"": ""12345678"", ""issuer"": ""A. O. Smith"", ""ticker"": ""AOS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-05T15:00:08	10
+63	APA Corporation	6	"{""issuer"": ""APA Corporation"", ""ticker"": ""APA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+64	Air Products	6	"{""issuer"": ""Air Products"", ""ticker"": ""APD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+65	Amphenol	6	"{""issuer"": ""Amphenol"", ""ticker"": ""APH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+66	Apollo Global Management	6	"{""issuer"": ""Apollo Global Management"", ""ticker"": ""APO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+67	Aptiv	6	"{""issuer"": ""Aptiv"", ""ticker"": ""APTV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+68	Alexandria Real Estate Equities	6	"{""issuer"": ""Alexandria Real Estate Equities"", ""ticker"": ""ARE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+69	Atmos Energy	6	"{""issuer"": ""Atmos Energy"", ""ticker"": ""ATO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+70	AvalonBay Communities	6	"{""issuer"": ""AvalonBay Communities"", ""ticker"": ""AVB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+71	Broadcom	6	"{""issuer"": ""Broadcom"", ""ticker"": ""AVGO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+72	Avery Dennison	6	"{""issuer"": ""Avery Dennison"", ""ticker"": ""AVY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+73	American Water Works	6	"{""issuer"": ""American Water Works"", ""ticker"": ""AWK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+74	Axon Enterprise	6	"{""issuer"": ""Axon Enterprise"", ""ticker"": ""AXON"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+75	American Express	6	"{""issuer"": ""American Express"", ""ticker"": ""AXP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+76	AutoZone	6	"{""issuer"": ""AutoZone"", ""ticker"": ""AZO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+77	Boeing	6	"{""issuer"": ""Boeing"", ""ticker"": ""BA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+78	Bank of America	6	"{""issuer"": ""Bank of America"", ""ticker"": ""BAC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+79	Ball Corporation	6	"{""issuer"": ""Ball Corporation"", ""ticker"": ""BALL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+80	Baxter International	6	"{""issuer"": ""Baxter International"", ""ticker"": ""BAX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+81	Best Buy	6	"{""issuer"": ""Best Buy"", ""ticker"": ""BBY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+82	Becton Dickinson	6	"{""issuer"": ""Becton Dickinson"", ""ticker"": ""BDX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+83	Franklin Resources	6	"{""issuer"": ""Franklin Resources"", ""ticker"": ""BEN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+84	Brown–Forman	6	"{""issuer"": ""Brown–Forman"", ""ticker"": ""BF.B"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+85	Bunge Global	6	"{""issuer"": ""Bunge Global"", ""ticker"": ""BG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+86	Biogen	6	"{""issuer"": ""Biogen"", ""ticker"": ""BIIB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+87	BNY Mellon	6	"{""issuer"": ""BNY Mellon"", ""ticker"": ""BK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+88	Booking Holdings	6	"{""issuer"": ""Booking Holdings"", ""ticker"": ""BKNG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+89	Baker Hughes	6	"{""issuer"": ""Baker Hughes"", ""ticker"": ""BKR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+90	Builders FirstSource	6	"{""issuer"": ""Builders FirstSource"", ""ticker"": ""BLDR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+91	BlackRock	6	"{""issuer"": ""BlackRock"", ""ticker"": ""BLK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+92	Bristol Myers Squibb	6	"{""issuer"": ""Bristol Myers Squibb"", ""ticker"": ""BMY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+93	Broadridge Financial Solutions	6	"{""issuer"": ""Broadridge Financial Solutions"", ""ticker"": ""BR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+94	Berkshire Hathaway	6	"{""issuer"": ""Berkshire Hathaway"", ""ticker"": ""BRK.B"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+95	Brown & Brown	6	"{""issuer"": ""Brown & Brown"", ""ticker"": ""BRO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+96	Boston Scientific	6	"{""issuer"": ""Boston Scientific"", ""ticker"": ""BSX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+97	Blackstone Inc.	6	"{""issuer"": ""Blackstone Inc."", ""ticker"": ""BX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+98	BXP Inc.	6	"{""issuer"": ""BXP Inc."", ""ticker"": ""BXP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+99	Citigroup	6	"{""issuer"": ""Citigroup"", ""ticker"": ""C"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+100	Conagra Brands	6	"{""issuer"": ""Conagra Brands"", ""ticker"": ""CAG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+101	Cardinal Health	6	"{""issuer"": ""Cardinal Health"", ""ticker"": ""CAH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+102	Carrier Global	6	"{""issuer"": ""Carrier Global"", ""ticker"": ""CARR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+103	Caterpillar Inc.	6	"{""issuer"": ""Caterpillar Inc."", ""ticker"": ""CAT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+104	Chubb Limited	6	"{""issuer"": ""Chubb Limited"", ""ticker"": ""CB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+105	Cboe Global Markets	6	"{""issuer"": ""Cboe Global Markets"", ""ticker"": ""CBOE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+106	CBRE Group	6	"{""issuer"": ""CBRE Group"", ""ticker"": ""CBRE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+107	Crown Castle	6	"{""issuer"": ""Crown Castle"", ""ticker"": ""CCI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+108	Carnival	6	"{""issuer"": ""Carnival"", ""ticker"": ""CCL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+109	Cadence Design Systems	6	"{""issuer"": ""Cadence Design Systems"", ""ticker"": ""CDNS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+110	CDW	6	"{""issuer"": ""CDW"", ""ticker"": ""CDW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+111	Constellation Energy	6	"{""issuer"": ""Constellation Energy"", ""ticker"": ""CEG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+112	CF Industries	6	"{""issuer"": ""CF Industries"", ""ticker"": ""CF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+113	Citizens Financial Group	6	"{""issuer"": ""Citizens Financial Group"", ""ticker"": ""CFG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+114	Church & Dwight	6	"{""issuer"": ""Church & Dwight"", ""ticker"": ""CHD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+115	C.H. Robinson	6	"{""issuer"": ""C.H. Robinson"", ""ticker"": ""CHRW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+116	Charter Communications	6	"{""issuer"": ""Charter Communications"", ""ticker"": ""CHTR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+117	Cigna	6	"{""issuer"": ""Cigna"", ""ticker"": ""CI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+118	Cincinnati Financial	6	"{""issuer"": ""Cincinnati Financial"", ""ticker"": ""CINF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+119	Colgate-Palmolive	6	"{""issuer"": ""Colgate-Palmolive"", ""ticker"": ""CL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+120	Clorox	6	"{""issuer"": ""Clorox"", ""ticker"": ""CLX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+121	Comcast	6	"{""issuer"": ""Comcast"", ""ticker"": ""CMCSA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+122	CME Group	6	"{""issuer"": ""CME Group"", ""ticker"": ""CME"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+123	Chipotle Mexican Grill	6	"{""issuer"": ""Chipotle Mexican Grill"", ""ticker"": ""CMG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+124	Cummins	6	"{""issuer"": ""Cummins"", ""ticker"": ""CMI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+125	CMS Energy	6	"{""issuer"": ""CMS Energy"", ""ticker"": ""CMS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+126	Centene Corporation	6	"{""issuer"": ""Centene Corporation"", ""ticker"": ""CNC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+127	CenterPoint Energy	6	"{""issuer"": ""CenterPoint Energy"", ""ticker"": ""CNP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+128	Capital One	6	"{""issuer"": ""Capital One"", ""ticker"": ""COF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+129	Coinbase Global	6	"{""issuer"": ""Coinbase Global"", ""ticker"": ""COIN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+130	Cooper Companies (The)	6	"{""issuer"": ""Cooper Companies (The)"", ""ticker"": ""COO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+131	ConocoPhillips	6	"{""issuer"": ""ConocoPhillips"", ""ticker"": ""COP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+132	Cencora	6	"{""issuer"": ""Cencora"", ""ticker"": ""COR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+133	Costco	6	"{""issuer"": ""Costco"", ""ticker"": ""COST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+134	Corpay	6	"{""issuer"": ""Corpay"", ""ticker"": ""CPAY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+135	Campbell Soup Company	6	"{""issuer"": ""Campbell Soup Company"", ""ticker"": ""CPB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+136	Copart	6	"{""issuer"": ""Copart"", ""ticker"": ""CPRT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+137	Camden Property Trust	6	"{""issuer"": ""Camden Property Trust"", ""ticker"": ""CPT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+138	Charles River Laboratories	6	"{""issuer"": ""Charles River Laboratories"", ""ticker"": ""CRL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+139	Salesforce	6	"{""issuer"": ""Salesforce"", ""ticker"": ""CRM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+140	CrowdStrike	6	"{""issuer"": ""CrowdStrike"", ""ticker"": ""CRWD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+141	Cisco	6	"{""issuer"": ""Cisco"", ""ticker"": ""CSCO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+142	CoStar Group	6	"{""issuer"": ""CoStar Group"", ""ticker"": ""CSGP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+143	CSX Corporation	6	"{""issuer"": ""CSX Corporation"", ""ticker"": ""CSX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+144	Cintas	6	"{""issuer"": ""Cintas"", ""ticker"": ""CTAS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+145	Coterra	6	"{""issuer"": ""Coterra"", ""ticker"": ""CTRA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+146	Cognizant	6	"{""issuer"": ""Cognizant"", ""ticker"": ""CTSH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+147	Corteva	6	"{""issuer"": ""Corteva"", ""ticker"": ""CTVA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+148	CVS Health	6	"{""issuer"": ""CVS Health"", ""ticker"": ""CVS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+149	Chevron Corporation	6	"{""issuer"": ""Chevron Corporation"", ""ticker"": ""CVX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+150	Caesars Entertainment	6	"{""issuer"": ""Caesars Entertainment"", ""ticker"": ""CZR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+151	Dominion Energy	6	"{""issuer"": ""Dominion Energy"", ""ticker"": ""D"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+152	Delta Air Lines	6	"{""issuer"": ""Delta Air Lines"", ""ticker"": ""DAL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+153	DoorDash	6	"{""issuer"": ""DoorDash"", ""ticker"": ""DASH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+154	Dayforce	6	"{""issuer"": ""Dayforce"", ""ticker"": ""DAY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+155	DuPont	6	"{""issuer"": ""DuPont"", ""ticker"": ""DD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+156	Datadog	6	"{""issuer"": ""Datadog"", ""ticker"": ""DDOG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+157	Deere & Company	6	"{""issuer"": ""Deere & Company"", ""ticker"": ""DE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+158	Deckers Brands	6	"{""issuer"": ""Deckers Brands"", ""ticker"": ""DECK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+159	Dell Technologies	6	"{""issuer"": ""Dell Technologies"", ""ticker"": ""DELL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+160	Dollar General	6	"{""issuer"": ""Dollar General"", ""ticker"": ""DG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+161	Quest Diagnostics	6	"{""issuer"": ""Quest Diagnostics"", ""ticker"": ""DGX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+162	D. R. Horton	6	"{""issuer"": ""D. R. Horton"", ""ticker"": ""DHI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+163	Danaher Corporation	6	"{""issuer"": ""Danaher Corporation"", ""ticker"": ""DHR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+164	Walt Disney Company (The)	6	"{""issuer"": ""Walt Disney Company (The)"", ""ticker"": ""DIS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+165	Digital Realty	6	"{""issuer"": ""Digital Realty"", ""ticker"": ""DLR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+166	Dollar Tree	6	"{""issuer"": ""Dollar Tree"", ""ticker"": ""DLTR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+167	Healthpeak Properties	6	"{""issuer"": ""Healthpeak Properties"", ""ticker"": ""DOC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+168	Dover Corporation	6	"{""issuer"": ""Dover Corporation"", ""ticker"": ""DOV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+169	Dow Inc.	6	"{""issuer"": ""Dow Inc."", ""ticker"": ""DOW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+170	Domino's	6	"{""issuer"": ""Domino's"", ""ticker"": ""DPZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+171	Darden Restaurants	6	"{""issuer"": ""Darden Restaurants"", ""ticker"": ""DRI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+172	DTE Energy	6	"{""issuer"": ""DTE Energy"", ""ticker"": ""DTE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+173	Duke Energy	6	"{""issuer"": ""Duke Energy"", ""ticker"": ""DUK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+174	DaVita	6	"{""issuer"": ""DaVita"", ""ticker"": ""DVA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+175	Devon Energy	6	"{""issuer"": ""Devon Energy"", ""ticker"": ""DVN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+176	Dexcom	6	"{""issuer"": ""Dexcom"", ""ticker"": ""DXCM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+177	Electronic Arts	6	"{""issuer"": ""Electronic Arts"", ""ticker"": ""EA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+178	eBay	6	"{""issuer"": ""eBay"", ""ticker"": ""EBAY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+179	Ecolab	6	"{""issuer"": ""Ecolab"", ""ticker"": ""ECL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+180	Consolidated Edison	6	"{""issuer"": ""Consolidated Edison"", ""ticker"": ""ED"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+181	Equifax	6	"{""issuer"": ""Equifax"", ""ticker"": ""EFX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+182	Everest Group	6	"{""issuer"": ""Everest Group"", ""ticker"": ""EG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+183	Edison International	6	"{""issuer"": ""Edison International"", ""ticker"": ""EIX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+184	Estée Lauder Companies (The)	6	"{""issuer"": ""Estée Lauder Companies (The)"", ""ticker"": ""EL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+185	Elevance Health	6	"{""issuer"": ""Elevance Health"", ""ticker"": ""ELV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+186	Eastman Chemical Company	6	"{""issuer"": ""Eastman Chemical Company"", ""ticker"": ""EMN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+187	Emerson Electric	6	"{""issuer"": ""Emerson Electric"", ""ticker"": ""EMR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+188	Enphase Energy	6	"{""issuer"": ""Enphase Energy"", ""ticker"": ""ENPH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+189	EOG Resources	6	"{""issuer"": ""EOG Resources"", ""ticker"": ""EOG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+190	EPAM Systems	6	"{""issuer"": ""EPAM Systems"", ""ticker"": ""EPAM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+191	Equinix	6	"{""issuer"": ""Equinix"", ""ticker"": ""EQIX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+192	Equity Residential	6	"{""issuer"": ""Equity Residential"", ""ticker"": ""EQR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+193	EQT Corporation	6	"{""issuer"": ""EQT Corporation"", ""ticker"": ""EQT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+194	Erie Indemnity	6	"{""issuer"": ""Erie Indemnity"", ""ticker"": ""ERIE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+195	Eversource Energy	6	"{""issuer"": ""Eversource Energy"", ""ticker"": ""ES"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+196	Essex Property Trust	6	"{""issuer"": ""Essex Property Trust"", ""ticker"": ""ESS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+197	Eaton Corporation	6	"{""issuer"": ""Eaton Corporation"", ""ticker"": ""ETN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+198	Entergy	6	"{""issuer"": ""Entergy"", ""ticker"": ""ETR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+199	Evergy	6	"{""issuer"": ""Evergy"", ""ticker"": ""EVRG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+200	Edwards Lifesciences	6	"{""issuer"": ""Edwards Lifesciences"", ""ticker"": ""EW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+201	Exelon	6	"{""issuer"": ""Exelon"", ""ticker"": ""EXC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+202	Expand Energy	6	"{""issuer"": ""Expand Energy"", ""ticker"": ""EXE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+203	Expeditors International	6	"{""issuer"": ""Expeditors International"", ""ticker"": ""EXPD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+204	Expedia Group	6	"{""issuer"": ""Expedia Group"", ""ticker"": ""EXPE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+205	Extra Space Storage	6	"{""issuer"": ""Extra Space Storage"", ""ticker"": ""EXR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+206	Ford Motor Company	6	"{""issuer"": ""Ford Motor Company"", ""ticker"": ""F"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+207	Diamondback Energy	6	"{""issuer"": ""Diamondback Energy"", ""ticker"": ""FANG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+208	Fastenal	6	"{""issuer"": ""Fastenal"", ""ticker"": ""FAST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+209	Freeport-McMoRan	6	"{""issuer"": ""Freeport-McMoRan"", ""ticker"": ""FCX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+210	FactSet	6	"{""issuer"": ""FactSet"", ""ticker"": ""FDS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+211	FedEx	6	"{""issuer"": ""FedEx"", ""ticker"": ""FDX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+212	FirstEnergy	6	"{""issuer"": ""FirstEnergy"", ""ticker"": ""FE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+213	F5 Inc.	6	"{""issuer"": ""F5 Inc."", ""ticker"": ""FFIV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+214	Fiserv	6	"{""issuer"": ""Fiserv"", ""ticker"": ""FI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+215	Fair Isaac	6	"{""issuer"": ""Fair Isaac"", ""ticker"": ""FICO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+216	Fidelity National Information Services	6	"{""issuer"": ""Fidelity National Information Services"", ""ticker"": ""FIS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+217	Fifth Third Bancorp	6	"{""issuer"": ""Fifth Third Bancorp"", ""ticker"": ""FITB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+218	Fox Corporation (Class B)	6	"{""issuer"": ""Fox Corporation (Class B)"", ""ticker"": ""FOX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+219	Fox Corporation (Class A)	6	"{""issuer"": ""Fox Corporation (Class A)"", ""ticker"": ""FOXA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+220	Federal Realty Investment Trust	6	"{""issuer"": ""Federal Realty Investment Trust"", ""ticker"": ""FRT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+221	First Solar	6	"{""issuer"": ""First Solar"", ""ticker"": ""FSLR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+222	Fortinet	6	"{""issuer"": ""Fortinet"", ""ticker"": ""FTNT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+223	Fortive	6	"{""issuer"": ""Fortive"", ""ticker"": ""FTV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+224	General Dynamics	6	"{""issuer"": ""General Dynamics"", ""ticker"": ""GD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+225	GoDaddy	6	"{""issuer"": ""GoDaddy"", ""ticker"": ""GDDY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+226	GE Aerospace	6	"{""issuer"": ""GE Aerospace"", ""ticker"": ""GE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+227	GE HealthCare	6	"{""issuer"": ""GE HealthCare"", ""ticker"": ""GEHC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+228	Gen Digital	6	"{""issuer"": ""Gen Digital"", ""ticker"": ""GEN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+229	GE Vernova	6	"{""issuer"": ""GE Vernova"", ""ticker"": ""GEV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+230	Gilead Sciences	6	"{""issuer"": ""Gilead Sciences"", ""ticker"": ""GILD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+231	General Mills	6	"{""issuer"": ""General Mills"", ""ticker"": ""GIS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+232	Globe Life	6	"{""issuer"": ""Globe Life"", ""ticker"": ""GL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+233	Corning Inc.	6	"{""issuer"": ""Corning Inc."", ""ticker"": ""GLW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+234	General Motors	6	"{""issuer"": ""General Motors"", ""ticker"": ""GM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+235	Generac	6	"{""issuer"": ""Generac"", ""ticker"": ""GNRC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+236	Alphabet Inc. (Class C)	6	"{""issuer"": ""Alphabet Inc. (Class C)"", ""ticker"": ""GOOG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+237	Alphabet Inc. (Class A)	6	"{""issuer"": ""Alphabet Inc. (Class A)"", ""ticker"": ""GOOGL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+238	Genuine Parts Company	6	"{""issuer"": ""Genuine Parts Company"", ""ticker"": ""GPC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+239	Global Payments	6	"{""issuer"": ""Global Payments"", ""ticker"": ""GPN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+240	Garmin	6	"{""issuer"": ""Garmin"", ""ticker"": ""GRMN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+241	Goldman Sachs	6	"{""issuer"": ""Goldman Sachs"", ""ticker"": ""GS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+242	W. W. Grainger	6	"{""issuer"": ""W. W. Grainger"", ""ticker"": ""GWW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+243	Halliburton	6	"{""issuer"": ""Halliburton"", ""ticker"": ""HAL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+244	Hasbro	6	"{""issuer"": ""Hasbro"", ""ticker"": ""HAS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+245	Huntington Bancshares	6	"{""issuer"": ""Huntington Bancshares"", ""ticker"": ""HBAN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+246	HCA Healthcare	6	"{""issuer"": ""HCA Healthcare"", ""ticker"": ""HCA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+247	Home Depot (The)	6	"{""issuer"": ""Home Depot (The)"", ""ticker"": ""HD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+248	Hartford (The)	6	"{""issuer"": ""Hartford (The)"", ""ticker"": ""HIG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+249	Huntington Ingalls Industries	6	"{""issuer"": ""Huntington Ingalls Industries"", ""ticker"": ""HII"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+250	Hilton Worldwide	6	"{""issuer"": ""Hilton Worldwide"", ""ticker"": ""HLT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+251	Hologic	6	"{""issuer"": ""Hologic"", ""ticker"": ""HOLX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+252	Honeywell	6	"{""issuer"": ""Honeywell"", ""ticker"": ""HON"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+253	Hewlett Packard Enterprise	6	"{""issuer"": ""Hewlett Packard Enterprise"", ""ticker"": ""HPE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+254	HP Inc.	6	"{""issuer"": ""HP Inc."", ""ticker"": ""HPQ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+255	Hormel Foods	6	"{""issuer"": ""Hormel Foods"", ""ticker"": ""HRL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+256	Henry Schein	6	"{""issuer"": ""Henry Schein"", ""ticker"": ""HSIC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+257	Host Hotels & Resorts	6	"{""issuer"": ""Host Hotels & Resorts"", ""ticker"": ""HST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+258	Hershey Company (The)	6	"{""issuer"": ""Hershey Company (The)"", ""ticker"": ""HSY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+259	Hubbell Incorporated	6	"{""issuer"": ""Hubbell Incorporated"", ""ticker"": ""HUBB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+260	Humana	6	"{""issuer"": ""Humana"", ""ticker"": ""HUM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+261	Howmet Aerospace	6	"{""issuer"": ""Howmet Aerospace"", ""ticker"": ""HWM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+262	Interactive Brokers Group	6	"{""issuer"": ""Interactive Brokers Group"", ""ticker"": ""IBKR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+263	IBM	6	"{""issuer"": ""IBM"", ""ticker"": ""IBM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+264	Intercontinental Exchange	6	"{""issuer"": ""Intercontinental Exchange"", ""ticker"": ""ICE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+265	Idexx Laboratories	6	"{""issuer"": ""Idexx Laboratories"", ""ticker"": ""IDXX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+266	IDEX Corporation	6	"{""issuer"": ""IDEX Corporation"", ""ticker"": ""IEX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+267	International Flavors & Fragrances	6	"{""issuer"": ""International Flavors & Fragrances"", ""ticker"": ""IFF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+268	Incyte	6	"{""issuer"": ""Incyte"", ""ticker"": ""INCY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+269	Intel	6	"{""issuer"": ""Intel"", ""ticker"": ""INTC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+270	Intuit	6	"{""issuer"": ""Intuit"", ""ticker"": ""INTU"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+271	Invitation Homes	6	"{""issuer"": ""Invitation Homes"", ""ticker"": ""INVH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+272	International Paper	6	"{""issuer"": ""International Paper"", ""ticker"": ""IP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+273	Interpublic Group of Companies (The)	6	"{""issuer"": ""Interpublic Group of Companies (The)"", ""ticker"": ""IPG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+274	IQVIA	6	"{""issuer"": ""IQVIA"", ""ticker"": ""IQV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+275	Ingersoll Rand	6	"{""issuer"": ""Ingersoll Rand"", ""ticker"": ""IR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+276	Iron Mountain	6	"{""issuer"": ""Iron Mountain"", ""ticker"": ""IRM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+277	Intuitive Surgical	6	"{""issuer"": ""Intuitive Surgical"", ""ticker"": ""ISRG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+278	Gartner	6	"{""issuer"": ""Gartner"", ""ticker"": ""IT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+279	Illinois Tool Works	6	"{""issuer"": ""Illinois Tool Works"", ""ticker"": ""ITW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+280	Invesco	6	"{""issuer"": ""Invesco"", ""ticker"": ""IVZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+281	Jacobs Solutions	6	"{""issuer"": ""Jacobs Solutions"", ""ticker"": ""J"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+282	J.B. Hunt	6	"{""issuer"": ""J.B. Hunt"", ""ticker"": ""JBHT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+283	Jabil	6	"{""issuer"": ""Jabil"", ""ticker"": ""JBL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+284	Johnson Controls	6	"{""issuer"": ""Johnson Controls"", ""ticker"": ""JCI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+285	Jack Henry & Associates	6	"{""issuer"": ""Jack Henry & Associates"", ""ticker"": ""JKHY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+286	Johnson & Johnson	6	"{""issuer"": ""Johnson & Johnson"", ""ticker"": ""JNJ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+287	JPMorgan Chase	6	"{""issuer"": ""JPMorgan Chase"", ""ticker"": ""JPM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+288	Kellanova	6	"{""issuer"": ""Kellanova"", ""ticker"": ""K"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+289	Keurig Dr Pepper	6	"{""issuer"": ""Keurig Dr Pepper"", ""ticker"": ""KDP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+290	KeyCorp	6	"{""issuer"": ""KeyCorp"", ""ticker"": ""KEY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+291	Keysight Technologies	6	"{""issuer"": ""Keysight Technologies"", ""ticker"": ""KEYS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+292	Kraft Heinz	6	"{""issuer"": ""Kraft Heinz"", ""ticker"": ""KHC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+293	Kimco Realty	6	"{""issuer"": ""Kimco Realty"", ""ticker"": ""KIM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+294	KKR	6	"{""issuer"": ""KKR"", ""ticker"": ""KKR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+295	KLA Corporation	6	"{""issuer"": ""KLA Corporation"", ""ticker"": ""KLAC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+296	Kimberly-Clark	6	"{""issuer"": ""Kimberly-Clark"", ""ticker"": ""KMB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+297	Kinder Morgan	6	"{""issuer"": ""Kinder Morgan"", ""ticker"": ""KMI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+298	CarMax	6	"{""issuer"": ""CarMax"", ""ticker"": ""KMX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+299	Coca-Cola Company (The)	6	"{""issuer"": ""Coca-Cola Company (The)"", ""ticker"": ""KO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+300	Kroger	6	"{""issuer"": ""Kroger"", ""ticker"": ""KR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+301	Kenvue	6	"{""issuer"": ""Kenvue"", ""ticker"": ""KVUE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+302	Loews Corporation	6	"{""issuer"": ""Loews Corporation"", ""ticker"": ""L"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+303	Leidos	6	"{""issuer"": ""Leidos"", ""ticker"": ""LDOS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+304	Lennar	6	"{""issuer"": ""Lennar"", ""ticker"": ""LEN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+305	LabCorp	6	"{""issuer"": ""LabCorp"", ""ticker"": ""LH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+306	L3Harris	6	"{""issuer"": ""L3Harris"", ""ticker"": ""LHX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+307	Lennox International	6	"{""issuer"": ""Lennox International"", ""ticker"": ""LII"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+308	Linde plc	6	"{""issuer"": ""Linde plc"", ""ticker"": ""LIN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+309	LKQ Corporation	6	"{""issuer"": ""LKQ Corporation"", ""ticker"": ""LKQ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+310	Lilly (Eli)	6	"{""issuer"": ""Lilly (Eli)"", ""ticker"": ""LLY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+311	Lockheed Martin	6	"{""issuer"": ""Lockheed Martin"", ""ticker"": ""LMT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+312	Alliant Energy	6	"{""issuer"": ""Alliant Energy"", ""ticker"": ""LNT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+313	Lowe's	6	"{""issuer"": ""Lowe's"", ""ticker"": ""LOW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+314	Lam Research	6	"{""issuer"": ""Lam Research"", ""ticker"": ""LRCX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+315	Lululemon Athletica	6	"{""issuer"": ""Lululemon Athletica"", ""ticker"": ""LULU"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+316	Southwest Airlines	6	"{""issuer"": ""Southwest Airlines"", ""ticker"": ""LUV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+317	Las Vegas Sands	6	"{""issuer"": ""Las Vegas Sands"", ""ticker"": ""LVS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+318	Lamb Weston	6	"{""issuer"": ""Lamb Weston"", ""ticker"": ""LW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+319	LyondellBasell	6	"{""issuer"": ""LyondellBasell"", ""ticker"": ""LYB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+320	Live Nation Entertainment	6	"{""issuer"": ""Live Nation Entertainment"", ""ticker"": ""LYV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+321	Mastercard	6	"{""issuer"": ""Mastercard"", ""ticker"": ""MA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+322	Mid-America Apartment Communities	6	"{""issuer"": ""Mid-America Apartment Communities"", ""ticker"": ""MAA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+323	Marriott International	6	"{""issuer"": ""Marriott International"", ""ticker"": ""MAR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+324	Masco	6	"{""issuer"": ""Masco"", ""ticker"": ""MAS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+325	McDonald's	6	"{""issuer"": ""McDonald's"", ""ticker"": ""MCD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+326	Microchip Technology	6	"{""issuer"": ""Microchip Technology"", ""ticker"": ""MCHP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+327	McKesson Corporation	6	"{""issuer"": ""McKesson Corporation"", ""ticker"": ""MCK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+328	Moody's Corporation	6	"{""issuer"": ""Moody's Corporation"", ""ticker"": ""MCO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+329	Mondelez International	6	"{""issuer"": ""Mondelez International"", ""ticker"": ""MDLZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+330	Medtronic	6	"{""issuer"": ""Medtronic"", ""ticker"": ""MDT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+331	MetLife	6	"{""issuer"": ""MetLife"", ""ticker"": ""MET"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+332	Meta Platforms	6	"{""issuer"": ""Meta Platforms"", ""ticker"": ""META"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+333	MGM Resorts	6	"{""issuer"": ""MGM Resorts"", ""ticker"": ""MGM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+334	Mohawk Industries	6	"{""issuer"": ""Mohawk Industries"", ""ticker"": ""MHK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+335	McCormick & Company	6	"{""issuer"": ""McCormick & Company"", ""ticker"": ""MKC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+336	MarketAxess	6	"{""issuer"": ""MarketAxess"", ""ticker"": ""MKTX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+337	Martin Marietta Materials	6	"{""issuer"": ""Martin Marietta Materials"", ""ticker"": ""MLM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+338	Marsh McLennan	6	"{""issuer"": ""Marsh McLennan"", ""ticker"": ""MMC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+339	3M	6	"{""isin"": ""12345678"", ""issuer"": ""3M"", ""ticker"": ""MMM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-05T20:15:19	10
+340	Monster Beverage	6	"{""issuer"": ""Monster Beverage"", ""ticker"": ""MNST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+341	Altria	6	"{""issuer"": ""Altria"", ""ticker"": ""MO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+342	Molina Healthcare	6	"{""issuer"": ""Molina Healthcare"", ""ticker"": ""MOH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+343	Mosaic Company (The)	6	"{""issuer"": ""Mosaic Company (The)"", ""ticker"": ""MOS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+344	Marathon Petroleum	6	"{""issuer"": ""Marathon Petroleum"", ""ticker"": ""MPC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+345	Monolithic Power Systems	6	"{""issuer"": ""Monolithic Power Systems"", ""ticker"": ""MPWR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+346	Merck & Co.	6	"{""issuer"": ""Merck & Co."", ""ticker"": ""MRK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+347	Moderna	6	"{""issuer"": ""Moderna"", ""ticker"": ""MRNA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+348	Morgan Stanley	6	"{""issuer"": ""Morgan Stanley"", ""ticker"": ""MS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+349	MSCI	6	"{""issuer"": ""MSCI"", ""ticker"": ""MSCI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+350	Microsoft	6	"{""issuer"": ""Microsoft"", ""ticker"": ""MSFT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+351	Motorola Solutions	6	"{""issuer"": ""Motorola Solutions"", ""ticker"": ""MSI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+352	M&T Bank	6	"{""issuer"": ""M&T Bank"", ""ticker"": ""MTB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+353	Match Group	6	"{""issuer"": ""Match Group"", ""ticker"": ""MTCH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+354	Mettler Toledo	6	"{""issuer"": ""Mettler Toledo"", ""ticker"": ""MTD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+355	Micron Technology	6	"{""issuer"": ""Micron Technology"", ""ticker"": ""MU"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+356	Norwegian Cruise Line Holdings	6	"{""issuer"": ""Norwegian Cruise Line Holdings"", ""ticker"": ""NCLH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+357	Nasdaq Inc.	6	"{""issuer"": ""Nasdaq Inc."", ""ticker"": ""NDAQ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+358	Nordson Corporation	6	"{""issuer"": ""Nordson Corporation"", ""ticker"": ""NDSN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+359	NextEra Energy	6	"{""issuer"": ""NextEra Energy"", ""ticker"": ""NEE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+360	Newmont	6	"{""issuer"": ""Newmont"", ""ticker"": ""NEM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+361	Netflix	6	"{""issuer"": ""Netflix"", ""ticker"": ""NFLX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+362	NiSource	6	"{""issuer"": ""NiSource"", ""ticker"": ""NI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+363	Nike Inc.	6	"{""issuer"": ""Nike Inc."", ""ticker"": ""NKE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+364	Northrop Grumman	6	"{""issuer"": ""Northrop Grumman"", ""ticker"": ""NOC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+365	ServiceNow	6	"{""issuer"": ""ServiceNow"", ""ticker"": ""NOW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+366	NRG Energy	6	"{""issuer"": ""NRG Energy"", ""ticker"": ""NRG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+367	Norfolk Southern Railway	6	"{""issuer"": ""Norfolk Southern Railway"", ""ticker"": ""NSC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+368	NetApp	6	"{""issuer"": ""NetApp"", ""ticker"": ""NTAP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+369	Northern Trust	6	"{""issuer"": ""Northern Trust"", ""ticker"": ""NTRS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+370	Nucor	6	"{""issuer"": ""Nucor"", ""ticker"": ""NUE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+371	Nvidia	6	"{""issuer"": ""Nvidia"", ""ticker"": ""NVDA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+372	NVR Inc.	6	"{""issuer"": ""NVR Inc."", ""ticker"": ""NVR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+373	News Corp (Class B)	6	"{""issuer"": ""News Corp (Class B)"", ""ticker"": ""NWS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+374	News Corp (Class A)	6	"{""issuer"": ""News Corp (Class A)"", ""ticker"": ""NWSA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+375	NXP Semiconductors	6	"{""issuer"": ""NXP Semiconductors"", ""ticker"": ""NXPI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+376	Realty Income	6	"{""issuer"": ""Realty Income"", ""ticker"": ""O"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+377	Old Dominion	6	"{""issuer"": ""Old Dominion"", ""ticker"": ""ODFL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+378	ONEOK	6	"{""issuer"": ""ONEOK"", ""ticker"": ""OKE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+379	Omnicom Group	6	"{""issuer"": ""Omnicom Group"", ""ticker"": ""OMC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+380	ON Semiconductor	6	"{""issuer"": ""ON Semiconductor"", ""ticker"": ""ON"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+381	Oracle Corporation	6	"{""issuer"": ""Oracle Corporation"", ""ticker"": ""ORCL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+382	O'Reilly Auto Parts	6	"{""issuer"": ""O'Reilly Auto Parts"", ""ticker"": ""ORLY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+383	Otis Worldwide	6	"{""issuer"": ""Otis Worldwide"", ""ticker"": ""OTIS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+384	Occidental Petroleum	6	"{""issuer"": ""Occidental Petroleum"", ""ticker"": ""OXY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+385	Palo Alto Networks	6	"{""issuer"": ""Palo Alto Networks"", ""ticker"": ""PANW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+386	Paycom	6	"{""issuer"": ""Paycom"", ""ticker"": ""PAYC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+387	Paychex	6	"{""issuer"": ""Paychex"", ""ticker"": ""PAYX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+388	Paccar	6	"{""issuer"": ""Paccar"", ""ticker"": ""PCAR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+389	PG&E Corporation	6	"{""issuer"": ""PG&E Corporation"", ""ticker"": ""PCG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+390	Public Service Enterprise Group	6	"{""issuer"": ""Public Service Enterprise Group"", ""ticker"": ""PEG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+391	PepsiCo	6	"{""issuer"": ""PepsiCo"", ""ticker"": ""PEP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+392	Pfizer	6	"{""issuer"": ""Pfizer"", ""ticker"": ""PFE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+393	Principal Financial Group	6	"{""issuer"": ""Principal Financial Group"", ""ticker"": ""PFG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+394	Procter & Gamble	6	"{""issuer"": ""Procter & Gamble"", ""ticker"": ""PG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+395	Progressive Corporation	6	"{""issuer"": ""Progressive Corporation"", ""ticker"": ""PGR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+396	Parker Hannifin	6	"{""issuer"": ""Parker Hannifin"", ""ticker"": ""PH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+397	PulteGroup	6	"{""issuer"": ""PulteGroup"", ""ticker"": ""PHM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+398	Packaging Corporation of America	6	"{""issuer"": ""Packaging Corporation of America"", ""ticker"": ""PKG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+399	Prologis	6	"{""issuer"": ""Prologis"", ""ticker"": ""PLD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+400	Palantir Technologies	6	"{""issuer"": ""Palantir Technologies"", ""ticker"": ""PLTR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+401	Philip Morris International	6	"{""issuer"": ""Philip Morris International"", ""ticker"": ""PM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+402	PNC Financial Services	6	"{""issuer"": ""PNC Financial Services"", ""ticker"": ""PNC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+403	Pentair	6	"{""issuer"": ""Pentair"", ""ticker"": ""PNR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+404	Pinnacle West	6	"{""issuer"": ""Pinnacle West"", ""ticker"": ""PNW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+405	Insulet Corporation	6	"{""issuer"": ""Insulet Corporation"", ""ticker"": ""PODD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+406	Pool Corporation	6	"{""issuer"": ""Pool Corporation"", ""ticker"": ""POOL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+407	PPG Industries	6	"{""issuer"": ""PPG Industries"", ""ticker"": ""PPG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+408	PPL Corporation	6	"{""issuer"": ""PPL Corporation"", ""ticker"": ""PPL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+409	Prudential Financial	6	"{""issuer"": ""Prudential Financial"", ""ticker"": ""PRU"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+410	Public Storage	6	"{""issuer"": ""Public Storage"", ""ticker"": ""PSA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+411	Paramount Skydance Corp	6	"{""issuer"": ""Paramount Skydance Corp"", ""ticker"": ""PSKY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+412	Phillips 66	6	"{""issuer"": ""Phillips 66"", ""ticker"": ""PSX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+413	PTC Inc.	6	"{""issuer"": ""PTC Inc."", ""ticker"": ""PTC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+414	Quanta Services	6	"{""issuer"": ""Quanta Services"", ""ticker"": ""PWR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+415	PayPal	6	"{""issuer"": ""PayPal"", ""ticker"": ""PYPL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+416	Qualcomm	6	"{""issuer"": ""Qualcomm"", ""ticker"": ""QCOM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+417	Royal Caribbean Group	6	"{""issuer"": ""Royal Caribbean Group"", ""ticker"": ""RCL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+418	Regency Centers	6	"{""issuer"": ""Regency Centers"", ""ticker"": ""REG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+419	Regeneron Pharmaceuticals	6	"{""issuer"": ""Regeneron Pharmaceuticals"", ""ticker"": ""REGN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+420	Regions Financial Corporation	6	"{""issuer"": ""Regions Financial Corporation"", ""ticker"": ""RF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+421	Raymond James Financial	6	"{""issuer"": ""Raymond James Financial"", ""ticker"": ""RJF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+422	Ralph Lauren Corporation	6	"{""issuer"": ""Ralph Lauren Corporation"", ""ticker"": ""RL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+423	ResMed	6	"{""issuer"": ""ResMed"", ""ticker"": ""RMD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+424	Rockwell Automation	6	"{""issuer"": ""Rockwell Automation"", ""ticker"": ""ROK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+425	Rollins Inc.	6	"{""issuer"": ""Rollins Inc."", ""ticker"": ""ROL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+426	Roper Technologies	6	"{""issuer"": ""Roper Technologies"", ""ticker"": ""ROP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+427	Ross Stores	6	"{""issuer"": ""Ross Stores"", ""ticker"": ""ROST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+428	Republic Services	6	"{""issuer"": ""Republic Services"", ""ticker"": ""RSG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+429	RTX Corporation	6	"{""issuer"": ""RTX Corporation"", ""ticker"": ""RTX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+430	Revvity	6	"{""issuer"": ""Revvity"", ""ticker"": ""RVTY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+431	SBA Communications	6	"{""issuer"": ""SBA Communications"", ""ticker"": ""SBAC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+432	Starbucks	6	"{""issuer"": ""Starbucks"", ""ticker"": ""SBUX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+433	Charles Schwab Corporation	6	"{""issuer"": ""Charles Schwab Corporation"", ""ticker"": ""SCHW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+434	Sherwin-Williams	6	"{""issuer"": ""Sherwin-Williams"", ""ticker"": ""SHW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+435	J.M. Smucker Company (The)	6	"{""issuer"": ""J.M. Smucker Company (The)"", ""ticker"": ""SJM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+436	Schlumberger	6	"{""issuer"": ""Schlumberger"", ""ticker"": ""SLB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+437	Supermicro	6	"{""issuer"": ""Supermicro"", ""ticker"": ""SMCI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+438	Snap-on	6	"{""issuer"": ""Snap-on"", ""ticker"": ""SNA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+439	Synopsys	6	"{""issuer"": ""Synopsys"", ""ticker"": ""SNPS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+440	Southern Company	6	"{""issuer"": ""Southern Company"", ""ticker"": ""SO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+441	Solventum	6	"{""issuer"": ""Solventum"", ""ticker"": ""SOLV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+442	Simon Property Group	6	"{""issuer"": ""Simon Property Group"", ""ticker"": ""SPG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+443	S&P Global	6	"{""issuer"": ""S&P Global"", ""ticker"": ""SPGI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+444	Sempra	6	"{""issuer"": ""Sempra"", ""ticker"": ""SRE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+445	Steris	6	"{""issuer"": ""Steris"", ""ticker"": ""STE"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+446	Steel Dynamics	6	"{""issuer"": ""Steel Dynamics"", ""ticker"": ""STLD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+447	State Street Corporation	6	"{""issuer"": ""State Street Corporation"", ""ticker"": ""STT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+448	Seagate Technology	6	"{""issuer"": ""Seagate Technology"", ""ticker"": ""STX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+449	Constellation Brands	6	"{""issuer"": ""Constellation Brands"", ""ticker"": ""STZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+450	Smurfit WestRock	6	"{""issuer"": ""Smurfit WestRock"", ""ticker"": ""SW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+451	Stanley Black & Decker	6	"{""issuer"": ""Stanley Black & Decker"", ""ticker"": ""SWK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+452	Skyworks Solutions	6	"{""issuer"": ""Skyworks Solutions"", ""ticker"": ""SWKS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+453	Synchrony Financial	6	"{""issuer"": ""Synchrony Financial"", ""ticker"": ""SYF"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+454	Stryker Corporation	6	"{""issuer"": ""Stryker Corporation"", ""ticker"": ""SYK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+455	Sysco	6	"{""issuer"": ""Sysco"", ""ticker"": ""SYY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+456	AT&T	6	"{""issuer"": ""AT&T"", ""ticker"": ""T"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+457	Molson Coors Beverage Company	6	"{""issuer"": ""Molson Coors Beverage Company"", ""ticker"": ""TAP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+458	TransDigm Group	6	"{""issuer"": ""TransDigm Group"", ""ticker"": ""TDG"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+459	Teledyne Technologies	6	"{""issuer"": ""Teledyne Technologies"", ""ticker"": ""TDY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+460	Bio-Techne	6	"{""issuer"": ""Bio-Techne"", ""ticker"": ""TECH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+461	TE Connectivity	6	"{""issuer"": ""TE Connectivity"", ""ticker"": ""TEL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+462	Teradyne	6	"{""issuer"": ""Teradyne"", ""ticker"": ""TER"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+463	Truist Financial	6	"{""issuer"": ""Truist Financial"", ""ticker"": ""TFC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+464	Target Corporation	6	"{""issuer"": ""Target Corporation"", ""ticker"": ""TGT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+465	TJX Companies	6	"{""issuer"": ""TJX Companies"", ""ticker"": ""TJX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+466	TKO Group Holdings	6	"{""issuer"": ""TKO Group Holdings"", ""ticker"": ""TKO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+467	Thermo Fisher Scientific	6	"{""issuer"": ""Thermo Fisher Scientific"", ""ticker"": ""TMO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+468	T-Mobile US	6	"{""issuer"": ""T-Mobile US"", ""ticker"": ""TMUS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+469	Texas Pacific Land Corporation	6	"{""issuer"": ""Texas Pacific Land Corporation"", ""ticker"": ""TPL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+470	Tapestry Inc.	6	"{""issuer"": ""Tapestry Inc."", ""ticker"": ""TPR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+471	Targa Resources	6	"{""issuer"": ""Targa Resources"", ""ticker"": ""TRGP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+472	Trimble Inc.	6	"{""issuer"": ""Trimble Inc."", ""ticker"": ""TRMB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+473	T. Rowe Price	6	"{""issuer"": ""T. Rowe Price"", ""ticker"": ""TROW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+474	Travelers Companies (The)	6	"{""issuer"": ""Travelers Companies (The)"", ""ticker"": ""TRV"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+475	Tractor Supply	6	"{""issuer"": ""Tractor Supply"", ""ticker"": ""TSCO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+476	Tesla Inc.	6	"{""issuer"": ""Tesla Inc."", ""ticker"": ""TSLA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+477	Tyson Foods	6	"{""issuer"": ""Tyson Foods"", ""ticker"": ""TSN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+478	Trane Technologies	6	"{""issuer"": ""Trane Technologies"", ""ticker"": ""TT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+479	The Trade Desk Inc.	6	"{""issuer"": ""The Trade Desk Inc."", ""ticker"": ""TTD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+480	Take-Two Interactive	6	"{""issuer"": ""Take-Two Interactive"", ""ticker"": ""TTWO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+481	Texas Instruments	6	"{""issuer"": ""Texas Instruments"", ""ticker"": ""TXN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+482	Textron	6	"{""issuer"": ""Textron"", ""ticker"": ""TXT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+483	Tyler Technologies	6	"{""issuer"": ""Tyler Technologies"", ""ticker"": ""TYL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+484	United Airlines Holdings	6	"{""issuer"": ""United Airlines Holdings"", ""ticker"": ""UAL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+485	Uber	6	"{""issuer"": ""Uber"", ""ticker"": ""UBER"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+486	UDR Inc.	6	"{""issuer"": ""UDR Inc."", ""ticker"": ""UDR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+487	Universal Health Services	6	"{""issuer"": ""Universal Health Services"", ""ticker"": ""UHS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+488	Ulta Beauty	6	"{""issuer"": ""Ulta Beauty"", ""ticker"": ""ULTA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+489	UnitedHealth Group	6	"{""issuer"": ""UnitedHealth Group"", ""ticker"": ""UNH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+490	Union Pacific Corporation	6	"{""issuer"": ""Union Pacific Corporation"", ""ticker"": ""UNP"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+491	United Parcel Service	6	"{""issuer"": ""United Parcel Service"", ""ticker"": ""UPS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+492	United Rentals	6	"{""issuer"": ""United Rentals"", ""ticker"": ""URI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+493	U.S. Bancorp	6	"{""issuer"": ""U.S. Bancorp"", ""ticker"": ""USB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+494	Visa Inc.	6	"{""issuer"": ""Visa Inc."", ""ticker"": ""V"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+495	Vici Properties	6	"{""issuer"": ""Vici Properties"", ""ticker"": ""VICI"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+496	Valero Energy	6	"{""issuer"": ""Valero Energy"", ""ticker"": ""VLO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+497	Veralto	6	"{""issuer"": ""Veralto"", ""ticker"": ""VLTO"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+498	Vulcan Materials Company	6	"{""issuer"": ""Vulcan Materials Company"", ""ticker"": ""VMC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+499	Verisk Analytics	6	"{""issuer"": ""Verisk Analytics"", ""ticker"": ""VRSK"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+500	Verisign	6	"{""issuer"": ""Verisign"", ""ticker"": ""VRSN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+501	Vertex Pharmaceuticals	6	"{""issuer"": ""Vertex Pharmaceuticals"", ""ticker"": ""VRTX"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+502	Vistra Corp.	6	"{""issuer"": ""Vistra Corp."", ""ticker"": ""VST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+503	Ventas	6	"{""issuer"": ""Ventas"", ""ticker"": ""VTR"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+504	Viatris	6	"{""issuer"": ""Viatris"", ""ticker"": ""VTRS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+505	Verizon	6	"{""issuer"": ""Verizon"", ""ticker"": ""VZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+506	Wabtec	6	"{""issuer"": ""Wabtec"", ""ticker"": ""WAB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+507	Waters Corporation	6	"{""issuer"": ""Waters Corporation"", ""ticker"": ""WAT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+508	Warner Bros. Discovery	6	"{""issuer"": ""Warner Bros. Discovery"", ""ticker"": ""WBD"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+509	Workday Inc.	6	"{""issuer"": ""Workday Inc."", ""ticker"": ""WDAY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+510	Western Digital	6	"{""issuer"": ""Western Digital"", ""ticker"": ""WDC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+511	WEC Energy Group	6	"{""issuer"": ""WEC Energy Group"", ""ticker"": ""WEC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+512	Welltower	6	"{""issuer"": ""Welltower"", ""ticker"": ""WELL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+513	Wells Fargo	6	"{""issuer"": ""Wells Fargo"", ""ticker"": ""WFC"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+514	Waste Management	6	"{""issuer"": ""Waste Management"", ""ticker"": ""WM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+515	Williams Companies	6	"{""issuer"": ""Williams Companies"", ""ticker"": ""WMB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+516	Walmart	6	"{""issuer"": ""Walmart"", ""ticker"": ""WMT"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+517	W. R. Berkley Corporation	6	"{""issuer"": ""W. R. Berkley Corporation"", ""ticker"": ""WRB"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+518	Williams-Sonoma	6	"{""issuer"": ""Williams-Sonoma"", ""ticker"": ""WSM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+519	West Pharmaceutical Services	6	"{""issuer"": ""West Pharmaceutical Services"", ""ticker"": ""WST"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+520	Willis Towers Watson	6	"{""issuer"": ""Willis Towers Watson"", ""ticker"": ""WTW"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+521	Weyerhaeuser	6	"{""issuer"": ""Weyerhaeuser"", ""ticker"": ""WY"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+522	Wynn Resorts	6	"{""issuer"": ""Wynn Resorts"", ""ticker"": ""WYNN"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+523	Xcel Energy	6	"{""issuer"": ""Xcel Energy"", ""ticker"": ""XEL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+524	ExxonMobil	6	"{""issuer"": ""ExxonMobil"", ""ticker"": ""XOM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+525	Xylem Inc.	6	"{""issuer"": ""Xylem Inc."", ""ticker"": ""XYL"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+526	Block Inc.	6	"{""issuer"": ""Block Inc."", ""ticker"": ""XYZ"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+527	Yum! Brands	6	"{""issuer"": ""Yum! Brands"", ""ticker"": ""YUM"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+528	Zimmer Biomet	6	"{""issuer"": ""Zimmer Biomet"", ""ticker"": ""ZBH"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+529	Zebra Technologies	6	"{""issuer"": ""Zebra Technologies"", ""ticker"": ""ZBRA"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+530	Zoetis	6	"{""issuer"": ""Zoetis"", ""ticker"": ""ZTS"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+531	SPDR S&P 500 ETF Trust	8	"{""isin"": ""US78462F1030"", ""cusip"": ""78462F103"", ""issuer"": ""State Street Global Advisors"", ""ticker"": ""SPY"", ""issue_date"": ""1993-01-22"", ""issue_country"": ""US"", ""issue_currency"": ""USD""}"	2025-10-02T17:55:38	10
+632	Bain Capital V LP	17	"{""Vintage Year"": """", ""fund_sponsor"": """", ""issue_country"": """", ""favorite_color"": ""blue"", ""inception_date"": """", ""issue_currency"": """"}"	2025-10-02T17:55:38	10
+633	Clearbridge Partners VIII LTD	17	"{""Vintage Year"": ""2008"", ""fund_sponsor"": """", ""issue_country"": ""USA"", ""inception_date"": """", ""issue_currency"": """"}"	2025-10-02T17:55:38	10
+634	Well Endowment Equity Pool	4	"{""inception_date"": ""2025-03-24""}"	2025-10-02T17:55:38	10
+635	Bob Hedge Fund	16		2025-09-25T21:04:48	10
+636	Peter Piper Portfolio	4		2025-09-26T13:02:13	10
+637	Harry Hedge Fund	16		2025-09-26T13:02:39	10
+638	Jim Nekos	1	"{""legal_name"": ""Vice Squad""}"	2025-09-27T13:37:40	10
+639	Peter's Capital Account	18		2025-09-27T14:43:26	10
+640	Peter Capital Account	18	"{""investor_id"": 0}"	2025-09-27T16:02:15	10
+641	Manager Expenses	20		2025-09-27T16:25:11	10
+642	Commitments I have made	255		2025-09-27T17:10:58	10
+643	Killer Bee	4		2025-09-27T22:15:50	10
+644	Big Kahuna	4		2025-09-28T17:40:32	10
+645	Deep Fryer	5		2025-09-28T20:28:32	10
+672	Test Entity 20251002123647	1	"{""created_via"": ""api_test"", ""test_attribute"": ""original_value""}"	2025-10-02T16:36:52	10
+673	Test Entity 20251002130517	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-02T17:05:20	10
+674	Test Entity 20251002145600	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-02T18:56:06	10
+675	Test Entity 20251002150239	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-02T19:02:44	10
+677	Test Entity from API	1	"{""test_attribute"": ""test_value""}"	2025-10-02T19:10:54	10
+678	Test Entity 20251002150650	1	"{""created_via"": ""api_test"", ""test_attribute"": ""original_value""}"	2025-10-02T19:12:47	10
+679	Test Entity 20251002151324	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-02T19:13:27	10
+680	Test Entity 20251002151413	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-02T19:14:15	10
+686	Test Entity 20251004121549	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:15:55	10
+687	Test Entity 20251004121609	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:16:13	10
+688	Test Entity 20251004122723	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:27:29	10
+689	Test Entity 20251004123054	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:30:58	10
+690	Test Entity 20251004123732	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:37:37	10
+691	Test Entity 20251004123757	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:38:01	10
+692	Test Entity 20251004124437	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:44:43	10
+693	Test Entity 20251004125007	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:50:11	10
+694	Test Entity 20251004125027	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T16:50:30	10
+695	Test Entity 20251004130823	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T17:08:29	10
+696	Test Entity 20251004131042	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T17:10:46	10
+697	Test Entity 20251004132215	1	"{""updated"": true, ""created_via"": ""api_test"", ""test_attribute"": ""updated_value""}"	2025-10-04T17:22:22	10

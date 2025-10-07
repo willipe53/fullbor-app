@@ -423,7 +423,7 @@ const UsersTable: React.FC = () => {
               No users found
               <br />
               No users exist for{" "}
-              {primaryClientGroup?.name || "this client group"}
+              {primaryClientGroup?.client_group_name || "this client group"}
               <br />
               Users are created when they accept invitations via email.
             </Typography>

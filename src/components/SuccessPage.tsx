@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
-  Button,
   AppBar,
   Toolbar,
   Container,
@@ -10,9 +9,22 @@ import {
   Tabs,
   Tab,
   CircularProgress,
-  Badge,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
-import { ViewList, Dashboard, People, Receipt } from "@mui/icons-material";
+import {
+  ViewList,
+  Dashboard,
+  Settings,
+  Mail,
+  Group,
+  Person,
+  Logout,
+  SwapHoriz,
+} from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { styled } from "@mui/material/styles";
@@ -20,6 +32,8 @@ import boar6white from "../assets/images/boar6white.png";
 import EntitiesTable from "./EntitiesTable";
 import UsersTable from "./UsersTable";
 import TransactionsTable from "./TransactionsTable";
+import ClientGroupsTable from "./ClientGroupsTable";
+import InvitationsTable from "./InvitationsTable";
 import ClientGroupOnboarding from "./ClientGroupOnboarding";
 import OneBorIntroduction from "./OneBorIntroduction";
 import { useClientGroupOnboarding } from "../hooks/useClientGroupOnboarding";
@@ -33,59 +47,26 @@ const HeaderLogo = styled("img")({
 const SuccessPage: React.FC = () => {
   const { userEmail, userId, logout } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(
+    null
+  );
 
   // Get current user for count queries
   const { data: currentUserData } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => apiService.queryUsers({}),
+    queryFn: () => apiService.queryUsers({ sub: userId! }),
     enabled: !!userId,
   });
 
-  const currentUser =
-    currentUserData && currentUserData.length > 0 ? currentUserData[0] : null;
-
-  // Count queries for badge display
-  const { data: entitiesCount } = useQuery({
-    queryKey: ["entity-count", "all", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryEntities({
-        count: true,
-        client_group_id: currentUser?.primary_client_group_id,
-      }),
-    enabled: !!currentUser?.user_id && !!currentUser?.primary_client_group_id,
-    select: (data) => (typeof data === "number" ? data : data?.count || 0),
-  });
-
-  const { data: usersCount } = useQuery({
-    queryKey: [
-      "user-count",
-      currentUser?.user_name,
-      currentUser?.primary_client_group_name,
-    ],
-    queryFn: () =>
-      apiService.queryUsers({
-        count: true,
-      }),
-    enabled:
-      !!currentUser?.user_name && !!currentUser?.primary_client_group_name,
-    select: (data) => (typeof data === "number" ? data : data?.count || 0),
-  });
-
-  const { data: transactionsCount } = useQuery({
-    queryKey: [
-      "transaction-count",
-      currentUser?.user_name,
-      currentUser?.primary_client_group_name,
-    ],
-    queryFn: () =>
-      apiService.queryTransactions({
-        count: true,
-        client_group_name: currentUser?.primary_client_group_name,
-      }),
-    enabled:
-      !!currentUser?.user_name && !!currentUser?.primary_client_group_name,
-    select: (data) => (typeof data === "number" ? data : data?.count || 0),
-  });
+  const currentUser = useMemo(() => {
+    if (!currentUserData) return null;
+    // Handle both array and paginated response
+    const usersArray = Array.isArray(currentUserData)
+      ? currentUserData
+      : currentUserData.data || [];
+    // Find the user that matches the current userId (sub)
+    return usersArray.find((u: apiService.User) => u.sub === userId) || null;
+  }, [currentUserData, userId]);
 
   // Client group onboarding logic
   // console.log("🔍 SuccessPage - Calling useClientGroupOnboarding with:", {
@@ -95,30 +76,73 @@ const SuccessPage: React.FC = () => {
   const {
     isLoading: onboardingLoading,
     needsOnboarding,
-    user,
     completeOnboarding,
   } = useClientGroupOnboarding(userEmail, userId);
 
   // Query to get client group information
   const { data: clientGroups } = useQuery({
-    queryKey: ["client-groups", user?.primary_client_group_id],
-    queryFn: () => {
-      if (!user?.primary_client_group_id) return Promise.resolve([]);
-      return apiService.queryClientGroups({
-        client_group_id: user.primary_client_group_id,
-      });
+    queryKey: ["client-groups", currentUser?.primary_client_group_id],
+    queryFn: async () => {
+      if (!currentUser?.primary_client_group_id) return [];
+      const response = await apiService.queryClientGroups({});
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (
+        typeof response === "object" &&
+        response !== null &&
+        "data" in response
+      ) {
+        return response.data || [];
+      }
+      return [];
     },
-    enabled: !!user?.primary_client_group_id,
+    enabled: !!currentUser?.primary_client_group_id,
   });
 
-  const primaryClientGroup =
-    clientGroups && clientGroups.length > 0 ? clientGroups[0] : null;
+  const primaryClientGroup = useMemo(() => {
+    if (!clientGroups || !currentUser?.primary_client_group_id) return null;
+
+    return (
+      clientGroups.find(
+        (cg: apiService.ClientGroup) =>
+          cg.client_group_id === currentUser.primary_client_group_id
+      ) || null
+    );
+  }, [clientGroups, currentUser?.primary_client_group_id]);
 
   const handleOnboardingComplete = async (clientGroupId: number) => {
     try {
       await completeOnboarding(clientGroupId);
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
+    }
+  };
+
+  // Settings menu handlers
+  const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
+    setSettingsAnchorEl(event.currentTarget);
+  };
+
+  const handleSettingsClose = () => {
+    setSettingsAnchorEl(null);
+  };
+
+  const handleMenuAction = (action: string) => {
+    handleSettingsClose();
+    switch (action) {
+      case "users":
+        setCurrentTab(3); // UsersTable tab
+        break;
+      case "client-groups":
+        setCurrentTab(4); // ClientGroupsTable tab
+        break;
+      case "invitations":
+        setCurrentTab(5); // InvitationsTable tab
+        break;
+      case "logout":
+        logout();
+        break;
     }
   };
 
@@ -129,35 +153,6 @@ const SuccessPage: React.FC = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
-
-  // Helper function to render tabs with badges
-  const renderTabWithBadge = (
-    icon: React.ReactElement,
-    label: string,
-    count?: number
-  ) => (
-    <Tab
-      icon={
-        count !== undefined ? (
-          <Badge
-            badgeContent={count}
-            sx={{
-              "& .MuiBadge-badge": {
-                backgroundColor: "#1976b2",
-                color: "white",
-              },
-            }}
-            max={999}
-          >
-            {icon}
-          </Badge>
-        ) : (
-          icon
-        )
-      }
-      label={label}
-    />
-  );
 
   const renderTabContent = () => {
     switch (currentTab) {
@@ -202,9 +197,13 @@ const SuccessPage: React.FC = () => {
       case 1:
         return <EntitiesTable />;
       case 2:
-        return <UsersTable />;
-      case 3:
         return <TransactionsTable />;
+      case 3:
+        return <UsersTable />;
+      case 4:
+        return <ClientGroupsTable />;
+      case 5:
+        return <InvitationsTable />;
       default:
         return null;
     }
@@ -219,6 +218,8 @@ const SuccessPage: React.FC = () => {
           <Toolbar sx={{ justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <HeaderLogo src={boar6white} alt="fullbor.ai Logo" />
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {primaryClientGroup && (
                 <Typography
                   variant="h6"
@@ -229,13 +230,55 @@ const SuccessPage: React.FC = () => {
                     display: { xs: "none", sm: "block" },
                   }}
                 >
-                  {primaryClientGroup.name}
+                  {primaryClientGroup.client_group_name}
                 </Typography>
               )}
+              <IconButton
+                color="inherit"
+                onClick={handleSettingsClick}
+                aria-label="settings"
+              >
+                <Settings />
+              </IconButton>
+              <Menu
+                anchorEl={settingsAnchorEl}
+                open={Boolean(settingsAnchorEl)}
+                onClose={handleSettingsClose}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+              >
+                <MenuItem onClick={() => handleMenuAction("users")}>
+                  <ListItemIcon>
+                    <Person fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>User Settings</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleMenuAction("client-groups")}>
+                  <ListItemIcon>
+                    <Group fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Client Groups</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleMenuAction("invitations")}>
+                  <ListItemIcon>
+                    <Mail fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Invite Users</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleMenuAction("logout")}>
+                  <ListItemIcon>
+                    <Logout fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Sign Out</ListItemText>
+                </MenuItem>
+              </Menu>
             </Box>
-            <Button color="inherit" onClick={logout}>
-              Logout
-            </Button>
           </Toolbar>
         </AppBar>
 
@@ -266,6 +309,8 @@ const SuccessPage: React.FC = () => {
         <Toolbar sx={{ justifyContent: "space-between" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <HeaderLogo src={boar6white} alt="fullbor.ai Logo" />
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {primaryClientGroup && (
               <Typography
                 variant="h6"
@@ -276,13 +321,55 @@ const SuccessPage: React.FC = () => {
                   display: { xs: "none", sm: "block" },
                 }}
               >
-                {primaryClientGroup.name}
+                {primaryClientGroup.client_group_name}
               </Typography>
             )}
+            <IconButton
+              color="inherit"
+              onClick={handleSettingsClick}
+              aria-label="settings"
+            >
+              <Settings />
+            </IconButton>
+            <Menu
+              anchorEl={settingsAnchorEl}
+              open={Boolean(settingsAnchorEl)}
+              onClose={handleSettingsClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+            >
+              <MenuItem onClick={() => handleMenuAction("users")}>
+                <ListItemIcon>
+                  <Person fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>User Settings</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleMenuAction("client-groups")}>
+                <ListItemIcon>
+                  <Group fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Client Groups</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleMenuAction("invitations")}>
+                <ListItemIcon>
+                  <Mail fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Invite Users</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => handleMenuAction("logout")}>
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Sign Out</ListItemText>
+              </MenuItem>
+            </Menu>
           </Box>
-          <Button color="inherit" onClick={logout}>
-            Logout
-          </Button>
         </Toolbar>
       </AppBar>
 
@@ -297,9 +384,8 @@ const SuccessPage: React.FC = () => {
         >
           <Tabs value={currentTab} onChange={handleTabChange}>
             <Tab icon={<Dashboard />} label="Dashboard" />
-            {renderTabWithBadge(<ViewList />, "Entities", entitiesCount)}
-            {renderTabWithBadge(<People />, "Users", usersCount)}
-            {renderTabWithBadge(<Receipt />, "Transactions", transactionsCount)}
+            <Tab icon={<ViewList />} label="Entities" />
+            <Tab icon={<SwapHoriz />} label="Transactions" />
           </Tabs>
         </Box>
       </Box>

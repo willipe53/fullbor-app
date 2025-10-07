@@ -209,6 +209,14 @@ components:
           type: string
         transaction_type_name:
           type: string
+        trade_date:
+          type: string
+          format: date
+          description: Trade date (date transaction was executed)
+        settle_date:
+          type: string
+          format: date
+          description: Settlement date (date transaction settles)
         properties:
           type: object
           additionalProperties: true
@@ -223,9 +231,14 @@ components:
         - portfolio_entity_name
         - transaction_status_name
         - transaction_type_name
+        - trade_date
+        - settle_date
     TransactionType:
       type: object
       properties:
+        transaction_type_id:
+          type: integer
+          description: Internal database ID
         transaction_type_name:
           type: string
         properties:
@@ -239,6 +252,7 @@ components:
           type: string
           nullable: true
       required:
+        - transaction_type_id
         - transaction_type_name
     TransactionStatus:
       type: object
@@ -1522,9 +1536,10 @@ paths:
                   contra_entity_name: "Manager Expenses"
                   instrument_entity_name: "Harry Hedge Fund"
                   transaction_type_name: "Management fees"
+                  trade_date: "2025-10-15"
+                  settle_date: "2025-10-17"
                   properties:
                     amount: 1000000
-                    post_date: "2025-10-31"
                     currency_code: "Swedish Krona"
       responses:
         "201":
@@ -1705,7 +1720,8 @@ paths:
                   summary: Buy and Sell Transaction Types
                   value:
                     data:
-                      - transaction_type_name: "Buy"
+                      - transaction_type_id: 1
+                        transaction_type_name: "Buy"
                         properties:
                           type: "object"
                           title: "Buy"
@@ -1741,7 +1757,8 @@ paths:
                             - "portfolio amount instrument up"
                         update_date: "2025-09-28T20:30:17Z"
                         updated_by_user_name: "10"
-                      - transaction_type_name: "Sell"
+                      - transaction_type_id: 2
+                        transaction_type_name: "Sell"
                         properties:
                           type: "object"
                           title: "Sell"

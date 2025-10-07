@@ -36,11 +36,12 @@ const OneBorIntroduction: React.FC = () => {
         }}
       >
         <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold" }}>
-          How to use the app
+          All of the below needs to be rewritten, so ignore it for now.
         </Typography>
         <Typography variant="h6" sx={{ opacity: 0.9 }}>
-          Your complete guide to organizing and managing portfolios with our
-          flexible, hierarchical system.
+          This needs to discuss the full functionality of the app, not just the
+          entities. Also, it probably should have that circular diagram of
+          functions that are clickable.
         </Typography>
       </Paper>
 

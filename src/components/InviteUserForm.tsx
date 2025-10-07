@@ -81,32 +81,29 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
   });
 
   // Fetch all client groups the user has access to
-  const { data: clientGroups = [] } = useQuery<ClientGroup[]>({
+  const {
+    data: clientGroups = [],
+    isLoading: clientGroupsLoading,
+    error: clientGroupsError,
+  } = useQuery<ClientGroup[]>({
     queryKey: ["allClientGroups", currentUser?.user_id],
     queryFn: async () => {
       console.log(
         "🔍 InviteUserForm - Fetching all client groups for user:",
-        currentUser?.user_id
+        currentUser?.user_id,
+        "currentUser:",
+        currentUser
       );
 
-      // Try to get client groups by email first
-      let result;
-      try {
-        result = await apiService.queryClientGroups({
-          email: currentUser!.email,
-        });
-        console.log(
-          "🔍 InviteUserForm - Client groups by email result:",
-          result
-        );
-      } catch (error) {
-        console.log(
-          "🔍 InviteUserForm - Failed to get client groups by email, trying without filter"
-        );
-        // If that fails, try to get all client groups (the user should only see ones they have access to)
-        result = await apiService.queryClientGroups({});
-        console.log("🔍 InviteUserForm - All client groups result:", result);
-      }
+      // Get all client groups (the backend filters by X-Current-User-Id header)
+      const result = await apiService.queryClientGroups({});
+      console.log("🔍 InviteUserForm - Client groups result:", result);
+      console.log(
+        "🔍 InviteUserForm - Result type:",
+        typeof result,
+        "isArray:",
+        Array.isArray(result)
+      );
 
       // Handle paginated response
       const groups = Array.isArray(result)
@@ -115,11 +112,33 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
         ? result.data
         : [];
 
-      console.log("🔍 InviteUserForm - Processed groups:", groups);
+      console.log(
+        "🔍 InviteUserForm - Processed groups:",
+        groups,
+        "length:",
+        groups.length
+      );
       return groups;
     },
-    enabled: open && !!currentUser?.user_id,
+    enabled: open && !!userId,
   });
+
+  console.log(
+    "🔍 InviteUserForm - clientGroups:",
+    clientGroups,
+    "length:",
+    clientGroups?.length,
+    "isLoading:",
+    clientGroupsLoading,
+    "error:",
+    clientGroupsError,
+    "enabled (open && !!userId):",
+    open && !!userId,
+    "open:",
+    open,
+    "userId:",
+    userId
+  );
 
   // Check if email is already a member of selected client group
   const { refetch: checkExistingUser } = useQuery({

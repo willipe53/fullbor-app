@@ -146,11 +146,11 @@ def get_client_group_id_by_name(connection, client_group_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT client_group_id FROM client_groups WHERE name = %s", (client_group_name,))
+                "SELECT client_group_id FROM client_groups WHERE client_group_name = %s", (client_group_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting client group ID by name: {e}")
+        print(f"Error getting client group ID by client_group_name: {e}")
         return None
 
 
@@ -159,11 +159,11 @@ def get_client_group_name_by_id(connection, client_group_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
+                "SELECT client_group_name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
-        print(f"Error getting client group name by ID: {e}")
+        print(f"Error getting client_group_name by ID: {e}")
         return None
 
 
@@ -261,7 +261,7 @@ def lambda_handler(event, context):
                                 FROM users u
                                 INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
                                 INNER JOIN client_groups cg ON cgu.client_group_id = cg.client_group_id
-                                WHERE u.user_id IN ({}) AND cg.name = %s
+                                WHERE u.user_id IN ({}) AND cg.client_group_name = %s
                             """.format(','.join(['%s'] * len(valid_user_ids))),
                                 valid_user_ids + [client_group_name_filter])
                         elif email_filter:
@@ -291,7 +291,8 @@ def lambda_handler(event, context):
                             query_params.append(email_filter)
 
                         if client_group_name_filter:
-                            where_conditions.append("cg.name = %s")
+                            where_conditions.append(
+                                "cg.client_group_name = %s")
                             # Join with client groups for filtering
                             join_clause = """
                                 INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
@@ -352,12 +353,15 @@ def lambda_handler(event, context):
 
                 # Extract optional fields
                 preferences = request_data.get('preferences', {})
-                preferences_json = json.dumps(preferences) if preferences else None
-                primary_client_group_id = request_data.get('primary_client_group_id')
+                preferences_json = json.dumps(
+                    preferences) if preferences else None
+                primary_client_group_id = request_data.get(
+                    'primary_client_group_id')
 
                 with connection.cursor() as cursor:
                     # Check if user already exists
-                    cursor.execute("SELECT user_id FROM users WHERE sub = %s", (sub,))
+                    cursor.execute(
+                        "SELECT user_id FROM users WHERE sub = %s", (sub,))
                     existing = cursor.fetchone()
 
                     if existing:
@@ -464,14 +468,15 @@ def lambda_handler(event, context):
                 # Convert client group names to IDs if needed
                 final_client_group_ids = []
                 if client_group_names:
-                    for name in client_group_names:
-                        cg_id = get_client_group_id_by_name(connection, name)
+                    for client_group_name in client_group_names:
+                        cg_id = get_client_group_id_by_name(
+                            connection, client_group_name)
                         if cg_id:
                             final_client_group_ids.append(cg_id)
                         else:
                             return {
                                 "statusCode": 400,
-                                "body": json.dumps({"error": f"Client group '{name}' not found"}),
+                                "body": json.dumps({"error": f"Client group '{client_group_name}' not found"}),
                                 "headers": {"Content-Type": "application/json"}
                             }
                 else:
@@ -520,12 +525,15 @@ def lambda_handler(event, context):
             # Extract fields from request
             preferences = request_data.get('preferences', {})
             preferences_json = json.dumps(preferences) if preferences else None
+
+            # Support both primary_client_group_id (direct) and primary_client_group_name (lookup)
+            primary_client_group_id = request_data.get(
+                'primary_client_group_id')
             primary_client_group_name = request_data.get(
                 'primary_client_group_name')
 
-            # Get primary_client_group_id if primary_client_group_name is provided
-            primary_client_group_id = None
-            if primary_client_group_name:
+            # If name is provided but not ID, look up the ID
+            if primary_client_group_name and not primary_client_group_id:
                 primary_client_group_id = get_client_group_id_by_name(
                     connection, primary_client_group_name)
                 if not primary_client_group_id:

@@ -64,6 +64,10 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
   onClose,
 }) => {
   useAuth(); // Keep auth context active
+
+  // Keep track of the original entity type name for API calls (URL path)
+  const originalEntityTypeName = editingEntityType?.entity_type_name;
+
   const [name, setName] = useState("");
   const [shortLabel, setShortLabel] = useState("");
   const [labelColor, setLabelColor] = useState("#4caf50"); // Default green
@@ -242,10 +246,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
       data: apiService.EntityType & { entity_type_id?: number }
     ) => {
       if (editingEntityType) {
-        return await apiService.updateEntityType(
-          editingEntityType.entity_type_name,
-          data
-        );
+        return await apiService.updateEntityType(originalEntityTypeName!, data);
       } else {
         await apiService.createEntityType(data);
         // Return a mock EntityType for create operations to satisfy TypeScript
@@ -733,7 +734,7 @@ const EntityTypeForm: React.FC<EntityTypeFormProps> = ({
                   {editingEntityType ? "Updating..." : "Creating..."}
                 </>
               ) : editingEntityType?.entity_type_id ? (
-                `Update ${editingEntityType.entity_type_name}`
+                "Update"
               ) : (
                 "Create Entity Type"
               )}

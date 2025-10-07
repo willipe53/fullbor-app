@@ -26,7 +26,7 @@ interface EntityType {
   entity_type_name: string;
   short_label?: string;
   label_color?: string;
-  attributes_schema: any;
+  attributes_schema: object | string;
   entity_category?: string;
   update_date?: string;
   updated_by_user_name?: string;
@@ -90,22 +90,35 @@ const EntityTypesTable: React.FC = () => {
   // Get current user for primary client group (simplified approach)
   const { data: currentUser } = useQuery({
     queryKey: ["current-user"],
-    queryFn: () => apiService.queryUsers({ sub: "current" }),
-    select: (data) => data[0],
+    queryFn: async () => {
+      const result = await apiService.queryUsers({ sub: "current" });
+      return Array.isArray(result) ? result : [];
+    },
+    select: (data) => data[0] || null,
   });
 
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
+    queryFn: async () => {
+      const result = await apiService.queryClientGroups({});
+      if (Array.isArray(result)) {
+        return result;
+      }
+      if (typeof result === "object" && result !== null && "data" in result) {
+        return result.data || [];
+      }
+      return [];
+    },
     enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
+    select: (data) =>
+      data.find(
+        (cg: apiService.ClientGroup) =>
+          cg.client_group_id === currentUser?.primary_client_group_id
+      ) || null,
   });
 
-  const formatSchema = (schema: any) => {
+  const formatSchema = (schema: object | string | null | undefined) => {
     if (!schema) return "None";
 
     let parsedSchema;

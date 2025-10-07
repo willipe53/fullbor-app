@@ -3,12 +3,8 @@ import {
   Box,
   Typography,
   CircularProgress,
-  TextField,
   Button,
-  Stack,
-  MenuItem,
   Modal,
-  Autocomplete,
   Tooltip,
   IconButton,
   Checkbox,
@@ -26,6 +22,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import * as apiService from "../services/api";
 import EntityForm from "./EntityForm";
 import EntityTypesTable from "./EntityTypesTable";
+import TableFilter from "./TableFilter";
 
 interface EntitiesTableProps {
   groupSelectionMode?: {
@@ -42,8 +39,19 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const { userId: sub } = useAuth();
   const queryClient = useQueryClient();
 
-  const [entityNameFilter, setEntityNameFilter] = useState("");
-  const [entityTypeFilter, setEntityTypeFilter] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+
+  // Helper function to get field values for filtering
+  const getFieldValue = (entity: apiService.Entity, field: string): string => {
+    switch (field) {
+      case "Name":
+        return entity.entity_name || "";
+      case "Type":
+        return entity.entity_type_name || "";
+      default:
+        return "";
+    }
+  };
   const [editingEntity, setEditingEntity] = useState<apiService.Entity | null>(
     null
   );
@@ -170,33 +178,27 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   }, [rawEntityTypesData]);
 
   // Create list of unique entity names for autocomplete
-  const uniqueEntityNames = React.useMemo(() => {
-    if (!entitiesData) return [];
-    const names = entitiesData
-      .map((entity) => entity.entity_name)
-      .filter(Boolean);
-    return [...new Set(names)].sort();
-  }, [entitiesData]);
 
-  // Apply client-side filtering for entity name and type
+  // Apply client-side filtering using TableFilter
   const filteredEntitiesData = React.useMemo(() => {
     if (!entitiesData) return [];
 
-    return entitiesData.filter((entity) => {
-      // Filter by entity name
-      const nameMatch =
-        !entityNameFilter ||
-        entity.entity_name
-          .toLowerCase()
-          .includes(entityNameFilter.toLowerCase());
+    let processedData = [...entitiesData];
 
-      // Filter by entity type
-      const typeMatch =
-        !entityTypeFilter || entity.entity_type_name === entityTypeFilter;
-
-      return nameMatch && typeMatch;
+    // Apply filters
+    Object.entries(filters).forEach(([field, value]) => {
+      if (value && value.trim() !== "") {
+        processedData = processedData.filter((entity) => {
+          const fieldValue = getFieldValue(entity, field);
+          return (
+            fieldValue && fieldValue.toLowerCase().includes(value.toLowerCase())
+          );
+        });
+      }
     });
-  }, [entitiesData, entityNameFilter, entityTypeFilter]);
+
+    return processedData;
+  }, [entitiesData, filters]);
 
   // Checkbox handlers for group selection mode
   const handleEntityToggle = React.useCallback(
@@ -598,97 +600,23 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       </Box>
 
       {/* Filters */}
-      <Box sx={{ mb: 3, p: 2, border: "1px solid #ddd", borderRadius: 1 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Filters
-        </Typography>
-        <Stack spacing={2}>
-          {(entityNameFilter || entityTypeFilter) && (
-            <Box sx={{ p: 1, bgcolor: "primary.light", borderRadius: 1 }}>
-              <Typography variant="body2" color="primary.contrastText">
-                Filters active:{" "}
-                {entityNameFilter && `Name: "${entityNameFilter}"`}
-                {entityNameFilter && entityTypeFilter && " • "}
-                {entityTypeFilter && `Type: "${entityTypeFilter}"`}
-              </Typography>
-            </Box>
-          )}
-          <Stack direction="row" spacing={2}>
-            <Autocomplete
-              options={uniqueEntityNames}
-              value={entityNameFilter}
-              onChange={(_, newValue) => setEntityNameFilter(newValue || "")}
-              onInputChange={(_, newInputValue) =>
-                setEntityNameFilter(newInputValue)
-              }
-              freeSolo
-              size="small"
-              sx={{ minWidth: 200 }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Name (contains)"
-                  placeholder="Type to search..."
-                />
-              )}
-              filterOptions={(options, { inputValue }) => {
-                if (!inputValue) return options;
-                return options.filter((option) =>
-                  option.toLowerCase().includes(inputValue.toLowerCase())
-                );
-              }}
-              noOptionsText="No matching entities"
-            />
-            <TextField
-              select
-              label="Entity Type"
-              value={entityTypeFilter}
-              onChange={(e) => setEntityTypeFilter(e.target.value)}
-              size="small"
-              sx={{ minWidth: 200 }}
-            >
-              <MenuItem value="">All Types</MenuItem>
-              {(entityTypesData || []).map((type) => (
-                <MenuItem
-                  key={type.entity_type_name}
-                  value={type.entity_type_name}
-                >
-                  {type.entity_type_name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              Showing {filteredEntitiesData.length} of {entitiesData.length}{" "}
-              entities
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setEntityNameFilter("");
-                setEntityTypeFilter("");
-              }}
-            >
-              Clear Filters
-            </Button>
-            <Button variant="outlined" onClick={() => refetch()}>
-              Refresh Data
-            </Button>
-          </Stack>
-        </Stack>
-      </Box>
+      <TableFilter
+        filters={["Type", "Name"]}
+        data={entitiesData || []}
+        onFilterChange={setFilters}
+        getFieldValue={getFieldValue}
+      />
 
       {/* Data Grid */}
       <Box sx={{ height: 600, width: "100%" }}>
         {filteredEntitiesData.length === 0 && !isLoading ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              {entityNameFilter || entityTypeFilter
+              {Object.values(filters).some((value) => value.trim() !== "")
                 ? "No entities match the current filters"
                 : "No entities found"}
               <br />
-              {!entityNameFilter && !entityTypeFilter && (
+              {!Object.values(filters).some((value) => value.trim() !== "") && (
                 <>
                   No entities found.
                   <br />

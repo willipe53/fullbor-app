@@ -34,7 +34,7 @@ const TransactionTypeSelectionStep: React.FC<
       </Typography>
       <Autocomplete
         options={filteredTransactionTypes || []}
-        getOptionLabel={(option) => option.name}
+        getOptionLabel={(option) => option.transaction_type_name}
         value={selectedTransactionType || null}
         onChange={(_, newValue) =>
           onTransactionTypeChange(

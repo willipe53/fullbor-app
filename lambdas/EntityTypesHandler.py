@@ -83,15 +83,15 @@ def lambda_handler(event, context):
         if http_method == 'GET':
             # Handle GET operations
             if 'entity_type_name' in path_parameters:
-                # Get single entity type by name: /entity-types/{entity_type_name}
+                # Get single entity type by entity_name: /entity-types/{entity_type_name}
                 entity_type_name = unquote(path_parameters['entity_type_name'])
 
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        SELECT name, attributes_schema, short_label, label_color, 
+                        SELECT entity_type_name, attributes_schema, short_label, label_color, 
                                entity_category, update_date, updated_user_id
                         FROM entity_types
-                        WHERE name = %s
+                        WHERE entity_type_name = %s
                     """, (entity_type_name,))
                     result = cursor.fetchone()
 
@@ -142,19 +142,19 @@ def lambda_handler(event, context):
                         if entity_category_filter:
                             # Filter by entity_category
                             cursor.execute("""
-                                SELECT entity_type_id, name, attributes_schema, short_label, label_color, 
+                                SELECT entity_type_id, entity_type_name, attributes_schema, short_label, label_color, 
                                        entity_category, update_date, updated_user_id
                                 FROM entity_types
                                 WHERE entity_category = %s
-                                ORDER BY name
+                                ORDER BY entity_type_name
                             """, (entity_category_filter,))
                         else:
                             # Get all entity types
                             cursor.execute("""
-                                SELECT entity_type_id, name, attributes_schema, short_label, label_color, 
+                                SELECT entity_type_id, entity_type_name, attributes_schema, short_label, label_color, 
                                        entity_category, update_date, updated_user_id
                                 FROM entity_types
-                                ORDER BY name
+                                ORDER BY entity_type_name
                             """)
 
                         results = cursor.fetchall()
@@ -210,7 +210,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Check if entity type already exists
                 cursor.execute(
-                    "SELECT entity_type_id FROM entity_types WHERE name = %s", (entity_type_name,))
+                    "SELECT entity_type_id FROM entity_types WHERE entity_type_name = %s", (entity_type_name,))
                 existing = cursor.fetchone()
 
                 if existing:
@@ -219,14 +219,14 @@ def lambda_handler(event, context):
                         UPDATE entity_types 
                         SET attributes_schema = %s, short_label = %s, label_color = %s, 
                             entity_category = %s, update_date = NOW(), updated_user_id = %s
-                        WHERE name = %s
+                        WHERE entity_type_name = %s
                     """, (attributes_schema_json, short_label, label_color, entity_category, user_id, entity_type_name))
                     connection.commit()
                     response = {"message": "Entity type updated successfully"}
                 else:
                     # Insert new entity type
                     cursor.execute("""
-                        INSERT INTO entity_types (name, attributes_schema, short_label, label_color, 
+                        INSERT INTO entity_types (entity_type_name, attributes_schema, short_label, label_color, 
                                                 entity_category, updated_user_id)
                         VALUES (%s, %s, %s, %s, %s, %s)
                     """, (entity_type_name, attributes_schema_json, short_label, label_color, entity_category, user_id))
@@ -267,7 +267,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Check if entity type exists
                 cursor.execute(
-                    "SELECT entity_type_id FROM entity_types WHERE name = %s", (entity_type_name,))
+                    "SELECT entity_type_id FROM entity_types WHERE entity_type_name = %s", (entity_type_name,))
                 existing = cursor.fetchone()
 
                 if not existing:
@@ -277,13 +277,48 @@ def lambda_handler(event, context):
                         "headers": {"Content-Type": "application/json"}
                     }
 
-                # Update entity type
-                cursor.execute("""
-                    UPDATE entity_types 
-                    SET attributes_schema = %s, short_label = %s, label_color = %s, 
-                        entity_category = %s, update_date = NOW(), updated_user_id = %s
-                    WHERE name = %s
-                """, (attributes_schema_json, short_label, label_color, entity_category, user_id, entity_type_name))
+                entity_type_id = existing[0]
+
+                # Check if entity_type_name is being updated
+                new_entity_type_name = request_data.get('entity_type_name')
+
+                # Build UPDATE statement with only fields that are provided
+                update_fields = []
+                update_params = []
+
+                if new_entity_type_name and new_entity_type_name != entity_type_name:
+                    update_fields.append("entity_type_name = %s")
+                    update_params.append(new_entity_type_name)
+
+                if attributes_schema_json is not None:
+                    update_fields.append("attributes_schema = %s")
+                    update_params.append(attributes_schema_json)
+
+                if short_label is not None:
+                    update_fields.append("short_label = %s")
+                    update_params.append(short_label)
+
+                if label_color is not None:
+                    update_fields.append("label_color = %s")
+                    update_params.append(label_color)
+
+                if entity_category is not None:
+                    update_fields.append("entity_category = %s")
+                    update_params.append(entity_category)
+
+                if user_id is not None:
+                    update_fields.append("updated_user_id = %s")
+                    update_params.append(user_id)
+
+                update_fields.append("update_date = NOW()")
+
+                if update_fields:
+                    update_params.append(entity_type_id)
+                    cursor.execute(f"""
+                        UPDATE entity_types 
+                        SET {', '.join(update_fields)}
+                        WHERE entity_type_id = %s
+                    """, update_params)
                 connection.commit()
                 response = {"message": "Entity type updated successfully"}
 
@@ -304,7 +339,7 @@ def lambda_handler(event, context):
             with connection.cursor() as cursor:
                 # Check if entity type exists
                 cursor.execute(
-                    "SELECT entity_type_id FROM entity_types WHERE name = %s", (entity_type_name,))
+                    "SELECT entity_type_id FROM entity_types WHERE entity_type_name = %s", (entity_type_name,))
                 existing = cursor.fetchone()
 
                 if not existing:
@@ -316,7 +351,7 @@ def lambda_handler(event, context):
 
                 # Delete entity type
                 cursor.execute(
-                    "DELETE FROM entity_types WHERE name = %s", (entity_type_name,))
+                    "DELETE FROM entity_types WHERE entity_type_name = %s", (entity_type_name,))
                 connection.commit()
                 response = {"message": "Entity type deleted successfully"}
 

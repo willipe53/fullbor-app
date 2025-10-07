@@ -53,7 +53,8 @@ const ContraSelectionStep: React.FC<ContraSelectionStepProps> = ({
         </Typography>
         <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
           <Typography variant="body1" gutterBottom>
-            Currency amount will be reduced in <strong>{selectedPortfolio?.name}</strong>.
+            Currency amount will be reduced in{" "}
+            <strong>{selectedPortfolio?.entity_name}</strong>.
           </Typography>
           <Button
             variant="outlined"
@@ -77,18 +78,13 @@ const ContraSelectionStep: React.FC<ContraSelectionStepProps> = ({
       <Stack direction="row" spacing={2} alignItems="flex-start">
         <Autocomplete
           options={validContraEntities || []}
-          getOptionLabel={(option) => option.name}
+          getOptionLabel={(option) => option.entity_name}
           value={selectedContra || null}
           onChange={(_, newValue) =>
             onContraChange(newValue?.entity_id.toString() || "")
           }
           renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Contra *"
-              required
-              fullWidth
-            />
+            <TextField {...params} label="Contra *" required fullWidth />
           )}
           disabled={isLoading}
           sx={{ flex: 1 }}
@@ -108,4 +104,3 @@ const ContraSelectionStep: React.FC<ContraSelectionStepProps> = ({
 };
 
 export default ContraSelectionStep;
-

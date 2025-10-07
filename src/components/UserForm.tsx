@@ -145,9 +145,12 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
   // Create/Update user mutation
   const mutation = useMutation({
     mutationFn: (data: any) => {
+      console.log("🔍 UserForm mutation called with data:", data);
       if (editingUser?.sub) {
+        console.log("🔍 Updating user with sub:", editingUser.sub);
         return apiService.updateUser(editingUser.sub, data);
       } else {
+        console.log("🔍 Creating new user");
         return apiService.createUser(data);
       }
     },

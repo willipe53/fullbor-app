@@ -64,18 +64,17 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   console.log("🔧 ClientGroupForm - Component rendered, isCreate:", isCreate);
 
   // Query to get entity count for this client group
-  const { data: entityCountData } = useQuery({
-    queryKey: ["entities", "count", editingClientGroup?.client_group_id],
+  const { data: entityCount } = useQuery({
+    queryKey: [
+      "client-group-entity-count",
+      editingClientGroup?.client_group_name,
+    ],
     queryFn: () =>
-      apiService.queryEntities({
-        client_group_id: editingClientGroup!.client_group_id,
-        count: true,
-      }),
-    enabled: !!editingClientGroup?.client_group_id && !isCreate,
+      apiService.getClientGroupEntityCount(
+        editingClientGroup!.client_group_name
+      ),
+    enabled: !!editingClientGroup?.client_group_name && !isCreate,
   });
-
-  const entityCount =
-    entityCountData && "count" in entityCountData ? entityCountData.count : 0;
 
   // Query to get all users (for available list)
   const { data: allUsersData } = useQuery({
@@ -85,18 +84,54 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   });
 
   // Query to get users in this client group (for selected list)
-  const { data: clientGroupUsersData } = useQuery({
+  const clientGroupUsersQuery = useQuery({
     queryKey: ["client-group-users", editingClientGroup?.client_group_name],
-    queryFn: () =>
-      apiService.getClientGroupUsers(editingClientGroup!.client_group_name),
+    queryFn: async () => {
+      console.log(
+        "🔍 Fetching client group users for:",
+        editingClientGroup!.client_group_name
+      );
+      const result = await apiService.getClientGroupUsers(
+        editingClientGroup!.client_group_name
+      );
+      console.log("🔍 getClientGroupUsers result:", result);
+      return result;
+    },
     enabled: !!editingClientGroup?.client_group_name && !isCreate,
   });
 
+  const clientGroupUsersData = clientGroupUsersQuery.data;
+
+  console.log(
+    "🔍 clientGroupUsersQuery.enabled:",
+    !!editingClientGroup?.client_group_name && !isCreate
+  );
+  console.log(
+    "🔍 editingClientGroup?.client_group_name:",
+    editingClientGroup?.client_group_name
+  );
+  console.log("🔍 isCreate:", isCreate);
+  console.log(
+    "🔍 clientGroupUsersQuery.isLoading:",
+    clientGroupUsersQuery.isLoading
+  );
+  console.log(
+    "🔍 clientGroupUsersQuery.isFetching:",
+    clientGroupUsersQuery.isFetching
+  );
+  console.log("🔍 clientGroupUsersQuery.data:", clientGroupUsersQuery.data);
+
   // Function to check if form is dirty
   const checkIfDirty = useCallback(() => {
+    // For new client groups (isCreate), consider dirty if name has content
     if (!initialFormState) {
-      console.log("🔧 checkIfDirty - no initialFormState");
-      return false;
+      console.log(
+        "🔧 checkIfDirty - no initialFormState, isCreate:",
+        isCreate,
+        "name:",
+        name
+      );
+      return isCreate && name.trim().length > 0;
     }
 
     const currentState = {
@@ -304,6 +339,11 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["client-groups"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["client-group-users"] });
+      queryClient.invalidateQueries({ queryKey: ["entity-counts"] });
+      queryClient.invalidateQueries({
+        queryKey: ["client-group-entity-count"],
+      });
       setTimeout(() => {
         onClose();
       }, 1000);
@@ -480,7 +520,13 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
 
   // Prepare TransferList data
   const transferListData = useMemo(() => {
+    console.log("🔍 ClientGroupForm - transferListData useMemo");
+    console.log("🔍 isCreate:", isCreate);
+    console.log("🔍 allUsersData:", allUsersData);
+    console.log("🔍 clientGroupUsersData:", clientGroupUsersData);
+
     if (isCreate || !allUsersData || !clientGroupUsersData) {
+      console.log("🔍 Returning empty lists - early exit");
       return {
         availableUsers: [],
         selectedUsers: [],
@@ -493,6 +539,9 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
     const clientGroupUsersArray = Array.isArray(clientGroupUsersData)
       ? clientGroupUsersData
       : [];
+
+    console.log("🔍 allUsersArray:", allUsersArray);
+    console.log("🔍 clientGroupUsersArray:", clientGroupUsersArray);
 
     // Get all users as TransferListItems
     const allUsers: TransferListItem[] = allUsersArray.map(
@@ -510,11 +559,16 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       })
     );
 
+    console.log("🔍 allUsers:", allUsers);
+    console.log("🔍 selectedUsers:", selectedUsers);
+
     // Available users are all users minus selected users
     const selectedUserIds = new Set(selectedUsers.map((user) => user.id));
     const availableUsers = allUsers.filter(
       (user) => !selectedUserIds.has(user.id)
     );
+
+    console.log("🔍 availableUsers:", availableUsers);
 
     return {
       availableUsers,
@@ -541,7 +595,10 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
         id={editingClientGroup?.client_group_id}
         onClose={onClose}
         onNameChange={(newName) => {
+          console.log("🔧 ClientGroupForm - Name changed to:", newName);
           setName(newName);
+          setIsDirty(true);
+          console.log("🔧 ClientGroupForm - Set isDirty to true");
         }}
         onDirtyChange={() => setIsDirty(true)}
         isNameEditDisabled={mutation.isPending || deleteMutation.isPending}
@@ -727,7 +784,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Typography variant="body1" color="text.secondary">
-                  Client Group currently contains {entityCount} entities.
+                  Client Group currently contains {entityCount ?? 0} entities.
                 </Typography>
                 <Button
                   variant="outlined"
@@ -796,6 +853,17 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           type="submit"
           variant="contained"
           disabled={mutation.isPending || deleteMutation.isPending || !isDirty}
+          sx={{ opacity: isDirty ? 1 : 0.5 }}
+          onMouseEnter={() => {
+            console.log(
+              "🔧 Button state - isDirty:",
+              isDirty,
+              "name:",
+              name,
+              "isCreate:",
+              isCreate
+            );
+          }}
           onClick={(e) => {
             console.log("🔧 Button onClick called");
             console.log("🔧 Event:", e);
@@ -816,7 +884,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           ) : isCreate ? (
             "Create Client Group"
           ) : (
-            `Update ${editingClientGroup.client_group_name}`
+            "Update"
           )}
         </Button>
       </Box>
