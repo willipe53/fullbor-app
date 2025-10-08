@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Button, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import LoginDialog from "./LoginDialog";
+import SigninDialog from "./SigninDialog";
 import SignupDialog from "./SignupDialog";
-import boar6white from "../assets/images/boar6white.png";
+import boar32 from "../assets/images/boar32.png";
 
 const AppContainer = styled("div")({
   height: "100vh",
@@ -41,12 +41,12 @@ const LogoImage = styled("img")({
 });
 
 const LandingPage: React.FC = () => {
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [signinOpen, setSigninOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
   return (
     <AppContainer id="app">
-      {/* Toolbar with Login/Signup buttons */}
+      {/* Toolbar with Sign In/Sign Up buttons */}
       <Toolbar id="toolbar">
         <Button
           variant="contained"
@@ -55,14 +55,14 @@ const LandingPage: React.FC = () => {
         >
           Sign Up
         </Button>
-        <Button variant="outlined" onClick={() => setLoginOpen(true)}>
-          Login
+        <Button variant="outlined" onClick={() => setSigninOpen(true)}>
+          Sign In
         </Button>
       </Toolbar>
 
       {/* Main content with centered logo */}
       <MainPage id="mainpage">
-        <LogoImage src={boar6white} alt="fullbor.ai Logo" />
+        <LogoImage src={boar32} alt="fullbor.ai Logo" />
         <Typography variant="h4" color="text.primary" textAlign="center">
           fullbor.ai
         </Typography>
@@ -76,8 +76,8 @@ const LandingPage: React.FC = () => {
         </Typography>
       </MainPage>
 
-      {/* Login Dialog */}
-      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
+      {/* Sign In Dialog */}
+      <SigninDialog open={signinOpen} onClose={() => setSigninOpen(false)} />
 
       {/* Signup Dialog */}
       <SignupDialog open={signupOpen} onClose={() => setSignupOpen(false)} />

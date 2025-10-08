@@ -12,7 +12,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import * as apiService from "../services/api";
-import LoginDialog from "./LoginDialog";
+import SigninDialog from "./SigninDialog";
 import SignupDialog from "./SignupDialog";
 import ErrorSnackbar from "./ErrorSnackbar";
 
@@ -27,7 +27,7 @@ const AcceptInvitation: React.FC = () => {
     isLoading: authLoading,
   } = useAuth();
 
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showSigninDialog, setShowSigninDialog] = useState(false);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
@@ -45,7 +45,7 @@ const AcceptInvitation: React.FC = () => {
   }, [invitationCode]);
 
   // Store invitation code but DON'T fetch data until user is authenticated
-  // The invitation validation will happen AFTER login/signup
+  // The invitation validation will happen AFTER signin/signup
 
   // Invitation validation is now handled inline in the useEffect
 
@@ -355,9 +355,9 @@ const AcceptInvitation: React.FC = () => {
     clientGroups,
   ]);
 
-  const handleLoginSuccess = () => {
-    setShowLoginDialog(false);
-    // Refetch user data after login
+  const handleSigninSuccess = () => {
+    setShowSigninDialog(false);
+    // Refetch user data after signin
     refetchUser();
   };
 
@@ -396,12 +396,36 @@ const AcceptInvitation: React.FC = () => {
           sx={{ mt: 8 }}
         >
           <Paper elevation={3} sx={{ p: 4, width: "100%" }}>
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="h6">Invitation Error</Typography>
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              <Typography variant="h6">Invitation Issue</Typography>
             </Alert>
-            <Typography variant="body1">
-              {error || "Failed to load invitation details"}
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              There was a problem with the invitation code{" "}
+              <strong>{invitationCode}</strong>.
             </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Please contact the user who sent you the invitation for further
+              instructions. Or, you can create a new organization.
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={() => navigate("/")}
+                size="large"
+              >
+                Create New Organization
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate("/")}
+                size="large"
+              >
+                Go to Home
+              </Button>
+            </Box>
           </Paper>
         </Box>
       </Container>
@@ -464,7 +488,7 @@ const AcceptInvitation: React.FC = () => {
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => setShowLoginDialog(true)}
+                  onClick={() => setShowSigninDialog(true)}
                   size="large"
                 >
                   Sign In
@@ -502,13 +526,13 @@ const AcceptInvitation: React.FC = () => {
           </Container>
         )}
 
-      {/* Login Dialog */}
-      <LoginDialog
-        open={showLoginDialog}
-        onClose={() => setShowLoginDialog(false)}
-        onSuccess={handleLoginSuccess}
+      {/* Sign In Dialog */}
+      <SigninDialog
+        open={showSigninDialog}
+        onClose={() => setShowSigninDialog(false)}
+        onSuccess={handleSigninSuccess}
         onSwitchToSignup={() => {
-          setShowLoginDialog(false);
+          setShowSigninDialog(false);
           setShowSignupDialog(true);
         }}
       />
@@ -518,9 +542,9 @@ const AcceptInvitation: React.FC = () => {
         open={showSignupDialog}
         onClose={() => setShowSignupDialog(false)}
         onSuccess={handleSignupSuccess}
-        onSwitchToLogin={() => {
+        onSwitchToSignin={() => {
           setShowSignupDialog(false);
-          setShowLoginDialog(true);
+          setShowSigninDialog(true);
         }}
       />
 

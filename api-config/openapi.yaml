@@ -14,7 +14,7 @@ info:
 
      **OVERVIEW**
     ------------
-    The API has 43 endpoints across 9 main resource areas:
+    The API has 44 endpoints across 9 main resource areas:
 
     **CLIENT GROUPS (9 endpoints):**
     - GET    /client-groups
@@ -58,7 +58,8 @@ info:
     **TRANSACTION STATUSES (1 endpoint):**
     - GET    /transaction-statuses
 
-    **POSITION KEEPER (2 endpoints):**
+    **POSITION KEEPER (3 endpoints):**
+    - GET    /position-keeper/status
     - POST   /position-keeper/start
     - POST   /position-keeper/stop
 
@@ -2131,6 +2132,74 @@ paths:
                 properties:
                   message:
                     type: string
+        "400":
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /position-keeper/status:
+    parameters:
+      - $ref: "#/components/parameters/CurrentUserIdHeader"
+    get:
+      tags:
+        - PositionKeeper
+      summary: Get the current status of the Position Keeper
+      responses:
+        "200":
+          description: Position Keeper status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [running, idle]
+                    description: Current status of the Position Keeper
+                  holder:
+                    type: string
+                    nullable: true
+                    description: User or process holding the lock (if running)
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: When the lock expires (if running)
+              examples:
+                running:
+                  summary: Position Keeper is running
+                  value:
+                    status: "running"
+                    holder: "user@example.com"
+                    expires_at: "2025-10-08T15:30:00Z"
+                idle:
+                  summary: Position Keeper is idle
+                  value:
+                    status: "idle"
+                    holder: null
+                    expires_at: null
         "400":
           description: Bad request - invalid parameters
           content:

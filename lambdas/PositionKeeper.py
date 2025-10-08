@@ -101,6 +101,47 @@ def get_lock_status(connection, lock_id):
         raise Exception(f"Failed to get lock status: {str(e)}")
 
 
+def cleanup_orphaned_queued_transactions(connection):
+    """
+    Mark any remaining QUEUED transactions as UNKNOWN.
+    This handles cases where SQS messages were lost or failed to process.
+    Only affects transactions that were not successfully processed in this run.
+    """
+    try:
+        with connection.cursor() as cursor:
+            # Get count of QUEUED transactions before cleanup
+            cursor.execute("""
+                SELECT COUNT(*) FROM transactions 
+                WHERE transaction_status_id = 2
+            """)
+            queued_count = cursor.fetchone()[0]
+
+            if queued_count > 0:
+                print(
+                    f"\n=== Cleanup: Found {queued_count} orphaned QUEUED transactions ===")
+
+                # Update all QUEUED transactions to UNKNOWN status
+                cursor.execute("""
+                    UPDATE transactions 
+                    SET transaction_status_id = 4
+                    WHERE transaction_status_id = 2
+                """)
+                connection.commit()
+
+                updated_count = cursor.rowcount
+                print(
+                    f"Cleanup: Marked {updated_count} transactions as UNKNOWN")
+
+                return updated_count
+            else:
+                print("\n=== Cleanup: No orphaned QUEUED transactions found ===")
+                return 0
+
+    except Exception as e:
+        print(f"ERROR during cleanup: {str(e)}")
+        raise Exception(f"Failed to cleanup orphaned transactions: {str(e)}")
+
+
 def load_transaction_types_cache(connection):
     """Load all transaction types into memory cache."""
     global _transaction_types_cache
@@ -175,8 +216,6 @@ def process_position_keeping(
     Args:
         transaction_type_name: Name of the transaction type
         properties: Transaction properties
-        current_position_date_field: Field name for current position date
-        forecast_position_date_field: Field name for forecast position date
         position_keeping_actions: List of position keeping actions
         portfolio_name: Name of the portfolio
         instrument_name: Name of the instrument
@@ -185,17 +224,8 @@ def process_position_keeping(
     print(f"Portfolio: {portfolio_name}")
     print(f"Instrument: {instrument_name}")
     print(f"Transaction Properties: {json.dumps(properties, indent=2)}")
-    print(f"Current Position Date Field: {current_position_date_field}")
-    print(f"Forecast Position Date Field: {forecast_position_date_field}")
     print(
         f"Position Keeping Actions: {json.dumps(position_keeping_actions, indent=2)}")
-
-    # Extract dates from properties
-    current_date = properties.get(current_position_date_field)
-    forecast_date = properties.get(forecast_position_date_field)
-
-    print(f"Current Position Date: {current_date}")
-    print(f"Forecast Position Date: {forecast_date}")
 
     # Process each position keeping action
     for action in position_keeping_actions:
@@ -224,6 +254,8 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
         portfolio_entity_id = message_body.get("portfolio_entity_id")
         contra_entity_id = message_body.get("contra_entity_id")
         instrument_entity_id = message_body.get("instrument_entity_id")
+        trade_date = message_body.get("trade_date")
+        settle_date = message_body.get("settle_date")
         properties = message_body.get("properties", {})
 
         # Parse properties if it's a JSON string
@@ -238,6 +270,8 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
         print(
             f"Processing {operation} operation for transaction ID: {transaction_id}")
         print(f"Transaction Type ID: {transaction_type_id}")
+        print(f"Trade Date: {trade_date}")
+        print(f"Settle Date: {settle_date}")
 
         # Get transaction type from cache (no database lookup needed!)
         transaction_type = _transaction_types_cache.get(transaction_type_id)
@@ -257,18 +291,21 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
         position_keeping_actions = type_properties.get(
             "position_keeping_actions", [])
 
-        if not current_position_date_field or not forecast_position_date_field:
-            print(
-                f"ERROR: Missing current_position or forecast_position in transaction type rules")
-            return False
-
+        # position_keeping_actions is required, but current_position and forecast_position are optional
         if not position_keeping_actions:
-            print(f"ERROR: No position_keeping_actions defined for transaction type")
-            return False
+            print(
+                f"INFO: No position_keeping_actions defined for transaction type '{transaction_type_name}'. Skipping position processing.")
+            # Mark transaction as processed even though no position keeping was done
+            # This is valid - not all transaction types require position keeping
+            return True
 
-        print(f"Current position date field: {current_position_date_field}")
-        print(f"Forecast position date field: {forecast_position_date_field}")
         print(f"Position keeping actions: {position_keeping_actions}")
+        if current_position_date_field:
+            print(
+                f"Current position date field: {current_position_date_field}")
+        if forecast_position_date_field:
+            print(
+                f"Forecast position date field: {forecast_position_date_field}")
 
         # Get portfolio and instrument names from cache (no database lookup needed!)
         portfolio_name = _entities_cache.get(portfolio_entity_id)
@@ -415,7 +452,10 @@ def fetch_and_process_sqs_messages(sqs_client, queue_url: str) -> Dict[str, Any]
 
 def lambda_handler(event, context):
     """
-    Handle Position Keeper commands (start/stop).
+    Handle Position Keeper commands (start/stop/status).
+
+    GET /position-keeper/status:
+        - Returns the current status of the Position Keeper lock
 
     POST /position-keeper/start:
         - Checks if lock is set
@@ -437,14 +477,18 @@ def lambda_handler(event, context):
 
     # Determine command from the URL path
     path = event.get('path', '')
+    http_method = event.get('httpMethod', '')
+
     if path.endswith('/start'):
         command = 'start'
     elif path.endswith('/stop'):
         command = 'stop'
+    elif path.endswith('/status') and http_method == 'GET':
+        command = 'status'
     else:
         return {
             "statusCode": 400,
-            "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start or /position-keeper/stop"}),
+            "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start, /position-keeper/stop, or GET /position-keeper/status"}),
             "headers": {"Content-Type": "application/json"}
         }
 
@@ -458,7 +502,34 @@ def lambda_handler(event, context):
         # Get database connection
         connection = get_db_connection()
 
-        if command == 'stop':
+        if command == 'status':
+            # Get the current lock status
+            lock_status = get_lock_status(connection, LOCK_ID)
+
+            if lock_status and lock_status['is_active']:
+                # Lock is active
+                response = {
+                    "status": "running",
+                    "holder": lock_status['holder'],
+                    "expires_at": lock_status['expires_at'].isoformat() if lock_status['expires_at'] else None
+                }
+            else:
+                # No active lock
+                response = {
+                    "status": "idle",
+                    "holder": None,
+                    "expires_at": None
+                }
+
+            connection.close()
+
+            return {
+                "statusCode": 200,
+                "body": json.dumps(response),
+                "headers": {"Content-Type": "application/json"}
+            }
+
+        elif command == 'stop':
             # Check if Position Keeper is running
             lock_status = get_lock_status(connection, LOCK_ID)
 
@@ -536,9 +607,17 @@ def lambda_handler(event, context):
                 print(f"Successful: {stats['successful']}")
                 print(f"Failed: {stats['failed']}")
 
+                # Cleanup any orphaned QUEUED transactions
+                # This marks transactions as UNKNOWN if they were queued but no SQS message exists
+                cleanup_count = cleanup_orphaned_queued_transactions(
+                    connection)
+
                 response = {
                     "message": "Position Keeper process completed",
-                    "statistics": stats
+                    "statistics": stats,
+                    "cleanup": {
+                        "orphaned_transactions_marked_unknown": cleanup_count
+                    }
                 }
 
             finally:

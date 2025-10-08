@@ -73,6 +73,8 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     queryKey: ["entities"],
     queryFn: () => apiService.queryEntities({}),
     enabled: !!sub,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   // Step 4: Fetch selected entities for this client group (SELECTED dataset)
@@ -145,6 +147,8 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
   const { data: rawEntityTypesData } = useQuery({
     queryKey: ["entity-types"],
     queryFn: () => apiService.queryEntityTypes({}),
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes (entity types change rarely)
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   // Transform entity types API response data to array format
@@ -181,7 +185,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
 
   // Apply client-side filtering using TableFilter
   const filteredEntitiesData = React.useMemo(() => {
-    if (!entitiesData) return [];
+    if (!entitiesData || !Array.isArray(entitiesData)) return [];
 
     let processedData = [...entitiesData];
 
@@ -241,55 +245,70 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
     });
   }, [groupSelectionMode, filteredEntitiesData, selectedEntityIds]);
 
-  const formatAttributes = (attributes: apiService.JSONValue) => {
-    if (!attributes) return "None";
+  // Create a map of entity type names to their data for O(1) lookup instead of O(n) filtering
+  const entityTypeMap = React.useMemo(() => {
+    const map = new Map<string, apiService.EntityType>();
+    if (Array.isArray(entityTypesData)) {
+      entityTypesData.forEach((type: apiService.EntityType) => {
+        map.set(type.entity_type_name, type);
+      });
+    }
+    return map;
+  }, [entityTypesData]);
 
-    let parsedAttributes;
+  // Memoize formatAttributes to avoid recalculating on every render
+  const formatAttributes = React.useCallback(
+    (attributes: apiService.JSONValue) => {
+      if (!attributes) return "None";
 
-    // Handle different data types - parse to object first
-    if (typeof attributes === "string") {
-      try {
-        parsedAttributes = JSON.parse(attributes);
-      } catch {
-        return `Invalid JSON: ${attributes.substring(0, 50)}...`;
+      let parsedAttributes;
+
+      // Handle different data types - parse to object first
+      if (typeof attributes === "string") {
+        try {
+          parsedAttributes = JSON.parse(attributes);
+        } catch {
+          return `Invalid JSON: ${attributes.substring(0, 50)}...`;
+        }
+      } else if (typeof attributes === "object") {
+        parsedAttributes = attributes;
+      } else {
+        return String(attributes);
       }
-    } else if (typeof attributes === "object") {
-      parsedAttributes = attributes;
-    } else {
-      return String(attributes);
-    }
 
-    try {
-      const entries = Object.entries(parsedAttributes);
-      if (entries.length === 0) return "None";
+      try {
+        const entries = Object.entries(parsedAttributes);
+        if (entries.length === 0) return "None";
 
-      return entries
-        .map(([key, value]) => {
-          // Determine the type of the value for better formatting
-          let valueType: string = typeof value;
-          let displayValue = String(value);
+        return entries
+          .map(([key, value]) => {
+            // Determine the type of the value for better formatting
+            let valueType: string = typeof value;
+            let displayValue = String(value);
 
-          // Handle special cases
-          if (value === null) {
-            valueType = "null";
-            displayValue = "null";
-          } else if (Array.isArray(value)) {
-            valueType = "array";
-            displayValue = `[${value.length} items]`;
-          } else if (typeof value === "object") {
-            valueType = "object";
-            displayValue = "{...}";
-          } else if (typeof value === "string" && value.length > 20) {
-            displayValue = `${value.substring(0, 20)}...`;
-          }
+            // Handle special cases
+            if (value === null) {
+              valueType = "null";
+              displayValue = "null";
+            } else if (Array.isArray(value)) {
+              valueType = "array";
+              displayValue = `[${value.length} items]`;
+            } else if (typeof value === "object") {
+              valueType = "object";
+              displayValue = "{...}";
+            } else if (typeof value === "string" && value.length > 20) {
+              displayValue = `${value.substring(0, 20)}...`;
+            }
 
-          return `${key}(${valueType}): ${displayValue}`;
-        })
-        .join(", ");
-    } catch {
-      return "Invalid attributes";
-    }
-  };
+            return `${key}(${valueType}): ${displayValue}`;
+          })
+          .join(", ");
+      } catch {
+        return "Invalid attributes";
+      }
+    },
+    []
+  );
 
   // Define DataGrid columns
   const columns: GridColDef[] = useMemo(
@@ -348,10 +367,8 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
         field: "short_label",
         headerName: "Type",
         renderCell: (params: GridRenderCellParams) => {
-          // Find the entity type for this entity to get its short_label and color
-          const entityType = entityTypesData?.find(
-            (type) => type.entity_type_name === params.row.entity_type_name
-          );
+          // Use O(1) map lookup instead of O(n) filtering
+          const entityType = entityTypeMap.get(params.row.entity_type_name);
           const shortLabel = entityType?.short_label;
           const labelColor = entityType?.label_color;
           const colorValue = labelColor?.startsWith("#")
@@ -403,12 +420,13 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       },
     ],
     [
-      entityTypesData,
+      entityTypeMap,
       filteredEntitiesData,
       groupSelectionMode,
       selectedEntityIds,
       handleSelectAllVisible,
       handleEntityToggle,
+      formatAttributes,
     ]
   );
 
@@ -602,7 +620,7 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
       {/* Filters */}
       <TableFilter
         filters={["Type", "Name"]}
-        data={entitiesData || []}
+        data={Array.isArray(entitiesData) ? entitiesData : []}
         onFilterChange={setFilters}
         getFieldValue={getFieldValue}
       />
@@ -631,10 +649,10 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
             columns={columns}
             getRowId={(row) => row.entity_id}
             pagination
-            pageSizeOptions={[25, 50, 100]}
+            pageSizeOptions={[50, 100, 250]}
             initialState={{
               pagination: {
-                paginationModel: { pageSize: 25 },
+                paginationModel: { pageSize: 100 },
               },
             }}
             disableRowSelectionOnClick

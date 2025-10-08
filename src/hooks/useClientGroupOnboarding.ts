@@ -24,6 +24,7 @@ export const useClientGroupOnboarding = (
   const hasProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const lastUserIdRef = useRef<string | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   // Query to get user data
   const {
@@ -34,11 +35,24 @@ export const useClientGroupOnboarding = (
     queryKey: ["user", cognitoUserId],
     queryFn: async () => {
       if (!cognitoUserId) return Promise.resolve([]);
-      console.log("🔍 Fetching users for onboarding check...");
+      console.log(
+        "🔍 Fetching users for onboarding check with sub:",
+        cognitoUserId
+      );
       try {
-        const result = await apiService.queryUsers({});
+        // Query for the specific user by sub instead of fetching all users
+        const result = await apiService.queryUsers({ sub: cognitoUserId });
         console.log("🔍 Users query result:", result);
-        return result;
+        // Normalize the response to always return an array
+        if (Array.isArray(result)) {
+          return result;
+        } else if (result && typeof result === "object" && "data" in result) {
+          return (result as any).data || [];
+        } else if (result && typeof result === "object" && "count" in result) {
+          // Count-only response, return empty array
+          return [];
+        }
+        return [];
       } catch (error) {
         console.error("❌ Users query error:", error);
         throw error;
@@ -46,20 +60,25 @@ export const useClientGroupOnboarding = (
     },
     enabled: !!cognitoUserId && !!userEmail,
     retry: 1, // Limit retries
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Mutation to create/update user
   const updateUserMutation = useMutation({
-    mutationFn: (
+    mutationFn: async (
       data: apiService.UpdateUserRequest | apiService.CreateUserRequest
-    ) => {
+    ): Promise<apiService.User | void> => {
       // API now uses sub for user identification
       if (data.sub) {
         // For updates, use the sub to identify the user
-        return apiService.updateUser(data.sub, data);
+        return apiService.updateUser(
+          data.sub,
+          data as apiService.UpdateUserRequest
+        );
       } else {
         // For creation, call create endpoint
-        return apiService.createUser(data);
+        await apiService.createUser(data as apiService.CreateUserRequest);
+        return; // createUser returns void
       }
     },
     onSuccess: () => {
@@ -70,7 +89,6 @@ export const useClientGroupOnboarding = (
   // Mutation to update user's primary client group
   const assignClientGroupMutation = useMutation({
     mutationFn: ({
-      userDbId,
       clientGroupId,
     }: {
       userDbId: number;
@@ -86,6 +104,23 @@ export const useClientGroupOnboarding = (
   });
 
   useEffect(() => {
+    // Set a timeout to prevent infinite loading
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      if (state.isLoading && !hasProcessedRef.current) {
+        console.error("⏱️ Onboarding check timed out after 10 seconds");
+        setState({
+          isLoading: false,
+          needsOnboarding: true, // Default to showing onboarding
+          user: null,
+          error: "Loading took too long. Please try refreshing the page.",
+        });
+      }
+    }, 10000); // 10 second timeout
+
     console.log("🔍 useClientGroupOnboarding - Parameters:", {
       cognitoUserId,
       userEmail,
@@ -101,6 +136,9 @@ export const useClientGroupOnboarding = (
       });
       hasProcessedRef.current = false;
       lastUserIdRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
       return;
     }
 
@@ -163,7 +201,9 @@ export const useClientGroupOnboarding = (
         const existingUsers = users || [];
         console.log("🔍 Checking existing users:", existingUsers);
         console.log("🔍 Looking for user with sub:", cognitoUserId);
-        let currentUser = existingUsers.find((u) => u.sub === cognitoUserId);
+        let currentUser = existingUsers.find(
+          (u: apiService.User) => u.sub === cognitoUserId
+        );
         console.log("🔍 Found current user:", currentUser);
 
         if (currentUser) {
@@ -185,8 +225,9 @@ export const useClientGroupOnboarding = (
               const updatedUsers = await refetchUser();
 
               currentUser =
-                updatedUsers.data?.find((u) => u.sub === cognitoUserId) ||
-                currentUser;
+                updatedUsers.data?.find(
+                  (u: apiService.User) => u.sub === cognitoUserId
+                ) || currentUser;
             } catch (userUpdateError: any) {
               console.error("Failed to update user:", userUpdateError);
               throw new Error(
@@ -223,7 +264,7 @@ export const useClientGroupOnboarding = (
 
             const updatedUsers = await refetchUser();
             currentUser = updatedUsers.data?.find(
-              (u) => u.sub === cognitoUserId
+              (u: apiService.User) => u.sub === cognitoUserId
             );
           } catch (userCreationError: any) {
             console.error("Failed to create user:", userCreationError);
@@ -267,6 +308,13 @@ export const useClientGroupOnboarding = (
     };
 
     handleUserCheck();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [cognitoUserId, userEmail, users]);
 
   const completeOnboarding = async (clientGroupId: number) => {

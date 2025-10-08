@@ -4,6 +4,7 @@ import {
   CognitoUser,
   AuthenticationDetails,
   CognitoUserAttribute,
+  CognitoUserSession,
 } from "amazon-cognito-identity-js";
 import { userPool } from "../config/cognito";
 
@@ -14,7 +15,7 @@ interface AuthContextType {
   userId: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  signin: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   confirmSignup: (email: string, confirmationCode: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -28,6 +29,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -48,35 +50,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already signed in
     const currentUser = userPool.getCurrentUser();
     if (currentUser) {
-      currentUser.getSession((err: any, session: any) => {
-        if (err) {
+      currentUser.getSession(
+        (err: Error | null, session: CognitoUserSession | null) => {
+          if (err) {
+            setIsLoading(false);
+            return;
+          }
+          if (session && session.isValid()) {
+            const idToken = session.getIdToken();
+            const payload = idToken.payload;
+            setUser(currentUser);
+            setUserEmail(payload.email);
+            setUserName(
+              payload.name ||
+                payload.given_name ||
+                payload.email?.split("@")[0] ||
+                ""
+            );
+            setUserId(payload.sub);
+          }
           setIsLoading(false);
-          return;
         }
-        if (session && session.isValid()) {
-          const idToken = session.getIdToken();
-          const payload = idToken.payload;
-          setUser(currentUser);
-          setUserEmail(payload.email);
-          setUserName(
-            payload.name ||
-              payload.given_name ||
-              payload.email?.split("@")[0] ||
-              ""
-          );
-          setUserId(payload.sub);
-        }
-        setIsLoading(false);
-      });
+      );
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const signin = async (email: string, password: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       const cognitoUser = new CognitoUser({
         Username: email,
@@ -242,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userId,
     isAuthenticated: !!user,
     isLoading,
-    login,
+    signin,
     signup,
     confirmSignup,
     forgotPassword,

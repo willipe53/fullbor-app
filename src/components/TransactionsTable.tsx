@@ -37,25 +37,49 @@ import TransactionForm from "./TransactionForm";
 import TransactionTypesTable from "./TransactionTypesTable";
 import TableFilter from "./TableFilter";
 
-// Helper function for formatting properties
-const formatProperties = (properties: unknown) => {
-  if (!properties) return "";
-  try {
-    const parsed =
-      typeof properties === "string" ? JSON.parse(properties) : properties;
-    return Object.entries(parsed)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(", ");
-  } catch {
-    return String(properties);
-  }
-};
+// Memoized helper function for formatting properties - moved outside component to avoid recreation
+const formatProperties = (() => {
+  const cache = new Map<string, string>();
+  return (properties: unknown): string => {
+    if (!properties) return "";
 
-// Status mapping for consistent lookups
-const STATUS_MAP: Record<
-  number,
+    // Use cache key for memoization
+    const cacheKey =
+      typeof properties === "string" ? properties : JSON.stringify(properties);
+
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!;
+    }
+
+    try {
+      const parsed =
+        typeof properties === "string" ? JSON.parse(properties) : properties;
+      const result = Object.entries(parsed)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+
+      // Cache the result (limit cache size to prevent memory leaks)
+      if (cache.size > 1000) {
+        const firstKey = cache.keys().next().value;
+        if (firstKey !== undefined) {
+          cache.delete(firstKey);
+        }
+      }
+      cache.set(cacheKey, result);
+
+      return result;
+    } catch {
+      const result = String(properties);
+      cache.set(cacheKey, result);
+      return result;
+    }
+  };
+})();
+
+// Status mapping by name for O(1) lookups (more efficient than Object.values().find())
+const STATUS_NAME_MAP: Record<
+  string,
   {
-    name: string;
     color:
       | "default"
       | "primary"
@@ -67,9 +91,9 @@ const STATUS_MAP: Record<
     variant: "filled" | "outlined";
   }
 > = {
-  1: { name: "INCOMPLETE", color: "warning", variant: "filled" },
-  2: { name: "QUEUED", color: "info", variant: "filled" },
-  3: { name: "PROCESSED", color: "success", variant: "filled" },
+  INCOMPLETE: { color: "warning", variant: "filled" },
+  QUEUED: { color: "info", variant: "filled" },
+  PROCESSED: { color: "success", variant: "filled" },
 };
 
 const TransactionsTable: React.FC = () => {
@@ -81,12 +105,12 @@ const TransactionsTable: React.FC = () => {
     queryKey: ["user", userId],
     queryFn: async () => {
       const result = await apiService.queryUsers({ sub: userId! });
-      console.log("🔍 queryUsers result:", result);
       return result;
     },
     enabled: !!userId,
+    staleTime: 10 * 60 * 1000, // 10 minutes - user data changes rarely
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     select: (data) => {
-      console.log("🔍 queryUsers select, data:", data);
       // Handle both array and paginated response
       let usersArray: apiService.User[];
       if (Array.isArray(data)) {
@@ -98,28 +122,21 @@ const TransactionsTable: React.FC = () => {
       }
       // Find the user that matches the current userId (sub)
       const user = usersArray.find((u) => u.sub === userId);
-      console.log("🔍 Selected user:", user);
       return user;
     },
   });
-
-  console.log("🔍 currentUser:", currentUser, "userId:", userId);
-  console.log(
-    "🔍 currentUser?.primary_client_group_id:",
-    currentUser?.primary_client_group_id
-  );
 
   // Get primary client group for display
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
     queryFn: async () => {
       const result = await apiService.queryClientGroups({});
-      console.log("🔍 queryClientGroups result:", result);
       return result;
     },
     enabled: !!currentUser?.primary_client_group_id,
+    staleTime: 10 * 60 * 1000, // 10 minutes - client groups change rarely
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     select: (data) => {
-      console.log("🔍 queryClientGroups select, data:", data);
       // Handle both array and paginated response
       let groupsArray: apiService.ClientGroup[];
       if (Array.isArray(data)) {
@@ -133,7 +150,6 @@ const TransactionsTable: React.FC = () => {
       const group = groupsArray.find(
         (g) => g.client_group_id === currentUser?.primary_client_group_id
       );
-      console.log("🔍 Selected primary client group:", group);
       return group;
     },
   });
@@ -153,7 +169,10 @@ const TransactionsTable: React.FC = () => {
   const [isPollingActive, setIsPollingActive] = useState(false);
 
   // Helper function to get field values for filtering
-  const getFieldValue = (transaction: any, field: string): string => {
+  const getFieldValue = (
+    transaction: apiService.Transaction,
+    field: string
+  ): string => {
     switch (field) {
       case "Portfolio":
         return transaction.portfolio_entity_name || "";
@@ -170,21 +189,43 @@ const TransactionsTable: React.FC = () => {
     }
   };
 
-  // Position keeper mutation
+  // Position keeper mutations
   const queryClient = useQueryClient();
-  const runPositionKeeperMutation = useMutation({
+
+  const startPositionKeeperMutation = useMutation({
     mutationFn: apiService.startPositionKeeper,
-    onSuccess: (data: any) => {
+    onSuccess: (data: { message: string }) => {
       setPositionKeeperMessage(
-        data.message || "Position keeper executed successfully"
+        data.message || "Position keeper started successfully"
       );
       setPositionKeeperSeverity("success");
+      setIsPollingActive(true);
       // Refresh transactions to see any status changes
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setPositionKeeperMessage(
-        error.message || "Failed to run position keeper"
+        error.message || "Failed to start position keeper"
+      );
+      setPositionKeeperSeverity("error");
+      setIsPollingActive(false);
+    },
+  });
+
+  const stopPositionKeeperMutation = useMutation({
+    mutationFn: apiService.stopPositionKeeper,
+    onSuccess: (data: { message: string }) => {
+      setPositionKeeperMessage(
+        data.message || "Position keeper stopped successfully"
+      );
+      setPositionKeeperSeverity("success");
+      setIsPollingActive(false);
+      // Refresh transactions to see any status changes
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+    onError: (error: Error) => {
+      setPositionKeeperMessage(
+        error.message || "Failed to stop position keeper"
       );
       setPositionKeeperSeverity("error");
     },
@@ -203,34 +244,23 @@ const TransactionsTable: React.FC = () => {
       currentUser?.primary_client_group_id,
     ],
     queryFn: async () => {
-      console.log("🔍 Fetching transactions, currentUser:", currentUser);
       if (!currentUser?.user_id) {
         throw new Error("No user ID available");
       }
 
       // Don't send any query parameters - backend filters by X-Current-User-Id header
       const result = await apiService.queryTransactions({});
-      console.log("🔍 Transactions API result:", result);
       return result;
     },
     enabled: !!currentUser?.user_id && !!currentUser?.primary_client_group_id,
-    staleTime: 30 * 1000, // 30 seconds - more responsive
-    refetchOnMount: true, // Refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 2 * 60 * 1000, // 2 minutes - balance between freshness and performance
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is still fresh
+    refetchOnWindowFocus: true, // Refetch when window regains focus (for concurrent edits)
   });
-
-  console.log(
-    "🔍 Query state - isLoading:",
-    isLoading,
-    "error:",
-    error,
-    "data:",
-    rawTransactionsData
-  );
 
   // Process transactions data with O(1) lookups
   const transactionsData = useMemo(() => {
-    console.log("🔍 rawTransactionsData:", rawTransactionsData);
     if (!rawTransactionsData) return [];
 
     // Handle both array and paginated response formats
@@ -245,13 +275,6 @@ const TransactionsTable: React.FC = () => {
     } else {
       transactionsArray = [];
     }
-
-    console.log(
-      "🔍 transactionsArray:",
-      transactionsArray,
-      "length:",
-      transactionsArray.length
-    );
 
     let processedData = transactionsArray.map(
       (transaction: apiService.Transaction) => {
@@ -275,22 +298,14 @@ const TransactionsTable: React.FC = () => {
     // Apply filters
     Object.entries(filters).forEach(([field, value]) => {
       if (value && value.trim() !== "") {
-        console.log(`Applying filter: ${field} = "${value}"`);
-        const beforeCount = processedData.length;
-        processedData = processedData.filter((transaction: any) => {
-          const fieldValue = getFieldValue(transaction, field);
-          const matches =
-            fieldValue &&
-            fieldValue.toLowerCase().includes(value.toLowerCase());
-          if (!matches) {
-            console.log(
-              `Filtered out: ${fieldValue} (doesn't contain "${value}")`
+        processedData = processedData.filter(
+          (transaction: apiService.Transaction) => {
+            const fieldValue = getFieldValue(transaction, field);
+            return (
+              fieldValue &&
+              fieldValue.toLowerCase().includes(value.toLowerCase())
             );
           }
-          return matches;
-        });
-        console.log(
-          `Filter ${field}="${value}": ${beforeCount} -> ${processedData.length} rows`
         );
       }
     });
@@ -298,27 +313,33 @@ const TransactionsTable: React.FC = () => {
     return processedData;
   }, [rawTransactionsData, filters]);
 
-  // Polling logic for QUEUED transactions
+  // Polling logic to check position keeper status
   useEffect(() => {
     let intervalId: number | null = null;
 
     if (isPollingActive) {
-      // Check for QUEUED transactions every 10 seconds
-      intervalId = setInterval(() => {
-        if (transactionsData && transactionsData.length > 0) {
-          const queuedTransactions = transactionsData.filter(
-            (transaction: any) =>
-              transaction.transaction_status_name === "QUEUED"
-          );
+      // Check position keeper status every 2 seconds
+      intervalId = setInterval(async () => {
+        try {
+          const status = await apiService.getPositionKeeperStatus();
 
-          if (queuedTransactions.length > 0) {
-            console.log(
-              `Found ${queuedTransactions.length} QUEUED transactions, triggering position keeper`
-            );
-            runPositionKeeperMutation.mutate();
+          if (status.status === "idle") {
+            // Position keeper finished processing, stop polling
+            setIsPollingActive(false);
+            setPositionKeeperMessage("Position keeper completed processing");
+            setPositionKeeperSeverity("success");
+            // Refresh transactions to see any status changes
+            queryClient.invalidateQueries({ queryKey: ["transactions"] });
           }
+          // If status is "running", continue polling
+        } catch (error) {
+          console.error("Error checking position keeper status:", error);
+          // On error, stop polling to avoid infinite error loop
+          setIsPollingActive(false);
+          setPositionKeeperMessage("Error checking position keeper status");
+          setPositionKeeperSeverity("error");
         }
-      }, 10000); // 10 seconds
+      }, 2000); // 2 seconds
     }
 
     return () => {
@@ -326,17 +347,51 @@ const TransactionsTable: React.FC = () => {
         clearInterval(intervalId);
       }
     };
-  }, [isPollingActive, transactionsData, runPositionKeeperMutation]);
+  }, [isPollingActive, queryClient]);
 
-  // Toggle polling function
-  const togglePolling = useCallback(() => {
-    setIsPollingActive((prev) => !prev);
-  }, []);
+  // Handle position keeper button click
+  const handlePositionKeeperClick = useCallback(() => {
+    if (isPollingActive) {
+      // Stop position keeper
+      stopPositionKeeperMutation.mutate();
+    } else {
+      // Start position keeper
+      startPositionKeeperMutation.mutate();
+    }
+  }, [
+    isPollingActive,
+    startPositionKeeperMutation,
+    stopPositionKeeperMutation,
+  ]);
 
-  const handleEdit = useCallback((transaction: apiService.Transaction) => {
-    setEditingTransaction(transaction);
-    setIsFormOpen(true);
-  }, []);
+  const handleEdit = useCallback(
+    (transactionId: number) => {
+      // Find the original transaction from rawTransactionsData, not the processed row
+      let transactionsArray: apiService.Transaction[];
+      if (Array.isArray(rawTransactionsData)) {
+        transactionsArray = rawTransactionsData;
+      } else if (
+        rawTransactionsData &&
+        "data" in rawTransactionsData &&
+        Array.isArray(rawTransactionsData.data)
+      ) {
+        transactionsArray =
+          rawTransactionsData.data as apiService.Transaction[];
+      } else {
+        transactionsArray = [];
+      }
+
+      const originalTransaction = transactionsArray.find(
+        (t) => t.transaction_id === transactionId
+      );
+
+      if (originalTransaction) {
+        setEditingTransaction(originalTransaction);
+        setIsFormOpen(true);
+      }
+    },
+    [rawTransactionsData]
+  );
 
   const handleCloseForm = useCallback(() => {
     setIsFormOpen(false);
@@ -415,15 +470,13 @@ const TransactionsTable: React.FC = () => {
         renderCell: (params: GridRenderCellParams) => {
           const statusName = params.row.transaction_status_name;
 
-          // Find status info by name instead of ID
+          // O(1) lookup by name instead of O(n) Object.values().find()
           const statusInfo =
-            Object.values(STATUS_MAP).find(
-              (status) => status.name === statusName
-            ) || STATUS_MAP[1]; // Default to INCOMPLETE
+            STATUS_NAME_MAP[statusName] || STATUS_NAME_MAP["INCOMPLETE"];
 
           return (
             <Chip
-              label={statusInfo.name}
+              label={statusName}
               size="small"
               color={statusInfo.color}
               variant={statusInfo.variant}
@@ -434,7 +487,8 @@ const TransactionsTable: React.FC = () => {
       {
         field: "properties",
         headerName: "Properties",
-        width: 200,
+        flex: 1,
+        minWidth: 200,
         align: "left",
         headerAlign: "left",
         renderCell: (params: GridRenderCellParams) => (
@@ -533,10 +587,14 @@ const TransactionsTable: React.FC = () => {
             variant="contained"
             color={isPollingActive ? "error" : "primary"}
             size="small"
-            onClick={togglePolling}
-            disabled={runPositionKeeperMutation.isPending}
+            onClick={handlePositionKeeperClick}
+            disabled={
+              startPositionKeeperMutation.isPending ||
+              stopPositionKeeperMutation.isPending
+            }
             startIcon={
-              runPositionKeeperMutation.isPending ? (
+              startPositionKeeperMutation.isPending ||
+              stopPositionKeeperMutation.isPending ? (
                 <CircularProgress size={16} />
               ) : isPollingActive ? (
                 <Pause />
@@ -555,8 +613,8 @@ const TransactionsTable: React.FC = () => {
           <Tooltip
             title={
               isPollingActive
-                ? "Stop automatic processing of queued transactions"
-                : "Start automatic processing of queued transactions every 10 seconds"
+                ? "Stop the position keeper and cease processing"
+                : "Start the position keeper to process queued transactions"
             }
             placement="top"
           >
@@ -629,14 +687,14 @@ const TransactionsTable: React.FC = () => {
         <DataGrid
           rows={transactionsData}
           columns={columns}
-          pageSizeOptions={[25, 50, 100]}
+          pageSizeOptions={[50, 100, 250]}
           initialState={{
             pagination: {
-              paginationModel: { pageSize: 25 },
+              paginationModel: { pageSize: 100 },
             },
           }}
           onRowClick={(params: GridRowParams) =>
-            handleEdit(params.row as apiService.Transaction)
+            handleEdit(params.row.transaction_id as number)
           }
           sx={{
             "& .MuiDataGrid-columnHeaders": {

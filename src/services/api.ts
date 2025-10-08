@@ -189,13 +189,8 @@ export interface QueryEntitiesRequest {
   count?: boolean;
 }
 
-export type QueryEntitiesResponse =
-  | {
-      data: Entity[];
-      count: number;
-    }
-  | { count: number }
-  | Entity[]; // Simple array when no pagination parameters are provided
+// Always returns an array of entities, or a count object if count=true
+export type QueryEntitiesResponse = Entity[] | { count: number };
 
 // Entity Types API functions - Updated for FullBor API
 export interface QueryEntityTypesRequest {
@@ -203,12 +198,8 @@ export interface QueryEntityTypesRequest {
   count?: boolean;
 }
 
-export type QueryEntityTypesResponse =
-  | {
-      data: EntityType[];
-      count: number;
-    }
-  | { count: number };
+// Always returns an array of entity types, or a count object if count=true
+export type QueryEntityTypesResponse = EntityType[] | { count: number };
 
 export const queryEntityTypes = async (
   data: QueryEntityTypesRequest = {}
@@ -277,6 +268,18 @@ export const deleteEntity = async (entityName: string): Promise<void> => {
   return apiCall<void>(`/entities/${entityName}`, {
     method: "DELETE",
   });
+};
+
+// Helper function to query entities by category (uses entity_type_name filter)
+export const queryEntitiesByCategory = async (
+  category: string
+): Promise<Entity[]> => {
+  const response = await queryEntities({ entity_type_name: category });
+  // Normalize response - if it's a count object, return empty array
+  if (!Array.isArray(response)) {
+    return [];
+  }
+  return response;
 };
 
 // Legacy delete record function - deprecated, use specific delete functions
@@ -761,7 +764,7 @@ export const queryClientGroupInvitations = async (
   );
 };
 
-// Convenience function to update user's sub field after login
+// Convenience function to update user's sub field after signin
 export const updateUserSub = async (
   userName: string,
   sub: string,
@@ -1005,36 +1008,36 @@ export const deleteTransaction = async (
 
 // Position Keeper API Functions - Updated for FullBor API
 export const startPositionKeeper = async (): Promise<{
-  command: string;
-  status: string;
   message: string;
-  timestamp: string;
 }> => {
   return apiCall<{
-    command: string;
-    status: string;
     message: string;
-    timestamp: string;
-  }>("/position-keeper", {
+  }>("/position-keeper/start", {
     method: "POST",
-    data: { command: "start" },
   });
 };
 
 export const stopPositionKeeper = async (): Promise<{
-  command: string;
-  status: string;
   message: string;
-  timestamp: string;
 }> => {
   return apiCall<{
-    command: string;
-    status: string;
     message: string;
-    timestamp: string;
-  }>("/position-keeper", {
+  }>("/position-keeper/stop", {
     method: "POST",
-    data: { command: "stop" },
+  });
+};
+
+export const getPositionKeeperStatus = async (): Promise<{
+  status: "running" | "idle";
+  holder: string | null;
+  expires_at: string | null;
+}> => {
+  return apiCall<{
+    status: "running" | "idle";
+    holder: string | null;
+    expires_at: string | null;
+  }>("/position-keeper/status", {
+    method: "GET",
   });
 };
 

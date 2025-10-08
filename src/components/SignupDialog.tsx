@@ -19,14 +19,14 @@ interface SignupDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  onSwitchToLogin?: () => void;
+  onSwitchToSignin?: () => void;
 }
 
 const SignupDialog: React.FC<SignupDialogProps> = ({
   open,
   onClose,
   onSuccess,
-  onSwitchToLogin,
+  onSwitchToSignin,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -155,16 +155,16 @@ const SignupDialog: React.FC<SignupDialogProps> = ({
                 ),
               }}
             />
-            {onSwitchToLogin && (
+            {onSwitchToSignin && (
               <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
                 <Button
                   variant="text"
                   size="small"
-                  onClick={onSwitchToLogin}
+                  onClick={onSwitchToSignin}
                   disabled={loading}
                   sx={{ textTransform: "none" }}
                 >
-                  Already have an account? Login
+                  Already have an account? Sign in
                 </Button>
               </Box>
             )}

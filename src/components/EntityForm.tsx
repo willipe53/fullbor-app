@@ -137,11 +137,13 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
 
       // Find and set the selected entity type
       if (entityTypesData && editingEntity.entity_type_name) {
-        const data = Array.isArray(entityTypesData)
-          ? entityTypesData
-          : entityTypesData && "data" in entityTypesData
-          ? entityTypesData.data
-          : [];
+        const data: apiService.EntityType[] = (
+          Array.isArray(entityTypesData)
+            ? entityTypesData
+            : entityTypesData && "data" in entityTypesData
+            ? entityTypesData.data
+            : []
+        ) as apiService.EntityType[];
         const entityType = data.find(
           (et: apiService.EntityType) =>
             et.entity_type_name === editingEntity.entity_type_name
@@ -375,11 +377,11 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
           {/* Entity Type */}
           <Autocomplete
             options={
-              Array.isArray(entityTypesData)
+              (Array.isArray(entityTypesData)
                 ? entityTypesData
                 : entityTypesData && "data" in entityTypesData
                 ? entityTypesData.data
-                : []
+                : []) as apiService.EntityType[]
             }
             getOptionLabel={(option) => option.entity_type_name || ""}
             getOptionKey={(option) => option.entity_type_name}

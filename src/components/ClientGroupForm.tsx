@@ -14,6 +14,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import * as apiService from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import FormHeader from "./FormHeader";
 import FormJsonToggle from "./FormJsonToggle";
 import TransferList, { type TransferListItem } from "./TransferList";
@@ -38,6 +39,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   onAddEntities,
 }) => {
   const queryClient = useQueryClient();
+  const { userId } = useAuth();
   const [name, setName] = useState<string>("");
   const [preferences, setPreferences] = useState<apiService.JSONValue>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,6 +64,20 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
   const isCreate = !editingClientGroup?.client_group_id;
 
   console.log("🔧 ClientGroupForm - Component rendered, isCreate:", isCreate);
+
+  // Query to get current user's data
+  const { data: currentUserData } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: async () => {
+      const result = await apiService.queryUsers({ sub: userId! });
+      // Handle both array and paginated response
+      if (Array.isArray(result)) {
+        return result.find((u) => u.sub === userId);
+      }
+      return undefined;
+    },
+    enabled: !!userId,
+  });
 
   // Query to get entity count for this client group
   const { data: entityCount } = useQuery({
@@ -347,6 +363,27 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       setTimeout(() => {
         onClose();
       }, 1000);
+    },
+  });
+
+  // Make primary mutation
+  const makePrimaryMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUserData || !editingClientGroup?.client_group_id) {
+        throw new Error("Missing user or client group data");
+      }
+      // Update user's primary_client_group_id
+      return apiService.updateUser(currentUserData.sub, {
+        primary_client_group_id: editingClientGroup.client_group_id,
+      });
+    },
+    onSuccess: () => {
+      // Invalidate all relevant queries to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["client-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["primary-client-group"] });
+      // Close the form
+      onClose();
     },
   });
 
@@ -808,7 +845,7 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
       <Box
         sx={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
           gap: 2,
           p: 2,
           borderTop: "1px solid",
@@ -817,76 +854,117 @@ const ClientGroupForm: React.FC<ClientGroupFormProps> = ({
           flexShrink: 0,
         }}
       >
-        {/* Delete Button - only show for existing groups */}
-        {!isCreate && (
+        {/* Left side: Delete Button - only show for existing groups */}
+        <Box>
+          {!isCreate && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Are you sure you want to delete "${editingClientGroup.client_group_name}"? This action cannot be undone.`
+                  )
+                ) {
+                  deleteMutation.mutate();
+                }
+              }}
+              disabled={
+                mutation.isPending ||
+                deleteMutation.isPending ||
+                makePrimaryMutation.isPending
+              }
+            >
+              {deleteMutation.isPending ? (
+                <CircularProgress size={20} />
+              ) : (
+                "DELETE"
+              )}
+            </Button>
+          )}
+        </Box>
+
+        {/* Right side: Make Primary, Cancel, and Update buttons */}
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {/* Make Primary Button - only show if not already primary */}
+          {!isCreate &&
+            currentUserData &&
+            editingClientGroup?.client_group_id !==
+              currentUserData.primary_client_group_id && (
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => makePrimaryMutation.mutate()}
+                disabled={
+                  mutation.isPending ||
+                  deleteMutation.isPending ||
+                  makePrimaryMutation.isPending
+                }
+              >
+                {makePrimaryMutation.isPending ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  "Make Primary"
+                )}
+              </Button>
+            )}
+
           <Button
             variant="outlined"
-            color="error"
-            onClick={() => {
-              if (
-                window.confirm(
-                  `Are you sure you want to delete "${editingClientGroup.client_group_name}"? This action cannot be undone.`
-                )
-              ) {
-                deleteMutation.mutate();
+            onClick={onClose}
+            disabled={
+              mutation.isPending ||
+              deleteMutation.isPending ||
+              makePrimaryMutation.isPending
+            }
+          >
+            Cancel
+          </Button>
+
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={
+              mutation.isPending ||
+              deleteMutation.isPending ||
+              makePrimaryMutation.isPending ||
+              !isDirty
+            }
+            sx={{ opacity: isDirty ? 1 : 0.5 }}
+            onMouseEnter={() => {
+              console.log(
+                "🔧 Button state - isDirty:",
+                isDirty,
+                "name:",
+                name,
+                "isCreate:",
+                isCreate
+              );
+            }}
+            onClick={(e) => {
+              console.log("🔧 Button onClick called");
+              console.log("🔧 Event:", e);
+              // Manually trigger form submission
+              const form = e.currentTarget.closest("form");
+              console.log("🔧 Found form:", form);
+              if (form) {
+                console.log("🔧 Manually submitting form");
+                form.requestSubmit();
+              } else {
+                console.log("🔧 No form found, calling handleSubmit directly");
+                handleSubmit(e);
               }
             }}
-            disabled={mutation.isPending || deleteMutation.isPending}
           >
-            {deleteMutation.isPending ? (
+            {mutation.isPending ? (
               <CircularProgress size={20} />
+            ) : isCreate ? (
+              "Create Client Group"
             ) : (
-              "DELETE"
+              "Update"
             )}
           </Button>
-        )}
-
-        <Button
-          variant="outlined"
-          onClick={onClose}
-          disabled={mutation.isPending || deleteMutation.isPending}
-        >
-          Cancel
-        </Button>
-
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={mutation.isPending || deleteMutation.isPending || !isDirty}
-          sx={{ opacity: isDirty ? 1 : 0.5 }}
-          onMouseEnter={() => {
-            console.log(
-              "🔧 Button state - isDirty:",
-              isDirty,
-              "name:",
-              name,
-              "isCreate:",
-              isCreate
-            );
-          }}
-          onClick={(e) => {
-            console.log("🔧 Button onClick called");
-            console.log("🔧 Event:", e);
-            // Manually trigger form submission
-            const form = e.currentTarget.closest("form");
-            console.log("🔧 Found form:", form);
-            if (form) {
-              console.log("🔧 Manually submitting form");
-              form.requestSubmit();
-            } else {
-              console.log("🔧 No form found, calling handleSubmit directly");
-              handleSubmit(e);
-            }
-          }}
-        >
-          {mutation.isPending ? (
-            <CircularProgress size={20} />
-          ) : isCreate ? (
-            "Create Client Group"
-          ) : (
-            "Update"
-          )}
-        </Button>
+        </Box>
       </Box>
     </Paper>
   );

@@ -28,7 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { styled } from "@mui/material/styles";
-import boar6white from "../assets/images/boar6white.png";
+import boarwhite from "../assets/images/boarwhite.png";
 import EntitiesTable from "./EntitiesTable";
 import UsersTable from "./UsersTable";
 import TransactionsTable from "./TransactionsTable";
@@ -36,12 +36,17 @@ import ClientGroupsTable from "./ClientGroupsTable";
 import InvitationsTable from "./InvitationsTable";
 import ClientGroupOnboarding from "./ClientGroupOnboarding";
 import OneBorIntroduction from "./OneBorIntroduction";
+import AboutDialog from "./AboutDialog";
 import { useClientGroupOnboarding } from "../hooks/useClientGroupOnboarding";
 import * as apiService from "../services/api";
 
 const HeaderLogo = styled("img")({
   height: "40px",
   width: "auto",
+  cursor: "pointer",
+  "&:hover": {
+    opacity: 0.8,
+  },
 });
 
 const SuccessPage: React.FC = () => {
@@ -50,6 +55,7 @@ const SuccessPage: React.FC = () => {
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(
     null
   );
+  const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
 
   // Get current user for count queries
   const { data: currentUserData } = useQuery({
@@ -61,9 +67,16 @@ const SuccessPage: React.FC = () => {
   const currentUser = useMemo(() => {
     if (!currentUserData) return null;
     // Handle both array and paginated response
-    const usersArray = Array.isArray(currentUserData)
-      ? currentUserData
-      : currentUserData.data || [];
+    let usersArray: apiService.User[] = [];
+    if (Array.isArray(currentUserData)) {
+      usersArray = currentUserData;
+    } else if (
+      typeof currentUserData === "object" &&
+      "data" in currentUserData &&
+      Array.isArray(currentUserData.data)
+    ) {
+      usersArray = currentUserData.data;
+    }
     // Find the user that matches the current userId (sub)
     return usersArray.find((u: apiService.User) => u.sub === userId) || null;
   }, [currentUserData, userId]);
@@ -151,7 +164,10 @@ const SuccessPage: React.FC = () => {
   };
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
+    // Only allow tab changes to visible tabs (0, 1, 2)
+    if (newValue >= 0 && newValue <= 2) {
+      setCurrentTab(newValue);
+    }
   };
 
   const renderTabContent = () => {
@@ -217,7 +233,11 @@ const SuccessPage: React.FC = () => {
         <AppBar position="static" sx={{ backgroundColor: "#0b365a" }}>
           <Toolbar sx={{ justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <HeaderLogo src={boar6white} alt="fullbor.ai Logo" />
+              <HeaderLogo
+                src={boarwhite}
+                alt="fullbor.ai Logo"
+                onClick={() => setAboutDialogOpen(true)}
+              />
             </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {primaryClientGroup && (
@@ -308,7 +328,11 @@ const SuccessPage: React.FC = () => {
       <AppBar position="static" sx={{ backgroundColor: "#0b365a" }}>
         <Toolbar sx={{ justifyContent: "space-between" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <HeaderLogo src={boar6white} alt="fullbor.ai Logo" />
+            <HeaderLogo
+              src={boarwhite}
+              alt="fullbor.ai Logo"
+              onClick={() => setAboutDialogOpen(true)}
+            />
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {primaryClientGroup && (
@@ -382,7 +406,10 @@ const SuccessPage: React.FC = () => {
             alignItems: "center",
           }}
         >
-          <Tabs value={currentTab} onChange={handleTabChange}>
+          <Tabs
+            value={currentTab <= 2 ? currentTab : false}
+            onChange={handleTabChange}
+          >
             <Tab icon={<Dashboard />} label="Dashboard" />
             <Tab icon={<ViewList />} label="Entities" />
             <Tab icon={<SwapHoriz />} label="Transactions" />
@@ -400,6 +427,14 @@ const SuccessPage: React.FC = () => {
         userId={userId || ""}
         onComplete={handleOnboardingComplete}
         onCancel={handleOnboardingCancel}
+      />
+
+      {/* About Dialog */}
+      <AboutDialog
+        open={aboutDialogOpen}
+        onClose={() => setAboutDialogOpen(false)}
+        userEmail={userEmail}
+        primaryClientGroupName={primaryClientGroup?.client_group_name || null}
       />
     </Box>
   );

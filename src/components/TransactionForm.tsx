@@ -33,7 +33,6 @@ import * as apiService from "../services/api";
 import {
   prettyPrint,
   formatNumberForDisplay,
-  parseFormattedNumber,
   formatPriceForDisplay,
   parseNumericShortcut,
   formatDatabaseTimestamp,
@@ -49,12 +48,21 @@ interface TransactionFormRef {
   handleDismissal: () => void;
 }
 
+interface PropertySchema {
+  type?: string;
+  format?: string;
+  description?: string;
+  enum?: string[];
+  "x-enum-api"?: [string, string, string];
+  default?: unknown;
+}
+
 interface TransactionSchema {
   $schema?: string;
   title: string;
   description?: string;
   type: string;
-  properties: Record<string, any>;
+  properties: Record<string, PropertySchema>;
   required: string[];
   additionalProperties: boolean;
   valid_instruments: string[];
@@ -68,7 +76,7 @@ interface FormData {
   contra_entity_id: string;
   trade_date: string;
   settle_date: string;
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
 }
 
 // Transaction status constants - removed as no longer managed via API
@@ -110,31 +118,41 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     // Get current user data
     const { data: currentUser } = useQuery({
       queryKey: ["user", userId],
-      queryFn: () => apiService.queryUsers({ sub: userId! }),
+      queryFn: async () => {
+        const response = await apiService.queryUsers({ sub: userId! });
+        // Response is either User[] or { count: number }
+        if (Array.isArray(response) && response.length > 0) {
+          return response[0];
+        }
+        return undefined;
+      },
       enabled: !!userId,
-      select: (data) => data[0],
+      staleTime: 10 * 60 * 1000, // 10 minutes - user data rarely changes
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     });
 
     // Get all entities for the user
     const { data: entities, isLoading: entitiesLoading } = useQuery({
-      queryKey: ["entities", currentUser?.user_id],
-      queryFn: () =>
-        apiService.queryEntities({
-          user_id: currentUser!.user_id,
-        }),
-      enabled: !!currentUser?.user_id,
-      staleTime: 60 * 1000, // 1 minute - entities don't change often
+      queryKey: ["entities"], // Don't key by user_id since we fetch all entities anyway
+      queryFn: async () => {
+        const response = await apiService.queryEntities({});
+        // Response is either Entity[] or { count: number }
+        return Array.isArray(response) ? response : [];
+      },
+      enabled: !!userId, // Only need userId to be present, not currentUser
+      staleTime: 5 * 60 * 1000, // 5 minutes - entities don't change that often
+      gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
       refetchOnMount: false, // Don't refetch if already cached
       refetchOnWindowFocus: false,
     });
 
     // Get entities by category for API-driven enums
     const { data: currencyEntities, isLoading: currencyLoading } = useQuery({
-      queryKey: ["entities", currentUser?.user_id, "category", "Currency"],
-      queryFn: () =>
-        apiService.queryEntitiesByCategory(currentUser!.user_id, "Currency"),
-      enabled: !!currentUser?.user_id,
-      staleTime: 5 * 60 * 1000, // 5 minutes - currencies rarely change
+      queryKey: ["entities", "category", "Currency"],
+      queryFn: () => apiService.queryEntitiesByCategory("Currency"),
+      enabled: !!userId,
+      staleTime: 10 * 60 * 1000, // 10 minutes - currencies rarely change
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
@@ -144,11 +162,11 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       data: portfolioEntitiesByCategory,
       isLoading: portfolioCategoryLoading,
     } = useQuery({
-      queryKey: ["entities", currentUser?.user_id, "category", "Portfolio"],
-      queryFn: () =>
-        apiService.queryEntitiesByCategory(currentUser!.user_id, "Portfolio"),
-      enabled: !!currentUser?.user_id,
-      staleTime: 5 * 60 * 1000, // 5 minutes - currencies rarely change
+      queryKey: ["entities", "category", "Portfolio"],
+      queryFn: () => apiService.queryEntitiesByCategory("Portfolio"),
+      enabled: !!userId,
+      staleTime: 10 * 60 * 1000, // 10 minutes - portfolios rarely change
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
@@ -157,11 +175,11 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       data: instrumentEntitiesByCategory,
       isLoading: instrumentCategoryLoading,
     } = useQuery({
-      queryKey: ["entities", currentUser?.user_id, "category", "Instrument"],
-      queryFn: () =>
-        apiService.queryEntitiesByCategory(currentUser!.user_id, "Instrument"),
-      enabled: !!currentUser?.user_id,
-      staleTime: 5 * 60 * 1000, // 5 minutes - currencies rarely change
+      queryKey: ["entities", "category", "Instrument"],
+      queryFn: () => apiService.queryEntitiesByCategory("Instrument"),
+      enabled: !!userId,
+      staleTime: 10 * 60 * 1000, // 10 minutes - instruments rarely change
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
@@ -169,8 +187,13 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     // Get entity types
     const { data: entityTypes } = useQuery({
       queryKey: ["entity-types"],
-      queryFn: () => apiService.queryEntityTypes({}),
-      staleTime: 5 * 60 * 1000, // 5 minutes (entity types rarely change)
+      queryFn: async () => {
+        const response = await apiService.queryEntityTypes({});
+        // Response is either EntityType[] or { count: number }
+        return Array.isArray(response) ? response : [];
+      },
+      staleTime: 10 * 60 * 1000, // 10 minutes (entity types rarely change)
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
@@ -178,15 +201,57 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     // Get transaction types
     const { data: transactionTypes } = useQuery({
       queryKey: ["transaction-types"],
-      queryFn: () => apiService.queryTransactionTypes({}),
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      queryFn: async () => {
+        const response = await apiService.queryTransactionTypes({});
+        // Response is either TransactionType[] or { count: number }
+        return Array.isArray(response) ? response : [];
+      },
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
 
+    // Create entity type maps for O(1) lookups (must be before useEffect that uses them)
+    const entityTypeMap = useMemo(() => {
+      if (!entityTypes) return new Map();
+      return new Map(
+        entityTypes.map((et) => [et.entity_type_name, et.entity_type_id])
+      );
+    }, [entityTypes]);
+
+    // Create entity lookup maps for O(1) access (must be before useEffect that uses them)
+    const entitiesById = useMemo(() => {
+      if (!entities) return new Map();
+      return new Map(entities.map((e) => [e.entity_id, e]));
+    }, [entities]);
+
+    const entitiesByName = useMemo(() => {
+      if (!entities) return new Map();
+      return new Map(entities.map((e) => [e.entity_name, e]));
+    }, [entities]);
+
+    const transactionTypesById = useMemo(() => {
+      if (!transactionTypes) return new Map();
+      return new Map(
+        transactionTypes.map((tt) => [tt.transaction_type_id, tt])
+      );
+    }, [transactionTypes]);
+
+    const transactionTypesByName = useMemo(() => {
+      if (!transactionTypes) return new Map();
+      return new Map(
+        transactionTypes.map((tt) => [tt.transaction_type_name, tt])
+      );
+    }, [transactionTypes]);
+
     // Initialize form data when editing an existing transaction
     React.useEffect(() => {
-      if (editingTransaction) {
+      if (
+        editingTransaction &&
+        entitiesByName.size > 0 &&
+        transactionTypesByName.size > 0
+      ) {
         // Debug: Check the size of the editing transaction data
         const transactionSize = JSON.stringify(editingTransaction).length;
         if (transactionSize > 10000) {
@@ -227,9 +292,9 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
           // Additional cleanup: Remove any remaining corrupted data
           if (parsedProperties && typeof parsedProperties === "object") {
-            const cleanedProperties: any = {};
+            const cleanedProperties: Record<string, unknown> = {};
             Object.keys(parsedProperties).forEach((key) => {
-              const value = (parsedProperties as any)[key];
+              const value = (parsedProperties as Record<string, unknown>)[key];
               // Only keep properties with non-numeric keys and simple values
               if (
                 isNaN(parseInt(key)) &&
@@ -245,59 +310,26 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           }
         }
 
-        // Look up entity IDs from names if we have names but not IDs
-        console.log(
-          "🔍 Initializing transaction form with:",
-          editingTransaction
-        );
-        console.log("🔍 Available entities:", entities);
-        console.log("🔍 Available transaction types:", transactionTypes);
-
+        // Look up entity IDs from names (API returns names, not IDs)
+        // Use maps for O(1) lookup instead of .find()
         const portfolioId =
-          editingTransaction.portfolio_entity_id?.toString() ||
-          entities
-            ?.find(
-              (e) => e.entity_name === editingTransaction.portfolio_entity_name
-            )
-            ?.entity_id.toString() ||
-          "";
-        const instrumentId =
-          editingTransaction.instrument_entity_id?.toString() ||
-          entities
-            ?.find(
-              (e) => e.entity_name === editingTransaction.instrument_entity_name
-            )
-            ?.entity_id.toString() ||
-          "";
-        const contraId =
-          editingTransaction.contra_entity_id?.toString() ||
-          entities
-            ?.find(
-              (e) => e.entity_name === editingTransaction.contra_entity_name
-            )
-            ?.entity_id.toString() ||
-          "";
+          entitiesByName
+            .get(editingTransaction.portfolio_entity_name)
+            ?.entity_id.toString() || "";
+        const instrumentId = editingTransaction.instrument_entity_name
+          ? entitiesByName
+              .get(editingTransaction.instrument_entity_name)
+              ?.entity_id.toString() || ""
+          : "";
+        const contraId = editingTransaction.contra_entity_name
+          ? entitiesByName
+              .get(editingTransaction.contra_entity_name)
+              ?.entity_id.toString() || ""
+          : "";
         const transactionTypeId =
-          editingTransaction.transaction_type_id?.toString() ||
-          transactionTypes
-            ?.find(
-              (tt) =>
-                tt.transaction_type_name ===
-                editingTransaction.transaction_type_name
-            )
-            ?.transaction_type_id.toString() ||
-          "";
-
-        console.log(
-          "🔍 Resolved IDs - portfolio:",
-          portfolioId,
-          "instrument:",
-          instrumentId,
-          "type:",
-          transactionTypeId,
-          "contra:",
-          contraId
-        );
+          transactionTypesByName
+            .get(editingTransaction.transaction_type_name)
+            ?.transaction_type_id.toString() || "";
 
         const tradeDate = editingTransaction.trade_date
           ? editingTransaction.trade_date.split("T")[0]
@@ -318,7 +350,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         // Mark as having unsaved changes when editing an existing transaction
         setHasUnsavedChanges(true);
       }
-    }, [editingTransaction, entities, transactionTypes]);
+    }, [editingTransaction, entitiesByName, transactionTypesByName]);
 
     // Calculate current step when editing an existing transaction
     React.useEffect(() => {
@@ -366,14 +398,6 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       }
     }, [editingTransaction, formData, transactionTypes, isInvestorTransaction]);
 
-    // Create entity type maps for O(1) lookups
-    const entityTypeMap = useMemo(() => {
-      if (!entityTypes) return new Map();
-      return new Map(
-        entityTypes.map((et) => [et.entity_type_name, et.entity_type_id])
-      );
-    }, [entityTypes]);
-
     // Filter entities by type
     const portfolioEntities = useMemo(() => {
       if (!entities || !entityTypeMap.has("Portfolio")) {
@@ -390,28 +414,14 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       return filtered;
     }, [entities, entityTypeMap]);
 
-    // Get selected portfolio entity
+    // Get selected portfolio entity using O(1) lookup
     const selectedPortfolio = useMemo(() => {
-      if (!formData.portfolio_entity_id || !portfolioEntities) {
-        console.log(
-          "🔍 No portfolio selected - formData.portfolio_entity_id:",
-          formData.portfolio_entity_id,
-          "portfolioEntities:",
-          portfolioEntities
-        );
+      if (!formData.portfolio_entity_id) {
         return null;
       }
-      const found = portfolioEntities.find(
-        (e) => e.entity_id.toString() === formData.portfolio_entity_id
-      );
-      console.log(
-        "🔍 Looking for portfolio with ID:",
-        formData.portfolio_entity_id,
-        "Found:",
-        found
-      );
-      return found;
-    }, [formData.portfolio_entity_id, portfolioEntities]);
+      const portfolioId = parseInt(formData.portfolio_entity_id);
+      return entitiesById.get(portfolioId) || null;
+    }, [formData.portfolio_entity_id, entitiesById]);
 
     const instrumentEntities = useMemo(() => {
       if (!entities || !entityTypes) return [];
@@ -429,22 +439,19 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       );
     }, [entities, entityTypes]);
 
-    // Get selected instrument entity
+    // Get selected instrument entity using O(1) lookup
     const selectedInstrument = useMemo(() => {
-      if (!formData.instrument_entity_id || !entities) return null;
-      return entities.find(
-        (e) => e.entity_id.toString() === formData.instrument_entity_id
-      );
-    }, [formData.instrument_entity_id, entities]);
+      if (!formData.instrument_entity_id) return null;
+      const instrumentId = parseInt(formData.instrument_entity_id);
+      return entitiesById.get(instrumentId) || null;
+    }, [formData.instrument_entity_id, entitiesById]);
 
-    // Get selected transaction type
+    // Get selected transaction type using O(1) lookup
     const selectedTransactionType = useMemo(() => {
-      if (!formData.transaction_type_id || !transactionTypes) return null;
-      return transactionTypes.find(
-        (tt) =>
-          tt.transaction_type_id.toString() === formData.transaction_type_id
-      );
-    }, [formData.transaction_type_id, transactionTypes]);
+      if (!formData.transaction_type_id) return null;
+      const typeId = parseInt(formData.transaction_type_id);
+      return transactionTypesById.get(typeId) || null;
+    }, [formData.transaction_type_id, transactionTypesById]);
 
     // Parse transaction type schema
     const transactionSchema = useMemo((): TransactionSchema | null => {
@@ -573,15 +580,28 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     // Create/Update transaction mutation
     const mutation = useMutation({
-      mutationFn: (data: apiService.CreateTransactionRequest) => {
+      mutationFn: async (data: apiService.CreateTransactionRequest) => {
         if (editingTransaction) {
-          const updateData = {
-            ...data,
-            transaction_id: editingTransaction.transaction_id,
-          };
-          return apiService.updateTransaction(updateData);
+          // updateTransaction expects (transactionId, data)
+          return apiService.updateTransaction(
+            editingTransaction.transaction_id,
+            data
+          );
         } else {
-          return apiService.createTransaction(data);
+          // createTransaction returns void, but we need to return a Transaction for consistency
+          await apiService.createTransaction(data);
+          // Return a mock transaction object to satisfy TypeScript
+          return {
+            transaction_id: 0,
+            portfolio_entity_name: data.portfolio_entity_name,
+            contra_entity_name: data.contra_entity_name,
+            instrument_entity_name: data.instrument_entity_name,
+            transaction_status_name: data.transaction_status_name,
+            transaction_type_name: data.transaction_type_name,
+            trade_date: data.trade_date,
+            settle_date: data.settle_date,
+            properties: data.properties,
+          } as apiService.Transaction;
         }
       },
       onSuccess: () => {
@@ -610,10 +630,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         // Optimistically update the cache by removing the deleted transaction
         queryClient.setQueriesData(
           { queryKey: ["transactions"] },
-          (old: any) => {
+          (old: unknown) => {
             if (!old) return old;
+            if (!Array.isArray(old)) return old;
             return old.filter(
-              (transaction: any) => transaction.transaction_id !== transactionId
+              (transaction: apiService.Transaction) =>
+                transaction.transaction_id !== transactionId
             );
           }
         );
@@ -641,23 +663,18 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     // Handle form submission (Create Transaction button - saves as QUEUED)
     const handleSubmit = () => {
-      // Find the entity names from the IDs
-      const portfolioEntity = entities?.find(
-        (e) => e.entity_id === parseInt(formData.portfolio_entity_id)
+      // Find the entity names from the IDs using O(1) map lookups
+      const portfolioEntity = entitiesById.get(
+        parseInt(formData.portfolio_entity_id)
       );
       const contraEntity = formData.contra_entity_id
-        ? entities?.find(
-            (e) => e.entity_id === parseInt(formData.contra_entity_id)
-          )
+        ? entitiesById.get(parseInt(formData.contra_entity_id))
         : null;
       const instrumentEntity = formData.instrument_entity_id
-        ? entities?.find(
-            (e) => e.entity_id === parseInt(formData.instrument_entity_id)
-          )
+        ? entitiesById.get(parseInt(formData.instrument_entity_id))
         : null;
-      const transactionType = transactionTypes?.find(
-        (tt) =>
-          tt.transaction_type_id === parseInt(formData.transaction_type_id)
+      const transactionType = transactionTypesById.get(
+        parseInt(formData.transaction_type_id)
       );
 
       if (!portfolioEntity || !transactionType) {
@@ -673,7 +690,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         transaction_type_name: transactionType.transaction_type_name,
         trade_date: formData.trade_date,
         settle_date: formData.settle_date,
-        properties: formData.properties,
+        properties: formData.properties as apiService.JSONValue,
       };
 
       mutation.mutate(submitData);
@@ -688,10 +705,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     // Check if transaction is INCOMPLETE (can be deleted)
     const isIncompleteTransaction = useMemo(() => {
-      return (
-        editingTransaction?.transaction_status_id === 1 // INCOMPLETE
-      );
-    }, [editingTransaction?.transaction_status_id]);
+      return editingTransaction?.transaction_status_name === "INCOMPLETE";
+    }, [editingTransaction?.transaction_status_name]);
 
     // Handle delete transaction
     const handleDelete = () => {
@@ -701,7 +716,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     };
 
     // Handle input changes
-    const handleInputChange = (field: keyof FormData, value: any) => {
+    const handleInputChange = (field: keyof FormData, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
 
       // Mark that there are unsaved changes
@@ -753,15 +768,18 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               isContraRequired = validContraGroups.length > 0;
 
               // Initialize properties with default values
-              const defaultProperties: Record<string, any> = {};
+              const defaultProperties: Record<string, unknown> = {};
               if (schema.properties) {
-                Object.entries(schema.properties).forEach(
-                  ([propName, propSchema]: [string, any]) => {
-                    if (propSchema.default !== undefined) {
-                      defaultProperties[propName] = propSchema.default;
-                    }
+                (
+                  Object.entries(schema.properties) as [
+                    string,
+                    PropertySchema
+                  ][]
+                ).forEach(([propName, propSchema]) => {
+                  if (propSchema.default !== undefined) {
+                    defaultProperties[propName] = propSchema.default;
                   }
-                );
+                });
               }
               newData.properties = defaultProperties;
             } catch (error) {
@@ -798,7 +816,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     };
 
     // Handle property changes
-    const handlePropertyChange = (propertyName: string, value: any) => {
+    const handlePropertyChange = (propertyName: string, value: unknown) => {
       // Debug: Log property changes for amount field
       if (propertyName === "amount") {
         console.log(
@@ -817,39 +835,8 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       setHasUnsavedChanges(true);
     };
 
-    // Handle entity creation success
-    const handlePortfolioCreated = (newEntity: any) => {
-      setFormData((prev) => ({
-        ...prev,
-        portfolio_entity_id: newEntity.entity_id.toString(),
-      }));
-      setShowPortfolioModal(false);
-      setCurrentStep(1);
-      // Refresh entities data
-      queryClient.invalidateQueries({ queryKey: ["entities"] });
-    };
-
-    const handleInstrumentCreated = (newEntity: any) => {
-      setFormData((prev) => ({
-        ...prev,
-        instrument_entity_id: newEntity.entity_id.toString(),
-      }));
-      setShowInstrumentModal(false);
-      setCurrentStep(2);
-      // Refresh entities data
-      queryClient.invalidateQueries({ queryKey: ["entities"] });
-    };
-
-    const handlecontraCreated = (newEntity: any) => {
-      setFormData((prev) => ({
-        ...prev,
-        contra_entity_id: newEntity.entity_id.toString(),
-      }));
-      setShowcontraModal(false);
-      setCurrentStep(4); // Contra is always step 4 regardless of investor transaction
-      // Refresh entities data
-      queryClient.invalidateQueries({ queryKey: ["entities"] });
-    };
+    // Note: Entity creation modals now handle their own logic
+    // and refresh the entities query on close
 
     // Check if contra step is required
     const isContraRequired = useMemo(() => {
@@ -917,21 +904,41 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         formData.transaction_type_id;
 
       if (hasMinimumFields && hasUnsavedChanges) {
+        // Find the entity names from the IDs using O(1) map lookups
+        const portfolioEntity = entitiesById.get(
+          parseInt(formData.portfolio_entity_id)
+        );
+        const contraEntity = formData.contra_entity_id
+          ? entitiesById.get(parseInt(formData.contra_entity_id))
+          : null;
+        const instrumentEntity = formData.instrument_entity_id
+          ? entitiesById.get(parseInt(formData.instrument_entity_id))
+          : null;
+        const transactionType = transactionTypesById.get(
+          parseInt(formData.transaction_type_id)
+        );
+
+        if (!portfolioEntity || !transactionType) {
+          console.error("Missing required entity or transaction type");
+          if (onClose) {
+            onClose();
+          }
+          return;
+        }
+
         if (editingTransaction) {
-          // Update existing transaction
-          const updateData: apiService.UpdateTransactionRequest = {
-            transaction_id: editingTransaction.transaction_id,
-            user_id: currentUser?.user_id || 0,
-            portfolio_entity_id: parseInt(formData.portfolio_entity_id),
-            instrument_entity_id: isInvestorTransaction
-              ? 0 // NULL for investor transactions
-              : parseInt(formData.instrument_entity_id),
-            transaction_type_id: parseInt(formData.transaction_type_id),
-            contra_entity_id: isContraRequired
-              ? parseInt(formData.contra_entity_id)
-              : 0,
-            properties: formData.properties,
-            transaction_status_id: 1, // INCOMPLETE
+          // Update existing transaction using name-based API
+          const updateData: apiService.CreateTransactionRequest = {
+            portfolio_entity_name: portfolioEntity.entity_name,
+            contra_entity_name: contraEntity?.entity_name,
+            instrument_entity_name: instrumentEntity?.entity_name,
+            transaction_status_name: "INCOMPLETE",
+            transaction_type_name: transactionType.transaction_type_name,
+            trade_date:
+              formData.trade_date || new Date().toISOString().split("T")[0],
+            settle_date:
+              formData.settle_date || new Date().toISOString().split("T")[0],
+            properties: formData.properties as apiService.JSONValue,
           };
 
           // Debug: Check the size of the request data
@@ -957,7 +964,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               "🚨 CORRUPTED PROPERTIES DETECTED! Resetting to empty object."
             );
             // Preserve any valid user input (like amount) that might have been entered
-            const validProperties: any = {};
+            const validProperties: Record<string, unknown> = {};
             Object.keys(formData.properties).forEach((key) => {
               const value = formData.properties[key];
               // Keep only simple values that aren't part of the corrupted string
@@ -972,7 +979,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 }
               }
             });
-            updateData.properties = validProperties;
+            updateData.properties = validProperties as apiService.JSONValue;
             console.log("🔧 Preserved valid properties:", validProperties);
           } else if (requestSize > 10000) {
             // If larger than 10KB
@@ -997,15 +1004,15 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 }
                 return acc;
               },
-              {} as any
+              {} as Record<string, unknown>
             );
 
-            updateData.properties = cleanedProperties;
+            updateData.properties = cleanedProperties as apiService.JSONValue;
             console.log("Cleaned properties:", cleanedProperties);
           }
 
           apiService
-            .updateTransaction(updateData)
+            .updateTransaction(editingTransaction.transaction_id, updateData)
             .then(() => {
               queryClient.invalidateQueries({ queryKey: ["transactions"] });
               // Close the form after successful save
@@ -1020,19 +1027,18 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               );
             });
         } else {
-          // Create new transaction
+          // Create new transaction using name-based API
           const submitData: apiService.CreateTransactionRequest = {
-            user_id: currentUser?.user_id || 0,
-            portfolio_entity_id: parseInt(formData.portfolio_entity_id),
-            instrument_entity_id: isInvestorTransaction
-              ? 0 // NULL for investor transactions
-              : parseInt(formData.instrument_entity_id),
-            transaction_type_id: parseInt(formData.transaction_type_id),
-            contra_entity_id: isContraRequired
-              ? parseInt(formData.contra_entity_id)
-              : 0,
-            properties: formData.properties,
-            transaction_status_id: 1, // INCOMPLETE
+            portfolio_entity_name: portfolioEntity.entity_name,
+            contra_entity_name: contraEntity?.entity_name,
+            instrument_entity_name: instrumentEntity?.entity_name,
+            transaction_status_name: "INCOMPLETE",
+            transaction_type_name: transactionType.transaction_type_name,
+            trade_date:
+              formData.trade_date || new Date().toISOString().split("T")[0],
+            settle_date:
+              formData.settle_date || new Date().toISOString().split("T")[0],
+            properties: formData.properties as apiService.JSONValue,
           };
 
           // Debug: Check the size of the request data
@@ -1050,7 +1056,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               "🚨 CORRUPTED PROPERTIES DETECTED! Resetting to empty object."
             );
             // Preserve any valid user input (like amount) that might have been entered
-            const validProperties: any = {};
+            const validProperties: Record<string, unknown> = {};
             Object.keys(formData.properties).forEach((key) => {
               const value = formData.properties[key];
               // Keep only simple values that aren't part of the corrupted string
@@ -1065,7 +1071,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 }
               }
             });
-            submitData.properties = validProperties;
+            submitData.properties = validProperties as apiService.JSONValue;
             console.log("🔧 Preserved valid properties:", validProperties);
           } else if (requestSize > 10000) {
             // If larger than 10KB
@@ -1090,10 +1096,10 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 }
                 return acc;
               },
-              {} as any
+              {} as Record<string, unknown>
             );
 
-            submitData.properties = cleanedProperties;
+            submitData.properties = cleanedProperties as apiService.JSONValue;
             console.log("Cleaned properties:", cleanedProperties);
           }
 
@@ -1124,12 +1130,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     }, [
       formData,
       hasUnsavedChanges,
-      currentUser?.user_id,
-      isContraRequired,
       queryClient,
       onClose,
       editingTransaction,
       isInvestorTransaction,
+      entitiesById,
+      transactionTypesById,
     ]);
 
     // Expose dismissal handler to parent via ref
@@ -1142,8 +1148,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     );
 
     // Render property field based on schema
-    const renderPropertyField = (propertyName: string, propertySchema: any) => {
-      const value = formData.properties[propertyName] || "";
+    const renderPropertyField = (
+      propertyName: string,
+      propertySchema: PropertySchema
+    ) => {
+      const rawValue = formData.properties[propertyName];
+      const value = typeof rawValue === "string" ? rawValue : "";
       const isRequired = transactionSchema?.required?.includes(propertyName);
       const displayLabel = prettyPrint(propertyName);
       const description = propertySchema.description;
@@ -1257,7 +1267,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           // Lookup entities and loading state by category
           const categoryLookup: Record<
             string,
-            { entities: any[] | undefined; loading: boolean }
+            { entities: apiService.Entity[] | undefined; loading: boolean }
           > = {
             Currency: { entities: currencyEntities, loading: currencyLoading },
             Portfolio: {
@@ -1365,12 +1375,26 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
         // For display, use the raw string value if not formatted, otherwise format it
         let displayValue = "";
-        if (isFormatted && rawValue !== undefined && rawValue !== "") {
+        if (
+          isFormatted &&
+          rawValue !== undefined &&
+          rawValue !== null &&
+          rawValue !== ""
+        ) {
+          // Type guard: ensure rawValue is string or number
+          const numValue =
+            typeof rawValue === "string" || typeof rawValue === "number"
+              ? rawValue
+              : 0;
           displayValue = isPriceField
-            ? formatPriceForDisplay(rawValue)
-            : formatNumberForDisplay(rawValue);
-        } else if (rawValue !== undefined && rawValue !== "") {
-          displayValue = rawValue.toString();
+            ? formatPriceForDisplay(numValue)
+            : formatNumberForDisplay(numValue);
+        } else if (
+          rawValue !== undefined &&
+          rawValue !== null &&
+          rawValue !== ""
+        ) {
+          displayValue = String(rawValue);
         }
 
         return (
@@ -1616,11 +1640,9 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                       <Autocomplete
                         options={instrumentEntities || []}
                         getOptionLabel={(option) => {
-                          const entityType = entityTypes?.find(
-                            (et) => et.entity_type_id === option.entity_type_id
-                          );
-                          return entityType
-                            ? `${option.entity_name} (${entityType.entity_type_name})`
+                          // Entity already has entity_type_name, no need to look it up
+                          return option.entity_type_name
+                            ? `${option.entity_name} (${option.entity_type_name})`
                             : option.entity_name;
                         }}
                         value={
@@ -2047,12 +2069,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   Create New Portfolio
                 </Typography>
                 <Box sx={{ maxHeight: "70vh", overflow: "auto" }}>
-                  <EntityForm
-                    onClose={() => setShowPortfolioModal(false)}
-                    onSuccess={handlePortfolioCreated}
-                    defaultEntityType="Portfolio"
-                    disableDialog={true}
-                  />
+                  <EntityForm onClose={() => setShowPortfolioModal(false)} />
                 </Box>
               </Box>
             </Box>
@@ -2098,19 +2115,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   Create New Instrument
                 </Typography>
                 <Box sx={{ maxHeight: "70vh", overflow: "auto" }}>
-                  <EntityForm
-                    onClose={() => setShowInstrumentModal(false)}
-                    onSuccess={handleInstrumentCreated}
-                    allowedEntityTypes={instrumentEntities
-                      .map((inst) => {
-                        const entityType = entityTypes?.find(
-                          (et) => et.entity_type_id === inst.entity_type_id
-                        );
-                        return entityType?.entity_type_name || "";
-                      })
-                      .filter(Boolean)}
-                    disableDialog={true}
-                  />
+                  <EntityForm onClose={() => setShowInstrumentModal(false)} />
                 </Box>
               </Box>
             </Box>
@@ -2156,22 +2161,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   Create New Contra
                 </Typography>
                 <Box sx={{ maxHeight: "70vh", overflow: "auto" }}>
-                  <EntityForm
-                    onClose={() => setShowcontraModal(false)}
-                    onSuccess={handlecontraCreated}
-                    allowedEntityTypes={
-                      transactionSchema?.valid_contra_groups
-                        ? entityTypes
-                            ?.filter((et) =>
-                              transactionSchema.valid_contra_groups.includes(
-                                et.short_label || ""
-                              )
-                            )
-                            .map((et) => et.entity_type_name) || []
-                        : entityTypes?.map((et) => et.entity_type_name) || [] // Allow all entity types if no valid_contra_groups
-                    }
-                    disableDialog={true}
-                  />
+                  <EntityForm onClose={() => setShowcontraModal(false)} />
                 </Box>
               </Box>
             </Box>

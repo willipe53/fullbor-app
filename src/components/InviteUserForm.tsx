@@ -21,7 +21,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import type { ClientGroup, CreateInvitationRequest } from "../services/api";
+import type { ClientGroup, CreateInvitationRequest, User } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
 interface InviteUserFormProps {
@@ -68,11 +68,11 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       const result = await apiService.queryUsers({ sub: userId! });
 
       // Handle paginated response
-      const users = Array.isArray(result)
+      const users: User[] = (Array.isArray(result)
         ? result
         : result && "data" in result
         ? result.data
-        : [];
+        : []) as User[];
 
       // Find the user with matching sub
       return users.find((user) => user.sub === userId) || null;
@@ -147,13 +147,13 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       const result = await apiService.queryUsers({ email: formData.email });
 
       // Handle paginated response
-      const users = Array.isArray(result)
+      const users: User[] = (Array.isArray(result)
         ? result
         : result && "data" in result
         ? result.data
-        : [];
+        : []) as User[];
 
-      return { data: users };
+      return users;
     },
     enabled: false, // Only run when manually triggered
     retry: false,
@@ -459,14 +459,6 @@ If you have any questions, please contact the person at your firm who administer
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 1 }}>
           {/* Client Group Selection */}
-          {console.log("🔍 InviteUserForm - Current form state:", {
-            formData: {
-              clientGroupId: formData.clientGroupId,
-              clientGroupName: formData.clientGroupName,
-            },
-            clientGroupsCount: clientGroups.length,
-            currentUserPrimaryId: currentUser?.primary_client_group_id,
-          })}
           <FormControl fullWidth error={!!getFieldError("clientGroupId")}>
             <InputLabel>Invite To Join</InputLabel>
             <Select
@@ -596,7 +588,7 @@ If you have any questions, please contact the person at your firm who administer
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>Close</Button>
 
         {!invitationCode ? (
           <Button

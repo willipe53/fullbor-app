@@ -27,7 +27,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 }) => {
   const [confirmationCode, setConfirmationCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const { confirmSignup, login } = useAuth();
+  const { confirmSignup, signin } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +39,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       await confirmSignup(email, confirmationCode);
 
       // Then automatically log the user in
-      await login(email, password);
+      await signin(email, password);
 
       onClose();
       setConfirmationCode("");

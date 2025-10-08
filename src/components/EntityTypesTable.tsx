@@ -62,16 +62,16 @@ const EntityTypesTable: React.FC = () => {
   });
 
   // Transform API response data to array format
-  const data = useMemo(() => {
+  const data = useMemo<EntityType[]>(() => {
     if (!rawData) return [];
 
     // Handle simple array format (when no pagination parameters are provided)
     if (Array.isArray(rawData)) {
-      return rawData;
+      return rawData as EntityType[];
     }
 
     if (rawData && typeof rawData === "object" && "data" in rawData) {
-      return rawData.data || [];
+      return (rawData.data as EntityType[]) || [];
     }
 
     // Handle count-only response format: { count: number }

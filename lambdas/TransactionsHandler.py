@@ -3,9 +3,11 @@ import json
 import boto3
 import pymysql
 import os
+import uuid
 from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+from typing import Dict, Any
 
 
 def get_db_connection():
@@ -286,6 +288,50 @@ def handle_transaction_operations(connection, http_method, path, path_parameters
         return {"error": f"Method {http_method} not allowed for transactions"}
 
 
+def send_to_sqs(transaction_data: Dict[str, Any], operation: str) -> bool:
+    """Send transaction data to SQS FIFO queue."""
+    try:
+        sqs = boto3.client('sqs', region_name='us-east-2')
+        queue_url = "https://sqs.us-east-2.amazonaws.com/316490106381/pandatransactions.fifo"
+
+        # Prepare message body
+        message_body = {
+            "operation": operation,  # "create" or "update"
+            "transaction_id": transaction_data.get("transaction_id"),
+            "portfolio_entity_id": transaction_data.get("portfolio_entity_id"),
+            "contra_entity_id": transaction_data.get("contra_entity_id"),
+            "instrument_entity_id": transaction_data.get("instrument_entity_id"),
+            "transaction_type_id": transaction_data.get("transaction_type_id"),
+            "transaction_status_id": transaction_data.get("transaction_status_id"),
+            "trade_date": transaction_data.get("trade_date"),
+            "settle_date": transaction_data.get("settle_date"),
+            "properties": transaction_data.get("properties"),
+            "updated_user_id": transaction_data.get("updated_user_id"),
+            "timestamp": transaction_data.get("timestamp", datetime.utcnow().isoformat())
+        }
+
+        # Generate unique message group ID and deduplication ID
+        message_group_id = f"transaction-{transaction_data.get('transaction_id', 'new')}"
+        message_deduplication_id = f"{operation}-{transaction_data.get('transaction_id', uuid.uuid4())}-{int(os.urandom(4).hex(), 16)}"
+
+        print(
+            f"DEBUG: Sending to SQS - Group ID: {message_group_id}, Dedup ID: {message_deduplication_id}")
+
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body),
+            MessageGroupId=message_group_id,
+            MessageDeduplicationId=message_deduplication_id
+        )
+
+        print(f"DEBUG: SQS message sent successfully: {response['MessageId']}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to send message to SQS: {str(e)}")
+        return False
+
+
 def handle_get_operations(connection, path, path_parameters, query_parameters, valid_portfolio_entity_ids):
     """Handle GET operations."""
     if 'transaction_id' in path_parameters:
@@ -514,6 +560,22 @@ def handle_post_operations(connection, path, path_parameters, body, current_user
         new_transaction_id = cursor.lastrowid
         connection.commit()
 
+        # Send to SQS queue
+        transaction_data = {
+            "transaction_id": new_transaction_id,
+            "portfolio_entity_id": portfolio_entity_id,
+            "contra_entity_id": contra_entity_id,
+            "instrument_entity_id": instrument_entity_id,
+            "transaction_type_id": transaction_type_id,
+            "transaction_status_id": transaction_status_id,
+            "trade_date": trade_date,
+            "settle_date": settle_date,
+            "properties": properties,
+            "updated_user_id": user_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        send_to_sqs(transaction_data, "create")
+
         return {"message": "Transaction created successfully", "transaction_id": new_transaction_id}
 
 
@@ -640,6 +702,33 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
             """, update_params)
 
         connection.commit()
+
+        # Fetch the updated transaction data to send to SQS
+        cursor.execute("""
+            SELECT transaction_id, portfolio_entity_id, contra_entity_id, 
+                   instrument_entity_id, transaction_type_id, transaction_status_id, 
+                   trade_date, settle_date, properties, updated_user_id
+            FROM transactions
+            WHERE transaction_id = %s
+        """, (transaction_id,))
+        updated_transaction = cursor.fetchone()
+
+        if updated_transaction:
+            transaction_data = {
+                "transaction_id": updated_transaction[0],
+                "portfolio_entity_id": updated_transaction[1],
+                "contra_entity_id": updated_transaction[2],
+                "instrument_entity_id": updated_transaction[3],
+                "transaction_type_id": updated_transaction[4],
+                "transaction_status_id": updated_transaction[5],
+                "trade_date": updated_transaction[6],
+                "settle_date": updated_transaction[7],
+                "properties": json.loads(updated_transaction[8]) if updated_transaction[8] else {},
+                "updated_user_id": updated_transaction[9],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            send_to_sqs(transaction_data, "update")
+
         return {"message": "Transaction updated successfully"}
 
 
