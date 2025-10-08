@@ -56,36 +56,55 @@ const ClientGroupOnboarding: React.FC<ClientGroupOnboardingProps> = ({
       console.log("🔍 Creating client group with data:", data);
 
       // First create the client group
-      const result = await apiService.updateClientGroup(data);
-      console.log("✅ Client group created:", result);
+      await apiService.createClientGroup(data);
+      console.log("✅ Client group created");
 
       // Get the current user's database ID (userId is Cognito UUID, we need database ID)
       console.log("🔍 Getting user database ID for Cognito ID:", userId);
       const currentUserData = await apiService.queryUsers({ sub: userId });
-      if (!currentUserData || currentUserData.length === 0) {
+      const users: apiService.User[] = (
+        Array.isArray(currentUserData)
+          ? currentUserData
+          : "data" in currentUserData
+          ? currentUserData.data
+          : []
+      ) as apiService.User[];
+
+      if (!users || users.length === 0) {
         throw new Error("User not found in database");
       }
-      const databaseUserId = currentUserData[0].user_id;
+      const databaseUserId = users[0].user_id;
       console.log("✅ Found database user_id:", databaseUserId);
 
       // Then add the user to the newly created group
       console.log("🔍 Adding user to group:", {
-        client_group_id: result.id,
-        user_id: databaseUserId,
-        add_or_remove: "add",
+        client_group_name: data.client_group_name,
+        user_ids: [databaseUserId],
       });
 
-      const membershipResult = await apiService.modifyClientGroupMembership({
-        client_group_id: result.id,
-        user_id: databaseUserId,
-        add_or_remove: "add",
+      await apiService.setClientGroupUsers(data.client_group_name, {
+        user_ids: [databaseUserId],
       });
-      console.log("✅ Membership result:", membershipResult);
+      console.log("✅ User added to group");
 
-      return result;
+      // Query the created group to get its ID
+      const createdGroupResponse = await apiService.queryClientGroups({});
+      const groups: apiService.ClientGroup[] = Array.isArray(
+        createdGroupResponse
+      )
+        ? createdGroupResponse
+        : "data" in createdGroupResponse
+        ? createdGroupResponse.data
+        : [];
+
+      const createdGroup = groups.find(
+        (g) => g.client_group_name === data.client_group_name
+      );
+
+      return createdGroup!;
     },
     onSuccess: (result) => {
-      onComplete(result.id);
+      onComplete(result.client_group_id);
     },
     onError: (error: Error) => {
       const friendlyMessage = apiService.parseApiError(error);
@@ -100,7 +119,9 @@ const ClientGroupOnboarding: React.FC<ClientGroupOnboardingProps> = ({
       const result = await apiService.queryInvitations({});
 
       // Handle paginated response format
-      const invitations = result.data || result;
+      const invitations: apiService.Invitation[] = Array.isArray(result)
+        ? result
+        : [];
       const invitation = invitations.find(
         (inv: apiService.Invitation) => inv.code === invitationCode
       );
@@ -131,20 +152,45 @@ const ClientGroupOnboarding: React.FC<ClientGroupOnboardingProps> = ({
 
   const redeemInvitationMutation = useMutation({
     mutationFn: async (invitation: apiService.Invitation) => {
-      // If this is their only client group, set it as primary first
-      const currentGroups = userClientGroups || [];
+      // Redeem the invitation (this handles adding user to group)
+      await apiService.redeemInvitation(invitation.code);
+
+      // Query the client group to get its ID
+      const groupsResponse = await apiService.queryClientGroups({});
+      const groups: apiService.ClientGroup[] = Array.isArray(groupsResponse)
+        ? groupsResponse
+        : "data" in groupsResponse
+        ? groupsResponse.data
+        : [];
+
+      const clientGroup = groups.find(
+        (g) => g.client_group_name === invitation.client_group_name
+      );
+
+      if (!clientGroup) {
+        throw new Error(
+          `Client group "${invitation.client_group_name}" not found`
+        );
+      }
+
+      // If this is their only client group, set it as primary
+      const currentGroups: apiService.ClientGroup[] = Array.isArray(
+        userClientGroups
+      )
+        ? userClientGroups
+        : "data" in (userClientGroups || {})
+        ? (userClientGroups as any).data
+        : [];
+
       if (currentGroups.length === 0) {
         await apiService.updateUser(userId!, {
           sub: userId!,
           email: userEmail!,
-          primary_client_group_id: invitation.client_group_id,
+          primary_client_group_id: clientGroup.client_group_id,
         });
       }
 
-      // Redeem the invitation (this handles adding user to group)
-      await apiService.redeemInvitation(invitation.code);
-
-      return invitation.client_group_id;
+      return clientGroup.client_group_id;
     },
     onSuccess: (clientGroupId) => {
       onComplete(clientGroupId);
@@ -162,7 +208,7 @@ const ClientGroupOnboarding: React.FC<ClientGroupOnboardingProps> = ({
     }
 
     createClientGroupMutation.mutate({
-      name: organizationName.trim(),
+      client_group_name: organizationName.trim(),
     });
   };
 

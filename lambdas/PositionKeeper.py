@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 from typing import Dict, Any, Optional
+import cors_helper
 
 # Global caches for transaction types and entities
 _transaction_types_cache: Dict[int, Dict[str, Any]] = {}
@@ -267,12 +268,6 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
                 return False
         updated_user_id = message_body.get("updated_user_id")
 
-        print(
-            f"Processing {operation} operation for transaction ID: {transaction_id}")
-        print(f"Transaction Type ID: {transaction_type_id}")
-        print(f"Trade Date: {trade_date}")
-        print(f"Settle Date: {settle_date}")
-
         # Get transaction type from cache (no database lookup needed!)
         transaction_type = _transaction_types_cache.get(transaction_type_id)
         if not transaction_type:
@@ -283,7 +278,12 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
         transaction_type_name = transaction_type['name']
         type_properties = transaction_type['properties']
 
-        print(f"Transaction Type: {transaction_type_name}")
+        print(
+            f"Processing {operation} operation for transaction ID: {transaction_id}")
+        print(
+            f"Transaction Type: {transaction_type_name} (ID: {transaction_type_id})")
+        print(f"Trade Date: {trade_date}")
+        print(f"Settle Date: {settle_date}")
 
         # Extract position keeping rules
         current_position_date_field = type_properties.get("current_position")
@@ -348,7 +348,7 @@ def process_transaction_message(message_body: Dict[str, Any]) -> bool:
             connection.commit()
 
             print(
-                f"Successfully processed {operation} for transaction {transaction_id}")
+                f"Successfully processed {operation} for transaction {transaction_id} ({transaction_type_name})")
             return True
 
         except Exception as e:
@@ -409,7 +409,17 @@ def fetch_and_process_sqs_messages(sqs_client, queue_url: str) -> Dict[str, Any]
                 try:
                     # Parse message body
                     message_body = json.loads(message['Body'])
-                    print(f"\n--- Processing message {total_messages} ---")
+
+                    # Get transaction type name for the header log
+                    transaction_type_id = message_body.get(
+                        "transaction_type_id")
+                    transaction_type = _transaction_types_cache.get(
+                        transaction_type_id)
+                    transaction_type_name = transaction_type[
+                        'name'] if transaction_type else f"Unknown ({transaction_type_id})"
+
+                    print(
+                        f"\n--- Processing message {total_messages}: {transaction_type_name} ---")
                     print(
                         f"Message body: {json.dumps(message_body, indent=2)}")
 
@@ -489,7 +499,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 400,
             "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start, /position-keeper/stop, or GET /position-keeper/status"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     # Constants
@@ -526,7 +536,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "body": json.dumps(response),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         elif command == 'stop':
@@ -550,7 +560,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "body": json.dumps(response),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         elif command == 'start':
@@ -567,7 +577,7 @@ def lambda_handler(event, context):
                         "holder": lock_status['holder'],
                         "expires_at": lock_status['expires_at'].isoformat() if lock_status['expires_at'] else None
                     }),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             # Try to acquire lock
@@ -581,7 +591,7 @@ def lambda_handler(event, context):
                         "error": "Failed to acquire lock - Position Keeper may be starting",
                         "status": "locked"
                     }),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             print(f"Lock acquired by {holder}")
@@ -630,7 +640,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "body": json.dumps(response),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
     except Exception as e:
@@ -644,5 +654,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }

@@ -55,12 +55,18 @@ const ClientGroupsTable: React.FC = () => {
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
+    queryFn: async () => {
+      const response = await apiService.queryClientGroups({});
+      const groups: apiService.ClientGroup[] = Array.isArray(response)
+        ? response
+        : "data" in response
+        ? response.data
+        : [];
+      return groups.find(
+        (g) => g.client_group_id === currentUser!.primary_client_group_id
+      );
+    },
     enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
   });
 
   // Fetch client groups for the current user
@@ -71,8 +77,7 @@ const ClientGroupsTable: React.FC = () => {
     refetch,
   } = useQuery({
     queryKey: ["client-groups", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryClientGroups({ user_id: currentUser!.user_id }),
+    queryFn: () => apiService.queryClientGroups({}),
     enabled: !!currentUser?.user_id,
   });
 
@@ -81,9 +86,11 @@ const ClientGroupsTable: React.FC = () => {
     if (!rawClientGroupsData) return [];
 
     // Handle paginated response
-    const groups = Array.isArray(rawClientGroupsData)
+    const groups: apiService.ClientGroup[] = Array.isArray(rawClientGroupsData)
       ? rawClientGroupsData
-      : rawClientGroupsData.data || [];
+      : "data" in rawClientGroupsData
+      ? rawClientGroupsData.data
+      : [];
 
     console.log("ClientGroupsTable - raw data:", rawClientGroupsData);
     console.log("ClientGroupsTable - extracted groups:", groups);

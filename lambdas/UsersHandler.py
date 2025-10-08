@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+import cors_helper
 # Data consistency functions (inline to avoid import issues)
 
 
@@ -200,7 +201,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 403,
                 "body": json.dumps({"error": "User has no client group affiliations or access denied"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         if http_method == 'GET':
@@ -210,7 +211,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 405,
                     "body": json.dumps({"error": "Method not allowed. Use POST for setting client groups."}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
             elif 'sub' in path_parameters:
                 # Get single user by sub: /users/{sub}
@@ -230,7 +231,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "User not found or access denied"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     # Map database fields to OpenAPI schema
@@ -338,7 +339,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Invalid JSON in request body"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Validate required fields
@@ -348,7 +349,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "sub and email are required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Extract optional fields
@@ -385,7 +386,7 @@ def lambda_handler(event, context):
                             return {
                                 "statusCode": 500,
                                 "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
-                                "headers": {"Content-Type": "application/json"}
+                                "headers": cors_helper.get_cors_headers()
                             }
 
                         connection.commit()
@@ -413,7 +414,7 @@ def lambda_handler(event, context):
                                 return {
                                     "statusCode": 500,
                                     "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
-                                    "headers": {"Content-Type": "application/json"}
+                                    "headers": cors_helper.get_cors_headers()
                                 }
 
                         connection.commit()
@@ -429,7 +430,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Invalid JSON in request body"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Get client groups from request
@@ -440,7 +441,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Either client_group_names or client_group_ids is required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Get user_id for the target user
@@ -452,7 +453,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "User not found"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     target_user_id = user_result[0]
@@ -462,7 +463,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 403,
                             "body": json.dumps({"error": "Access denied - cannot modify this user"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                 # Convert client group names to IDs if needed
@@ -477,7 +478,7 @@ def lambda_handler(event, context):
                             return {
                                 "statusCode": 400,
                                 "body": json.dumps({"error": f"Client group '{client_group_name}' not found"}),
-                                "headers": {"Content-Type": "application/json"}
+                                "headers": cors_helper.get_cors_headers()
                             }
                 else:
                     final_client_group_ids = client_group_ids
@@ -505,7 +506,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "sub is required in path"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             try:
@@ -514,7 +515,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "Invalid JSON in request body"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             sub = unquote(path_parameters['sub'])
@@ -540,7 +541,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": f"Primary client group '{primary_client_group_name}' not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
             with connection.cursor() as cursor:
@@ -556,7 +557,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 404,
                         "body": json.dumps({"error": "User not found or access denied"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 target_user_id = existing[0]
@@ -581,7 +582,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 500,
                         "body": json.dumps({"error": "Failed to establish primary client group relationship"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 connection.commit()
@@ -593,7 +594,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "sub is required in path"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             sub = unquote(path_parameters['sub'])
@@ -611,7 +612,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 404,
                         "body": json.dumps({"error": "User not found or access denied"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Delete user (CASCADE will handle client_group_users)
@@ -625,7 +626,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 405,
                 "body": json.dumps({"error": f"Method {http_method} not allowed for users"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         connection.close()
@@ -640,7 +641,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": status_code,
             "body": json.dumps(response) if response is not None else "",
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     except Exception as e:
@@ -654,5 +655,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }

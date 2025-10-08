@@ -4,6 +4,7 @@ import pymysql
 import os
 from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
+import cors_helper
 
 
 def get_db_connection():
@@ -109,7 +110,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 405,
                     "body": json.dumps({"error": "Method not allowed. Use POST for redemption."}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
             elif '/invitations/validate/' in path:
                 # Public endpoint to validate invitation by code: /invitations/validate/{code}
@@ -119,7 +120,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Invitation code is required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 with connection.cursor() as cursor:
@@ -136,7 +137,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "Invitation not found"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     response = {
@@ -157,7 +158,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 user_client_groups = get_user_client_groups(
@@ -166,7 +167,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User has no client group affiliations"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 with connection.cursor() as cursor:
@@ -184,7 +185,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "Invitation not found or access denied"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     response = {
@@ -211,7 +212,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 user_client_groups = get_user_client_groups(
@@ -220,7 +221,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User has no client group affiliations"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 with connection.cursor() as cursor:
@@ -283,7 +284,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Invitation code is required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Get user_id from sub
@@ -292,7 +293,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User not found. Please ensure you are logged in."}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 with connection.cursor() as cursor:
@@ -308,7 +309,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "Invitation not found or already expired"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     client_group_id = invitation_result[0]
@@ -348,7 +349,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "Invalid JSON in request body"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Validate required fields
@@ -360,14 +361,14 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "email_sent_to is required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 if not client_group_name:
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "client_group_name is required"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Get user's client groups for authorization
@@ -376,7 +377,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 user_client_groups = get_user_client_groups(
@@ -385,7 +386,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "User has no client group affiliations"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 with connection.cursor() as cursor:
@@ -401,7 +402,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 403,
                             "body": json.dumps({"error": f"Client group '{client_group_name}' not found or access denied"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     client_group_id = client_group_result[0]
@@ -445,7 +446,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "invitation_id is required for deletion"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             invitation_id = path_parameters['invitation_id']
@@ -456,7 +457,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 403,
                     "body": json.dumps({"error": "User not found"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             user_client_groups = get_user_client_groups(connection, user_id)
@@ -464,7 +465,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 403,
                     "body": json.dumps({"error": "User has no client group affiliations"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             with connection.cursor() as cursor:
@@ -478,7 +479,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 404,
                         "body": json.dumps({"error": "Invitation not found or access denied"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 connection.commit()
@@ -490,7 +491,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "invitation_id is required for update"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             invitation_id = path_parameters['invitation_id']
@@ -501,7 +502,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 403,
                     "body": json.dumps({"error": "User not found"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             # Parse request body
@@ -511,7 +512,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "Invalid JSON in request body"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             # Check if invitation exists and user has access
@@ -531,7 +532,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 403,
                         "body": json.dumps({"error": "Invitation not found or access denied"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Build update query dynamically based on provided fields
@@ -556,7 +557,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 400,
                             "body": json.dumps({"error": f"Invalid expires_at format: {str(e)}"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                 if 'client_group_name' in request_data:
@@ -576,7 +577,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 403,
                             "body": json.dumps({"error": "Client group not found or access denied"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     update_fields.append("client_group_id = %s")
@@ -591,7 +592,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 400,
                         "body": json.dumps({"error": "No valid fields provided for update"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Add updated_user_id
@@ -616,7 +617,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 405,
                 "body": json.dumps({"error": f"Method {http_method} not allowed"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         connection.close()
@@ -633,7 +634,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": status_code,
             "body": json.dumps(response),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     except Exception as e:
@@ -647,5 +648,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }

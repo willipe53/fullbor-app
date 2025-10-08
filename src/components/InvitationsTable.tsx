@@ -9,7 +9,6 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
-  Alert,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
@@ -51,9 +50,13 @@ const InvitationsTable: React.FC = () => {
         );
 
         // Handle paginated response format
-        const invitationList = Array.isArray(invitations)
-          ? invitations
-          : invitations.data || [];
+        const invitationList: apiService.Invitation[] = (
+          Array.isArray(invitations)
+            ? invitations
+            : "data" in invitations
+            ? invitations.data
+            : []
+        ) as apiService.Invitation[];
 
         console.log(
           "🔍 InvitationsTable - Processed invitation list:",

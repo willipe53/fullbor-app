@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+import cors_helper
 
 
 def get_db_connection():
@@ -99,7 +100,7 @@ def lambda_handler(event, context):
                         return {
                             "statusCode": 404,
                             "body": json.dumps({"error": "Entity type not found"}),
-                            "headers": {"Content-Type": "application/json"}
+                            "headers": cors_helper.get_cors_headers()
                         }
 
                     # Map database fields to OpenAPI schema
@@ -184,7 +185,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "Invalid JSON in request body"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             # Validate required fields
@@ -193,7 +194,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "entity_type_name is required"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             # Get user ID for tracking (required for POST/PUT/DELETE)
@@ -239,7 +240,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "entity_type_name is required in path"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             try:
@@ -248,7 +249,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "Invalid JSON in request body"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             entity_type_name = unquote(path_parameters['entity_type_name'])
@@ -274,7 +275,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 404,
                         "body": json.dumps({"error": "Entity type not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 entity_type_id = existing[0]
@@ -328,7 +329,7 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "body": json.dumps({"error": "entity_type_name is required in path"}),
-                    "headers": {"Content-Type": "application/json"}
+                    "headers": cors_helper.get_cors_headers()
                 }
 
             entity_type_name = unquote(path_parameters['entity_type_name'])
@@ -346,7 +347,7 @@ def lambda_handler(event, context):
                     return {
                         "statusCode": 404,
                         "body": json.dumps({"error": "Entity type not found"}),
-                        "headers": {"Content-Type": "application/json"}
+                        "headers": cors_helper.get_cors_headers()
                     }
 
                 # Delete entity type
@@ -360,7 +361,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 405,
                 "body": json.dumps({"error": f"Method {http_method} not allowed for entity types"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         connection.close()
@@ -375,7 +376,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": status_code,
             "body": json.dumps(response) if response is not None else "",
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     except Exception as e:
@@ -389,5 +390,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }

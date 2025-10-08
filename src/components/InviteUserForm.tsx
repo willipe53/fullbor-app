@@ -21,7 +21,11 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import type { ClientGroup, CreateInvitationRequest, User } from "../services/api";
+import type {
+  ClientGroup,
+  CreateInvitationRequest,
+  User,
+} from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
 interface InviteUserFormProps {
@@ -68,11 +72,13 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       const result = await apiService.queryUsers({ sub: userId! });
 
       // Handle paginated response
-      const users: User[] = (Array.isArray(result)
-        ? result
-        : result && "data" in result
-        ? result.data
-        : []) as User[];
+      const users: User[] = (
+        Array.isArray(result)
+          ? result
+          : result && "data" in result
+          ? result.data
+          : []
+      ) as User[];
 
       // Find the user with matching sub
       return users.find((user) => user.sub === userId) || null;
@@ -147,11 +153,13 @@ export const InviteUserForm: React.FC<InviteUserFormProps> = ({
       const result = await apiService.queryUsers({ email: formData.email });
 
       // Handle paginated response
-      const users: User[] = (Array.isArray(result)
-        ? result
-        : result && "data" in result
-        ? result.data
-        : []) as User[];
+      const users: User[] = (
+        Array.isArray(result)
+          ? result
+          : result && "data" in result
+          ? result.data
+          : []
+      ) as User[];
 
       return users;
     },

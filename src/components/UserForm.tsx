@@ -12,7 +12,6 @@ import {
 } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import { useAuth } from "../contexts/AuthContext";
 import FormHeader from "./FormHeader";
 
 interface UserFormProps {
@@ -21,7 +20,6 @@ interface UserFormProps {
 }
 
 const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
-  const { userId } = useAuth();
   const queryClient = useQueryClient();
 
   // Form state
@@ -50,13 +48,6 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
     position: "relative", // Enable absolute positioning for header/footer
   };
 
-  // Get current user's database ID
-  const { data: currentUser } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: () => apiService.getUserBySub(userId!),
-    enabled: !!userId,
-  });
-
   // Fetch all client groups (for dropdown selection)
   const { data: clientGroupsData } = useQuery({
     queryKey: ["client-groups"],
@@ -65,11 +56,13 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
   });
 
   // Extract client groups array from paginated response
-  const clientGroups = useMemo(() => {
+  const clientGroups: apiService.ClientGroup[] = useMemo(() => {
     if (!clientGroupsData) return [];
-    const groups = Array.isArray(clientGroupsData)
+    const groups: apiService.ClientGroup[] = Array.isArray(clientGroupsData)
       ? clientGroupsData
-      : clientGroupsData.data || [];
+      : "data" in clientGroupsData
+      ? clientGroupsData.data
+      : [];
     console.log("Client groups for dropdown:", groups);
     return groups;
   }, [clientGroupsData]);
@@ -144,14 +137,14 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
 
   // Create/Update user mutation
   const mutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: async (data: any) => {
       console.log("🔍 UserForm mutation called with data:", data);
       if (editingUser?.sub) {
         console.log("🔍 Updating user with sub:", editingUser.sub);
-        return apiService.updateUser(editingUser.sub, data);
+        await apiService.updateUser(editingUser.sub, data);
       } else {
         console.log("🔍 Creating new user");
-        return apiService.createUser(data);
+        await apiService.createUser(data);
       }
     },
     onSuccess: () => {
@@ -264,7 +257,7 @@ const UserForm: React.FC<UserFormProps> = ({ onClose, editingUser }) => {
                 (group) => group.client_group_id === primaryClientGroupId
               ) || null
             }
-            onChange={(_, newValue) => {
+            onChange={(_, newValue: apiService.ClientGroup | null) => {
               console.log("Autocomplete onChange:", newValue);
               setPrimaryClientGroupId(newValue?.client_group_id || null);
             }}

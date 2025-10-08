@@ -108,14 +108,18 @@ class LambdaDeployer:
     def create_zip_package(self, lambda_file_path: str) -> bytes:
         """Create a zip package for the Lambda function."""
         lambda_path = Path(lambda_file_path)
+        lambdas_dir = lambda_path.parent
+        cors_helper_path = lambdas_dir / 'cors_helper.py'
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_zip:
             with zipfile.ZipFile(temp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Add the main Lambda file
                 zip_file.write(lambda_file_path, lambda_path.name)
 
-                # Add any additional dependencies if needed
-                # For now, we're just deploying the single file
+                # Add CORS helper if it exists
+                if cors_helper_path.exists():
+                    zip_file.write(cors_helper_path, 'cors_helper.py')
+                    logger.info("  ✓ Added cors_helper.py to package")
 
             # Read the zip file content
             with open(temp_zip.name, 'rb') as f:

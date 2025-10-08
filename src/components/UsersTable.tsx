@@ -63,12 +63,18 @@ const UsersTable: React.FC = () => {
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
+    queryFn: async () => {
+      const response = await apiService.queryClientGroups({});
+      const groups: apiService.ClientGroup[] = Array.isArray(response)
+        ? response
+        : "data" in response
+        ? response.data
+        : [];
+      return groups.find(
+        (g) => g.client_group_id === currentUser!.primary_client_group_id
+      );
+    },
     enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
   });
 
   // Fetch all users (admin functionality)
@@ -80,12 +86,9 @@ const UsersTable: React.FC = () => {
   } = useQuery({
     queryKey: ["users", "client-group", currentUser?.primary_client_group_id],
     queryFn: async () => {
-      const queryParams = {
-        requesting_user_id: currentUser!.user_id,
-        client_group_id: currentUser!.primary_client_group_id,
-      };
-      console.log("Fetching users with params:", queryParams);
-      return await apiService.queryUsers(queryParams);
+      console.log("Fetching users for current user:", currentUser);
+      // Query all users - the API filters by X-Current-User-Id header
+      return await apiService.queryUsers({});
     },
     enabled: !!currentUser?.primary_client_group_id && !!currentUser?.user_id,
     staleTime: 30 * 1000, // 30 seconds
@@ -103,8 +106,7 @@ const UsersTable: React.FC = () => {
   // Fetch client groups to map IDs to names
   const { data: clientGroupsData } = useQuery({
     queryKey: ["client-groups", currentUser?.user_id],
-    queryFn: () =>
-      apiService.queryClientGroups({ user_id: currentUser!.user_id }),
+    queryFn: () => apiService.queryClientGroups({}),
     enabled: !!currentUser?.user_id,
   });
 
@@ -113,34 +115,38 @@ const UsersTable: React.FC = () => {
     if (!clientGroupsData) return new Map();
 
     // Handle paginated response
-    const groups = Array.isArray(clientGroupsData)
+    const groups: apiService.ClientGroup[] = Array.isArray(clientGroupsData)
       ? clientGroupsData
-      : clientGroupsData.data || [];
+      : "data" in clientGroupsData
+      ? clientGroupsData.data
+      : [];
 
     return new Map(
-      groups.map((group: any) => [
-        group.client_group_id,
-        group.client_group_name,
-      ])
+      groups.map((group) => [group.client_group_id, group.client_group_name])
     );
   }, [clientGroupsData]);
 
   // Transform users data
-  const usersData = useMemo(() => {
+  const usersData: apiService.User[] = useMemo(() => {
     if (!rawUsersData) return [];
 
+    // Handle paginated response
+    const users: apiService.User[] = (
+      Array.isArray(rawUsersData)
+        ? rawUsersData
+        : "data" in rawUsersData
+        ? rawUsersData.data
+        : []
+    ) as apiService.User[];
+
     // Check if data is already in object format
-    if (
-      Array.isArray(rawUsersData) &&
-      rawUsersData.length > 0 &&
-      typeof rawUsersData[0] === "object"
-    ) {
-      return rawUsersData;
+    if (users.length > 0 && typeof users[0] === "object") {
+      return users;
     }
 
     // Transform array format to object format if needed
-    if (Array.isArray(rawUsersData)) {
-      return rawUsersData.map((row: any) => {
+    if (Array.isArray(users)) {
+      return users.map((row: any) => {
         if (Array.isArray(row) && row.length >= 3) {
           return {
             user_id: row[0],
@@ -154,10 +160,10 @@ const UsersTable: React.FC = () => {
           };
         }
         return row;
-      });
+      }) as apiService.User[];
     }
 
-    return rawUsersData;
+    return [];
   }, [rawUsersData]);
 
   const formatPreferences = (preferences: any) => {

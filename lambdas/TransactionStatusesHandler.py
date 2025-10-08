@@ -5,6 +5,7 @@ import pymysql
 import os
 from datetime import datetime
 from botocore.exceptions import ClientError
+import cors_helper
 
 
 def get_db_connection():
@@ -84,7 +85,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 405,
                 "body": json.dumps({"error": f"Method {http_method} not allowed for transaction statuses"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         connection.close()
@@ -92,7 +93,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             "body": json.dumps(response),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     except Exception as e:
@@ -106,5 +107,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }

@@ -96,9 +96,24 @@ const SuccessPage: React.FC = () => {
   const { data: clientGroups } = useQuery({
     queryKey: ["client-groups", currentUser?.primary_client_group_id],
     queryFn: async () => {
-      if (!currentUser?.primary_client_group_id) return [];
+      console.log(
+        "🔍 SuccessPage - Fetching client groups for user:",
+        currentUser
+      );
+      if (!currentUser?.primary_client_group_id) {
+        console.log(
+          "🔍 SuccessPage - No primary_client_group_id, returning []"
+        );
+        return [];
+      }
       const response = await apiService.queryClientGroups({});
+      console.log("🔍 SuccessPage - Client groups response:", response);
+
       if (Array.isArray(response)) {
+        console.log(
+          "🔍 SuccessPage - Response is array, length:",
+          response.length
+        );
         return response;
       }
       if (
@@ -106,23 +121,42 @@ const SuccessPage: React.FC = () => {
         response !== null &&
         "data" in response
       ) {
+        console.log(
+          "🔍 SuccessPage - Response has data property, length:",
+          response.data?.length
+        );
         return response.data || [];
       }
+      console.log("🔍 SuccessPage - Unexpected response format, returning []");
       return [];
     },
     enabled: !!currentUser?.primary_client_group_id,
   });
 
   const primaryClientGroup = useMemo(() => {
-    if (!clientGroups || !currentUser?.primary_client_group_id) return null;
+    console.log("🔍 SuccessPage - Computing primaryClientGroup:", {
+      clientGroups,
+      clientGroupsLength: clientGroups?.length,
+      currentUser,
+      primaryClientGroupId: currentUser?.primary_client_group_id,
+    });
 
-    return (
+    if (!clientGroups || !currentUser?.primary_client_group_id) {
+      console.log(
+        "🔍 SuccessPage - No client groups or no primary_client_group_id"
+      );
+      return null;
+    }
+
+    const found =
       clientGroups.find(
         (cg: apiService.ClientGroup) =>
           cg.client_group_id === currentUser.primary_client_group_id
-      ) || null
-    );
-  }, [clientGroups, currentUser?.primary_client_group_id]);
+      ) || null;
+
+    console.log("🔍 SuccessPage - Found primaryClientGroup:", found);
+    return found;
+  }, [clientGroups, currentUser]);
 
   const handleOnboardingComplete = async (clientGroupId: number) => {
     try {

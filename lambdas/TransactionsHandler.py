@@ -8,6 +8,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
 from typing import Dict, Any
+import cors_helper
 
 
 def get_db_connection():
@@ -234,7 +235,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 403,
                 "body": json.dumps({"error": "User has no client group affiliations or access denied"}),
-                "headers": {"Content-Type": "application/json"}
+                "headers": cors_helper.get_cors_headers()
             }
 
         # Handle different operations based on HTTP method and path
@@ -255,7 +256,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": status_code,
             "body": json.dumps(response) if response is not None else "",
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
     except Exception as e:
@@ -269,7 +270,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Internal server error: {str(e)}"}),
-            "headers": {"Content-Type": "application/json"}
+            "headers": cors_helper.get_cors_headers()
         }
 
 

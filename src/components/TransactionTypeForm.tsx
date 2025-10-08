@@ -12,20 +12,13 @@ import {
 import AceEditor from "react-ace";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as apiService from "../services/api";
+import type { TransactionType } from "../services/api";
 import FormHeader from "./FormHeader";
 
 // Import JSON mode and theme for ace editor
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
-
-interface TransactionType {
-  transaction_type_id: number;
-  transaction_type_name: string;
-  properties?: object | string;
-  update_date?: string;
-  updated_by_user_name?: string;
-}
 
 interface TransactionTypeFormProps {
   editingTransactionType?: TransactionType;

@@ -17,10 +17,7 @@ import type {
 } from "@mui/x-data-grid";
 import { useQuery } from "@tanstack/react-query";
 import * as apiService from "../services/api";
-import type {
-  QueryTransactionTypesResponse,
-  TransactionType,
-} from "../services/api";
+import type { TransactionType } from "../services/api";
 import TransactionTypeForm from "./TransactionTypeForm";
 
 const TransactionTypesTable: React.FC = () => {
@@ -34,7 +31,7 @@ const TransactionTypesTable: React.FC = () => {
     isLoading,
     error,
     refetch,
-  } = useQuery<QueryTransactionTypesResponse>({
+  } = useQuery({
     queryKey: ["transaction-types"],
     queryFn: async () => {
       try {
@@ -46,25 +43,45 @@ const TransactionTypesTable: React.FC = () => {
     },
   });
 
-  // Use the data directly since it's already an array of TransactionType
-  const data = rawData || [];
+  // Transform response to array of TransactionType
+  const data: TransactionType[] = React.useMemo(() => {
+    if (!rawData) return [];
+    return (
+      Array.isArray(rawData) ? rawData : "data" in rawData ? rawData.data : []
+    ) as TransactionType[];
+  }, [rawData]);
 
   // Get current user for primary client group (simplified approach)
   const { data: currentUser } = useQuery({
     queryKey: ["current-user"],
-    queryFn: () => apiService.queryUsers({ sub: "current" }),
-    select: (data) => data[0],
+    queryFn: async () => {
+      const response = await apiService.queryUsers({ sub: "current" });
+      const users: apiService.User[] = (
+        Array.isArray(response)
+          ? response
+          : "data" in response
+          ? response.data
+          : []
+      ) as apiService.User[];
+      return users[0];
+    },
   });
 
   // Get primary client group details
   const { data: primaryClientGroup } = useQuery({
     queryKey: ["primary-client-group", currentUser?.primary_client_group_id],
-    queryFn: () =>
-      apiService.queryClientGroups({
-        client_group_id: currentUser!.primary_client_group_id!,
-      }),
+    queryFn: async () => {
+      const response = await apiService.queryClientGroups({});
+      const groups: apiService.ClientGroup[] = Array.isArray(response)
+        ? response
+        : "data" in response
+        ? response.data
+        : [];
+      return groups.find(
+        (g) => g.client_group_id === currentUser!.primary_client_group_id
+      );
+    },
     enabled: !!currentUser?.primary_client_group_id,
-    select: (data) => data[0],
   });
 
   const formatProperties = (properties: any) => {
@@ -260,10 +277,10 @@ const TransactionTypesTable: React.FC = () => {
               No transaction types found
               <br />
               No transaction types exist for{" "}
-              {primaryClientGroup?.name || "this client group"}
+              {primaryClientGroup?.client_group_name || "this client group"}
               <br />
               Click "New" to create one for{" "}
-              {primaryClientGroup?.name || "this client group"}.
+              {primaryClientGroup?.client_group_name || "this client group"}.
             </Typography>
           </Box>
         ) : (
