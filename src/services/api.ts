@@ -165,6 +165,7 @@ export interface Entity {
   entity_name: string;
   entity_type_name: string;
   attributes?: JSONValue;
+  unitized?: boolean;
   update_date?: string;
   updated_by_user_name?: string;
 }
@@ -173,12 +174,14 @@ export interface CreateEntityRequest {
   entity_name: string;
   entity_type_name: string;
   attributes?: JSONValue;
+  unitized?: boolean;
 }
 
 export interface UpdateEntityRequest {
   entity_name: string;
   entity_type_name: string;
   attributes?: JSONValue;
+  unitized?: boolean;
 }
 
 export interface QueryEntitiesRequest {
@@ -1007,12 +1010,25 @@ export const deleteTransaction = async (
 };
 
 // Position Keeper API Functions - Updated for FullBor API
-export const startPositionKeeper = async (): Promise<{
+export const startPositionKeeper = async (
+  mode?: "incremental" | "full-refresh"
+): Promise<{
   message: string;
+  mode?: string;
+  position_keeper_id?: number;
+  sandbox_rows_created?: number;
 }> => {
+  const endpoint =
+    mode === "full-refresh"
+      ? "/position-keeper/start/full-refresh"
+      : "/position-keeper/start";
+
   return apiCall<{
     message: string;
-  }>("/position-keeper/start", {
+    mode?: string;
+    position_keeper_id?: number;
+    sandbox_rows_created?: number;
+  }>(endpoint, {
     method: "POST",
   });
 };

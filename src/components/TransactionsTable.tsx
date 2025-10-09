@@ -16,6 +16,8 @@ import {
   IconButton,
   Alert,
   Snackbar,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   Add,
@@ -167,6 +169,9 @@ const TransactionsTable: React.FC = () => {
     "success" | "error"
   >("success");
   const [isPollingActive, setIsPollingActive] = useState(false);
+  const [positionKeeperMode, setPositionKeeperMode] = useState<
+    "incremental" | "full-refresh"
+  >("incremental");
 
   // Helper function to get field values for filtering
   const getFieldValue = (
@@ -193,10 +198,14 @@ const TransactionsTable: React.FC = () => {
   const queryClient = useQueryClient();
 
   const startPositionKeeperMutation = useMutation({
-    mutationFn: apiService.startPositionKeeper,
-    onSuccess: (data: { message: string }) => {
+    mutationFn: (mode: "incremental" | "full-refresh") =>
+      apiService.startPositionKeeper(mode),
+    onSuccess: (data: { message: string; mode?: string }) => {
+      const modeText = data.mode || positionKeeperMode;
       setPositionKeeperMessage(
-        data.message || "Position keeper started successfully"
+        `${
+          data.message || "Position keeper started successfully"
+        } (${modeText})`
       );
       setPositionKeeperSeverity("success");
       setIsPollingActive(true);
@@ -355,11 +364,12 @@ const TransactionsTable: React.FC = () => {
       // Stop position keeper
       stopPositionKeeperMutation.mutate();
     } else {
-      // Start position keeper
-      startPositionKeeperMutation.mutate();
+      // Start position keeper with selected mode
+      startPositionKeeperMutation.mutate(positionKeeperMode);
     }
   }, [
     isPollingActive,
+    positionKeeperMode,
     startPositionKeeperMutation,
     stopPositionKeeperMutation,
   ]);
@@ -579,10 +589,52 @@ const TransactionsTable: React.FC = () => {
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 0.5,
+            gap: 1,
             marginLeft: "auto",
           }}
         >
+          {/* Mode Toggle - only show when Position Keeper is not running */}
+          {!isPollingActive && (
+            <ToggleButtonGroup
+              value={positionKeeperMode}
+              exclusive
+              onChange={(_, newMode) => {
+                if (newMode !== null) {
+                  setPositionKeeperMode(newMode);
+                }
+              }}
+              size="small"
+              disabled={
+                startPositionKeeperMutation.isPending ||
+                stopPositionKeeperMutation.isPending
+              }
+              sx={{
+                height: 32,
+              }}
+            >
+              <ToggleButton
+                value="incremental"
+                sx={{
+                  textTransform: "none",
+                  px: 1.5,
+                  fontSize: "0.8125rem",
+                }}
+              >
+                Incremental
+              </ToggleButton>
+              <ToggleButton
+                value="full-refresh"
+                sx={{
+                  textTransform: "none",
+                  px: 1.5,
+                  fontSize: "0.8125rem",
+                }}
+              >
+                Full Refresh
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
+
           <Button
             variant="contained"
             color={isPollingActive ? "error" : "primary"}
@@ -614,7 +666,9 @@ const TransactionsTable: React.FC = () => {
             title={
               isPollingActive
                 ? "Stop the position keeper and cease processing"
-                : "Start the position keeper to process queued transactions"
+                : positionKeeperMode === "full-refresh"
+                ? "Start Full Refresh: Recalculates all positions from scratch (all transactions)"
+                : "Start Incremental: Process only queued transactions"
             }
             placement="top"
           >

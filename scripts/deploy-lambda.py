@@ -151,7 +151,7 @@ class LambdaDeployer:
                 '/invitations/{invitation_id}',
                 '/invitations/redeem/{code}'
             ],
-            'PositionKeeper': ['/position-keeper/start', '/position-keeper/stop'],
+            'PositionKeeper': ['/position-keeper/start/{mode}', '/position-keeper/stop', '/position-keeper/status'],
             'TransactionsHandler': ['/transactions', '/transactions/{transaction_id}'],
             'TransactionStatusesHandler': ['/transaction-statuses'],
             'TransactionTypesHandler': ['/transaction-types', '/transaction-types/{transaction_type_name}'],

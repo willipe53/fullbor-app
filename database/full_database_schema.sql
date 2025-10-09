@@ -105,7 +105,7 @@ CREATE TABLE `client_groups` (
   `updated_user_id` int DEFAULT NULL,
   PRIMARY KEY (`client_group_id`),
   UNIQUE KEY `client_group_name` (`client_group_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=512 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=513 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -122,10 +122,11 @@ CREATE TABLE `entities` (
   `attributes` json DEFAULT NULL,
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_user_id` int DEFAULT NULL,
+  `unitized` tinyint(1) DEFAULT '1',
   PRIMARY KEY (`entity_id`),
   KEY `fk_entities_entity_type` (`entity_type_id`),
   CONSTRAINT `fk_entities_entity_type` FOREIGN KEY (`entity_type_id`) REFERENCES `entity_types` (`entity_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=705 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=706 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -165,7 +166,7 @@ CREATE TABLE `entity_types` (
   `entity_category` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`entity_type_id`),
   UNIQUE KEY `entity_type_name` (`entity_type_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=316 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=317 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -184,7 +185,7 @@ CREATE TABLE `invitations` (
   `email_sent_to` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`invitation_id`),
   UNIQUE KEY `uq_invitations_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -199,6 +200,118 @@ CREATE TABLE `lambda_locks` (
   `holder` varchar(255) DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`lock_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50032 DROP TRIGGER IF EXISTS after_lambda_locks_insert */;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_lambda_locks_insert` AFTER INSERT ON `lambda_locks` FOR EACH ROW BEGIN
+    INSERT INTO position_keepers (lock_id, holder, expires_at)
+    VALUES (NEW.lock_id, NEW.holder, NEW.expires_at);
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `position_keepers`
+--
+
+DROP TABLE IF EXISTS `position_keepers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `position_keepers` (
+  `position_keeper_id` int NOT NULL AUTO_INCREMENT,
+  `lock_id` varchar(64) DEFAULT NULL,
+  `holder` varchar(255) DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`position_keeper_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `position_sandbox`
+--
+
+DROP TABLE IF EXISTS `position_sandbox`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `position_sandbox` (
+  `position_sandbox_id` int NOT NULL AUTO_INCREMENT,
+  `position_date` date NOT NULL,
+  `position_type_id` int NOT NULL,
+  `portfolio_entity_id` int NOT NULL,
+  `instrument_entity_id` int DEFAULT NULL,
+  `share_amount` decimal(20,8) DEFAULT NULL,
+  `market_value` decimal(20,4) DEFAULT NULL,
+  `position_keeper_id` int NOT NULL,
+  PRIMARY KEY (`position_sandbox_id`),
+  UNIQUE KEY `uq_positions_unique_s` (`position_type_id`,`portfolio_entity_id`,`instrument_entity_id`),
+  KEY `fk_position_type_s` (`position_type_id`),
+  KEY `fk_portfolio_entity_s` (`portfolio_entity_id`),
+  KEY `fk_pos_instrument_entity_s` (`instrument_entity_id`),
+  KEY `fk_position_keeper_s` (`position_keeper_id`),
+  CONSTRAINT `fk_portfolio_entity_s` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
+  CONSTRAINT `fk_pos_instrument_entity_s` FOREIGN KEY (`instrument_entity_id`) REFERENCES `entities` (`entity_id`),
+  CONSTRAINT `fk_position_keeper_s` FOREIGN KEY (`position_keeper_id`) REFERENCES `position_keepers` (`position_keeper_id`),
+  CONSTRAINT `fk_position_type_s` FOREIGN KEY (`position_type_id`) REFERENCES `position_types` (`position_type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `position_types`
+--
+
+DROP TABLE IF EXISTS `position_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `position_types` (
+  `position_type_id` int NOT NULL AUTO_INCREMENT,
+  `position_type_name` varchar(255) NOT NULL,
+  `properties` json DEFAULT NULL,
+  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_user_id` int DEFAULT NULL,
+  PRIMARY KEY (`position_type_id`),
+  UNIQUE KEY `position_type_name` (`position_type_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `positions`
+--
+
+DROP TABLE IF EXISTS `positions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `positions` (
+  `position_id` int NOT NULL AUTO_INCREMENT,
+  `position_date` date NOT NULL,
+  `position_type_id` int NOT NULL,
+  `portfolio_entity_id` int NOT NULL,
+  `instrument_entity_id` int DEFAULT NULL,
+  `share_amount` decimal(20,8) DEFAULT NULL,
+  `market_value` decimal(20,4) DEFAULT NULL,
+  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `position_keeper_id` int NOT NULL,
+  PRIMARY KEY (`position_id`),
+  UNIQUE KEY `uq_positions_unique` (`position_type_id`,`portfolio_entity_id`,`instrument_entity_id`),
+  KEY `fk_position_type` (`position_type_id`),
+  KEY `fk_portfolio_entity` (`portfolio_entity_id`),
+  KEY `fk_pos_instrument_entity` (`instrument_entity_id`),
+  KEY `fk_position_keeper` (`position_keeper_id`),
+  CONSTRAINT `fk_portfolio_entity` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
+  CONSTRAINT `fk_pos_instrument_entity` FOREIGN KEY (`instrument_entity_id`) REFERENCES `entities` (`entity_id`),
+  CONSTRAINT `fk_position_keeper` FOREIGN KEY (`position_keeper_id`) REFERENCES `position_keepers` (`position_keeper_id`),
+  CONSTRAINT `fk_position_type` FOREIGN KEY (`position_type_id`) REFERENCES `position_types` (`position_type_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -265,7 +378,7 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_party_entity` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_trans_trans_status` FOREIGN KEY (`transaction_status_id`) REFERENCES `transaction_statuses` (`transaction_status_id`),
   CONSTRAINT `fk_trans_trans_type` FOREIGN KEY (`transaction_type_id`) REFERENCES `transaction_types` (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -560,10 +673,10 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-07 15:25:43
+-- Dump completed on 2025-10-09 11:13:09
 -- =============================================================================
 -- OneBor Database Schema Export
--- Generated on: 2025-10-07 15:25:34
+-- Generated on: 2025-10-09 11:12:57
 -- Database: onebor
 -- Host: panda-db.cnqay066ma0a.us-east-2.rds.amazonaws.com:3306
 -- 

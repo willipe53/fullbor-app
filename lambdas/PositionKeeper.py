@@ -202,6 +202,183 @@ def load_entities_cache(connection):
         raise
 
 
+def create_position_keeper_record(connection, lock_id: str, holder: str, expires_at: datetime) -> int:
+    """
+    Create a position_keeper record to track this position keeping run.
+
+    Args:
+        connection: Database connection
+        lock_id: The lock ID being used
+        holder: The holder of the lock
+        expires_at: When the lock expires
+
+    Returns:
+        int: The position_keeper_id of the created record
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO position_keepers (lock_id, holder, expires_at)
+                VALUES (%s, %s, %s)
+            """, (lock_id, holder, expires_at))
+            connection.commit()
+            position_keeper_id = cursor.lastrowid
+            print(
+                f"Created position_keeper record with ID: {position_keeper_id}")
+            return position_keeper_id
+    except Exception as e:
+        print(f"ERROR creating position_keeper record: {str(e)}")
+        connection.rollback()
+        raise
+
+
+def generate_sandbox_rows(connection, position_keeper_id: int, mode: str = "Full Refresh") -> int:
+    """
+    Generate position_sandbox rows for position calculation.
+
+    For Full Refresh mode:
+    - Creates Trade Date (position_type_id=1) and Settle Date (position_type_id=2) records
+    - For every day from earliest trade_date to latest settle_date
+    - For each unique combination of (portfolio_entity_id, instrument_entity_id) 
+      and (contra_entity_id, instrument_entity_id)
+    - All records start with share_amount=0 and market_value=0
+
+    Args:
+        connection: Database connection
+        position_keeper_id: ID of the current position keeper run
+        mode: "Full Refresh" or "Incremental" (currently only Full Refresh is implemented)
+
+    Returns:
+        int: Number of rows inserted into position_sandbox
+    """
+    print(f"\n=== Generating Position Sandbox Rows (Mode: {mode}) ===")
+
+    if mode != "Full Refresh":
+        raise NotImplementedError(
+            f"Mode '{mode}' not yet implemented. Only 'Full Refresh' is supported.")
+
+    try:
+        with connection.cursor() as cursor:
+            # Step 1: Find min and max dates from transactions
+            print("Step 1: Finding date range from transactions...")
+            cursor.execute("""
+                SELECT MIN(dt) as min_date, MAX(dt) as max_date
+                FROM (
+                    SELECT trade_date AS dt FROM transactions
+                    UNION
+                    SELECT settle_date AS dt FROM transactions
+                ) AS all_dates
+            """)
+            date_result = cursor.fetchone()
+
+            if not date_result or not date_result[0]:
+                print("No transactions found - no sandbox rows to generate")
+                return 0
+
+            min_date = date_result[0]
+            max_date = date_result[1]
+            print(f"Date range: {min_date} to {max_date}")
+
+            # Step 2: Get all unique entity/instrument combinations
+            print("Step 2: Finding unique entity/instrument combinations...")
+            cursor.execute("""
+                SELECT DISTINCT portfolio_entity_id as entity_id, instrument_entity_id
+                FROM transactions
+                UNION
+                SELECT DISTINCT contra_entity_id as entity_id, instrument_entity_id
+                FROM transactions
+                ORDER BY entity_id, instrument_entity_id
+            """)
+            entity_permutations = cursor.fetchall()
+            print(
+                f"Found {len(entity_permutations)} entity/instrument combinations")
+
+            # Step 3: Clear existing sandbox data for this position_keeper_id
+            print(
+                f"Step 3: Clearing existing sandbox data for position_keeper_id {position_keeper_id}...")
+            cursor.execute("""
+                DELETE FROM position_sandbox 
+                WHERE position_keeper_id = %s
+            """, (position_keeper_id,))
+            deleted_count = cursor.rowcount
+            if deleted_count > 0:
+                print(f"Deleted {deleted_count} existing sandbox rows")
+
+            # Step 4: Generate all dates between min and max
+            print("Step 4: Generating position sandbox rows...")
+
+            # Use SQL to generate date series and insert all rows in one batch operation
+            # This is much more efficient than Python loops
+            insert_sql = """
+                INSERT INTO position_sandbox (
+                    position_date, 
+                    position_type_id, 
+                    portfolio_entity_id, 
+                    instrument_entity_id, 
+                    share_amount, 
+                    market_value, 
+                    position_keeper_id
+                )
+                SELECT 
+                    dates.position_date,
+                    position_types.position_type_id,
+                    entities.entity_id,
+                    entities.instrument_entity_id,
+                    0 as share_amount,
+                    0 as market_value,
+                    %s as position_keeper_id
+                FROM (
+                    SELECT DATE_ADD(%s, INTERVAL seq DAY) as position_date
+                    FROM (
+                        SELECT @row := @row + 1 as seq
+                        FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 
+                              UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                              UNION ALL SELECT 8 UNION ALL SELECT 9) t1,
+                             (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 
+                              UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                              UNION ALL SELECT 8 UNION ALL SELECT 9) t2,
+                             (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 
+                              UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                              UNION ALL SELECT 8 UNION ALL SELECT 9) t3,
+                             (SELECT @row := -1) r
+                    ) seq_table
+                    WHERE DATE_ADD(%s, INTERVAL seq DAY) <= %s
+                ) dates
+                CROSS JOIN (
+                    SELECT 1 as position_type_id
+                    UNION ALL
+                    SELECT 2 as position_type_id
+                ) position_types
+                CROSS JOIN (
+                    SELECT DISTINCT portfolio_entity_id as entity_id, instrument_entity_id
+                    FROM transactions
+                    UNION
+                    SELECT DISTINCT contra_entity_id as entity_id, instrument_entity_id
+                    FROM transactions
+                ) entities
+            """
+
+            cursor.execute(insert_sql, (position_keeper_id,
+                           min_date, min_date, max_date))
+            rows_inserted = cursor.rowcount
+            connection.commit()
+
+            print(
+                f"Successfully inserted {rows_inserted} rows into position_sandbox")
+            print(f"  - Date range: {min_date} to {max_date}")
+            print(
+                f"  - Entity/Instrument combinations: {len(entity_permutations)}")
+            print(f"  - Position types: 2 (Trade Date, Settle Date)")
+            print("=== Sandbox Generation Complete ===\n")
+
+            return rows_inserted
+
+    except Exception as e:
+        print(f"ERROR generating sandbox rows: {str(e)}")
+        connection.rollback()
+        raise
+
+
 def process_position_keeping(
     transaction_type_name: str,
     properties: Dict[str, Any],
@@ -468,14 +645,31 @@ def lambda_handler(event, context):
         - Returns the current status of the Position Keeper lock
 
     POST /position-keeper/start:
+        - Starts Position Keeper in Incremental mode (default)
+        - Only processes QUEUED transactions
         - Checks if lock is set
         - If locked, returns error
         - If not locked:
             1. Sets the lock
-            2. Fetches all new messages from SQS queue
-            3. Processes each message
-            4. Updates transaction status to PROCESSED
-            5. Releases the lock
+            2. Generates sandbox rows (incremental)
+            3. Fetches all new messages from SQS queue
+            4. Processes each message
+            5. Updates transaction status to PROCESSED
+            6. Deals with any orphans setting them to UNKNOWN
+            7. Releases the lock
+
+    POST /position-keeper/start/full-refresh:
+        - Starts Position Keeper in Full Refresh mode
+        - Processes ALL transactions (QUEUED + PROCESSED)
+        - Recalculates all positions from scratch
+        - If not locked:
+            1. Sets the lock
+            2. Generates sandbox rows (full refresh - all dates/entities)
+            3. Fetches all new messages from SQS queue
+            4. Processes each message
+            5. Updates transaction status to PROCESSED
+            6. Deals with any orphans setting them to UNKNOWN
+            7. Releases the lock
 
     POST /position-keeper/stop:
         - Releases the global lock
@@ -488,8 +682,21 @@ def lambda_handler(event, context):
     # Determine command from the URL path
     path = event.get('path', '')
     http_method = event.get('httpMethod', '')
+    path_parameters = event.get('pathParameters', {}) or {}
 
-    if path.endswith('/start'):
+    # Parse mode from path parameter
+    # /position-keeper/start/{mode} where mode = "incremental" or "full-refresh"
+    mode_param = path_parameters.get('mode', '').lower()
+
+    if mode_param == 'full-refresh':
+        mode = 'Full Refresh'
+    elif mode_param == 'incremental':
+        mode = 'Incremental'
+    else:
+        # Default to Incremental for any unrecognized mode
+        mode = 'Incremental'
+
+    if '/start' in path:
         command = 'start'
     elif path.endswith('/stop'):
         command = 'stop'
@@ -498,7 +705,7 @@ def lambda_handler(event, context):
     else:
         return {
             "statusCode": 400,
-            "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start, /position-keeper/stop, or GET /position-keeper/status"}),
+            "body": json.dumps({"error": "Invalid endpoint. Use /position-keeper/start, /position-keeper/start/full-refresh, /position-keeper/stop, or GET /position-keeper/status"}),
             "headers": cors_helper.get_cors_headers()
         }
 
@@ -595,14 +802,24 @@ def lambda_handler(event, context):
                 }
 
             print(f"Lock acquired by {holder}")
+            print(f"Position Keeper Mode: {mode}")
 
             try:
+                # Create position_keeper record
+                position_keeper_id = create_position_keeper_record(
+                    connection, LOCK_ID, holder, expires_at)
+
                 # Load caches
                 print("Loading transaction types cache...")
                 load_transaction_types_cache(connection)
 
                 print("Loading entities cache...")
                 load_entities_cache(connection)
+
+                # Generate sandbox rows
+                print(f"\nGenerating position sandbox rows (Mode: {mode})...")
+                sandbox_rows = generate_sandbox_rows(
+                    connection, position_keeper_id, mode=mode)
 
                 # Get SQS client
                 sqs_client = get_sqs_client()
@@ -624,6 +841,9 @@ def lambda_handler(event, context):
 
                 response = {
                     "message": "Position Keeper process completed",
+                    "mode": mode,
+                    "position_keeper_id": position_keeper_id,
+                    "sandbox_rows_created": sandbox_rows,
                     "statistics": stats,
                     "cleanup": {
                         "orphaned_transactions_marked_unknown": cleanup_count

@@ -7,6 +7,8 @@ import {
   TextField,
   Autocomplete,
   Alert,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import { Grid } from "@mui/material";
 import AceEditor from "react-ace";
@@ -41,6 +43,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
   const [selectedEntityType, setSelectedEntityType] =
     useState<apiService.EntityType | null>(null);
   const [attributes, setAttributes] = useState<apiService.JSONValue>({});
+  const [unitized, setUnitized] = useState(editingEntity?.unitized || false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -134,6 +137,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
     if (editingEntity) {
       setName(editingEntity.entity_name || "");
       setAttributes(editingEntity.attributes || {});
+      setUnitized(editingEntity.unitized || false);
 
       // Find and set the selected entity type
       if (entityTypesData && editingEntity.entity_type_name) {
@@ -153,6 +157,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
     } else {
       setName("");
       setAttributes({});
+      setUnitized(false);
       setSelectedEntityType(null);
     }
     setIsDirty(false);
@@ -270,6 +275,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
         entity_name: name.trim(),
         entity_type_name: selectedEntityType?.entity_type_name || "",
         attributes: attributes,
+        unitized: unitized,
       };
 
       console.log("Submitting entity data:", entityData);
@@ -282,6 +288,7 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
       name,
       selectedEntityType,
       attributes,
+      unitized,
       jsonError,
       mutation,
       editingEntity?.entity_id,
@@ -374,29 +381,61 @@ const EntityForm: React.FC<EntityFormProps> = ({ onClose, editingEntity }) => {
             </Alert>
           )}
 
-          {/* Entity Type */}
-          <Autocomplete
-            options={
-              (Array.isArray(entityTypesData)
-                ? entityTypesData
-                : entityTypesData && "data" in entityTypesData
-                ? entityTypesData.data
-                : []) as apiService.EntityType[]
-            }
-            getOptionLabel={(option) => option.entity_type_name || ""}
-            getOptionKey={(option) => option.entity_type_name}
-            value={selectedEntityType}
-            onChange={(_, newValue) => handleEntityTypeChange(newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Entity Type *"
-                error={!!errors.entityType}
-                helperText={errors.entityType}
+          {/* Entity Type and Unitized Toggle */}
+          <Box
+            sx={{ display: "flex", gap: 2, mb: 3, alignItems: "flex-start" }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <Autocomplete
+                options={
+                  (Array.isArray(entityTypesData)
+                    ? entityTypesData
+                    : entityTypesData && "data" in entityTypesData
+                    ? entityTypesData.data
+                    : []) as apiService.EntityType[]
+                }
+                getOptionLabel={(option) => option.entity_type_name || ""}
+                getOptionKey={(option) => option.entity_type_name}
+                value={selectedEntityType}
+                onChange={(_, newValue) => handleEntityTypeChange(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Entity Type *"
+                    error={!!errors.entityType}
+                    helperText={errors.entityType}
+                  />
+                )}
               />
-            )}
-            sx={{ mb: 3 }}
-          />
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", pt: 1 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={unitized}
+                    onChange={(e) => {
+                      setUnitized(e.target.checked);
+                      setIsDirty(true);
+                    }}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", flexDirection: "column" }}>
+                    <Typography variant="body2">Unitized</Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.7rem" }}
+                    >
+                      (has units/shares)
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
+          </Box>
 
           {/* Dynamic Schema Fields */}
           {selectedEntityType && schemaFields.length > 0 && (

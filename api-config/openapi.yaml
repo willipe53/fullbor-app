@@ -60,7 +60,7 @@ info:
 
     **POSITION KEEPER (3 endpoints):**
     - GET    /position-keeper/status
-    - POST   /position-keeper/start
+    - POST   /position-keeper/start/{mode}  (mode: incremental | full-refresh)
     - POST   /position-keeper/stop
 
     **USERS (5 endpoints):**
@@ -164,6 +164,10 @@ components:
         attributes:
           type: object
           additionalProperties: true
+        unitized:
+          type: boolean
+          description: Indicates if the entity is unitized
+          default: false
         update_date:
           type: string
           format: date-time
@@ -2077,13 +2081,29 @@ paths:
                 properties:
                   error:
                     type: string
-  /position-keeper/start:
+  /position-keeper/start/{mode}:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
+      - in: path
+        name: mode
+        required: true
+        schema:
+          type: string
+          enum: [incremental, full-refresh]
+        description: |
+          Position Keeper mode:
+          - `incremental`: Only processes QUEUED transactions (default behavior)
+          - `full-refresh`: Processes ALL transactions and recalculates all positions from scratch
     post:
       tags:
         - PositionKeeper
       summary: Start the Position Keeper process
+      description: |
+        Starts the Position Keeper with the specified mode.
+
+        **Modes:**
+        - `incremental`: Only processes QUEUED transactions and updates positions incrementally
+        - `full-refresh`: Processes ALL transactions (QUEUED + PROCESSED) and recalculates all positions from scratch
       responses:
         "201":
           description: Position Keeper started successfully
@@ -2094,6 +2114,12 @@ paths:
                 properties:
                   message:
                     type: string
+                  position_keeper_id:
+                    type: integer
+                  mode:
+                    type: string
+                  sandbox_rows_created:
+                    type: integer
         "400":
           description: Bad request - invalid parameters
           content:
@@ -2105,24 +2131,6 @@ paths:
                     type: string
         "409":
           description: Conflict - Position Keeper is already running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        "403":
-          description: Forbidden
           content:
             application/json:
               schema:

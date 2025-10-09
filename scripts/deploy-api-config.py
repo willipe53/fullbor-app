@@ -256,6 +256,11 @@ class APIGatewayDeployer:
 
             logger.info("✅ OpenAPI specification imported successfully")
 
+            # Wait for API Gateway to stabilize after import
+            # This gives AWS time to process the changes before we modify integrations
+            logger.info("Waiting for API Gateway to stabilize after import...")
+            time.sleep(3)
+
             # Apply Cognito User Pools authorization to all methods
             self._apply_cognito_authorization(api_id)
 
@@ -364,12 +369,18 @@ class APIGatewayDeployer:
         return handler_mapping.get(handler_name, handler_name)
 
     def _update_lambda_integrations(self, api_id: str) -> None:
-        """Update Lambda integrations for all endpoints."""
+        """Update Lambda integrations for all endpoints with retry logic."""
         logger.info("Updating Lambda integrations...")
+
+        # Track integration attempts
+        total_updated = 0
+        total_failed = 0
+        failed_endpoints = []
 
         try:
             # Get all resources
-            resources = self.apigateway_client.get_resources(restApiId=api_id)
+            resources = self.apigateway_client.get_resources(
+                restApiId=api_id, limit=500)
 
             # Map paths to Lambda handlers based on OpenAPI spec
             path_to_handler = {
@@ -387,6 +398,7 @@ class APIGatewayDeployer:
 
             for resource in resources['items']:
                 resource_path = resource.get('path', '')
+                resource_id = resource['id']
 
                 # Find matching handler for this path
                 handler_name = None
@@ -407,6 +419,7 @@ class APIGatewayDeployer:
                 # Get Lambda function name
                 lambda_function_name = self._get_lambda_function_name(
                     handler_name)
+                lambda_uri = f'arn:aws:apigateway:{self.region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{self.region}:{self._get_account_id()}:function:{lambda_function_name}/invocations'
 
                 # Check each HTTP method
                 http_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
@@ -415,34 +428,144 @@ class APIGatewayDeployer:
                         # Check if method exists
                         self.apigateway_client.get_method(
                             restApiId=api_id,
-                            resourceId=resource['id'],
+                            resourceId=resource_id,
                             httpMethod=method
                         )
 
-                        # Update integration
-                        self.apigateway_client.put_integration(
-                            restApiId=api_id,
-                            resourceId=resource['id'],
-                            httpMethod=method,
-                            type='AWS_PROXY',
-                            integrationHttpMethod='POST',
-                            uri=f'arn:aws:apigateway:{self.region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{self.region}:{self._get_account_id()}:function:{lambda_function_name}/invocations'
-                        )
+                        # Update integration with retry logic
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                self.apigateway_client.put_integration(
+                                    restApiId=api_id,
+                                    resourceId=resource_id,
+                                    httpMethod=method,
+                                    type='AWS_PROXY',
+                                    integrationHttpMethod='POST',
+                                    uri=lambda_uri
+                                )
 
-                        logger.info(
-                            f"✅ Updated {method} {resource_path} → {lambda_function_name}")
+                                # Verify the integration was created
+                                # Brief pause to let AWS process
+                                time.sleep(0.2)
+                                integration = self.apigateway_client.get_integration(
+                                    restApiId=api_id,
+                                    resourceId=resource_id,
+                                    httpMethod=method
+                                )
+
+                                if integration['type'] == 'AWS_PROXY':
+                                    total_updated += 1
+                                    logger.info(
+                                        f"✅ Updated {method} {resource_path} → {lambda_function_name}")
+                                    break
+                                else:
+                                    raise Exception(
+                                        f"Integration type mismatch: {integration['type']}")
+
+                            except Exception as e:
+                                if attempt < max_retries - 1:
+                                    logger.warning(
+                                        f"Retry {attempt + 1}/{max_retries} for {method} {resource_path}: {e}")
+                                    time.sleep(1)  # Wait before retry
+                                else:
+                                    raise  # Give up after max retries
 
                     except ClientError as e:
                         if e.response['Error']['Code'] == 'NotFoundException':
                             # Method doesn't exist, skip it
                             continue
                         else:
-                            logger.warning(
-                                f"Failed to update {method} {resource_path}: {e}")
+                            total_failed += 1
+                            failed_endpoints.append(
+                                f"{method} {resource_path}")
+                            logger.error(
+                                f"❌ Failed to update {method} {resource_path}: {e}")
+                    except Exception as e:
+                        total_failed += 1
+                        failed_endpoints.append(f"{method} {resource_path}")
+                        logger.error(
+                            f"❌ Failed to update {method} {resource_path}: {e}")
+
+            # Summary
+            logger.info(f"\n=== Lambda Integration Summary ===")
+            logger.info(f"Successfully updated: {total_updated}")
+            logger.info(f"Failed: {total_failed}")
+
+            if failed_endpoints:
+                logger.error(f"\nFailed endpoints:")
+                for endpoint in failed_endpoints:
+                    logger.error(f"  - {endpoint}")
+                raise Exception(
+                    f"Failed to update {total_failed} Lambda integrations")
 
         except ClientError as e:
             logger.error(f"Failed to update Lambda integrations: {e}")
             raise
+
+    def _verify_all_integrations(self, api_id: str) -> bool:
+        """Verify that all API methods have Lambda integrations configured."""
+        logger.info("Verifying all integrations are configured...")
+
+        try:
+            resources = self.apigateway_client.get_resources(
+                restApiId=api_id, limit=500)
+
+            missing_integrations = []
+            total_methods = 0
+            total_with_integration = 0
+
+            for resource in resources['items']:
+                resource_path = resource.get('path', '')
+                resource_id = resource['id']
+
+                if 'resourceMethods' in resource:
+                    for method in resource['resourceMethods'].keys():
+                        # Skip OPTIONS methods (they use MOCK integration)
+                        if method == 'OPTIONS':
+                            continue
+
+                        total_methods += 1
+
+                        try:
+                            integration = self.apigateway_client.get_integration(
+                                restApiId=api_id,
+                                resourceId=resource_id,
+                                httpMethod=method
+                            )
+
+                            # Check if it's a Lambda integration
+                            if integration['type'] == 'AWS_PROXY':
+                                total_with_integration += 1
+                            else:
+                                missing_integrations.append(
+                                    f"{method} {resource_path} (has {integration['type']} instead of AWS_PROXY)")
+
+                        except ClientError as e:
+                            if e.response['Error']['Code'] == 'NotFoundException':
+                                missing_integrations.append(
+                                    f"{method} {resource_path} (no integration)")
+
+            logger.info(f"\n=== Integration Verification Results ===")
+            logger.info(f"Total methods (excluding OPTIONS): {total_methods}")
+            logger.info(
+                f"Methods with AWS_PROXY integration: {total_with_integration}")
+            logger.info(
+                f"Missing or incorrect integrations: {len(missing_integrations)}")
+
+            if missing_integrations:
+                logger.error(
+                    f"\n❌ The following endpoints are missing proper integrations:")
+                for endpoint in missing_integrations:
+                    logger.error(f"  - {endpoint}")
+                return False
+            else:
+                logger.info(f"✅ All integrations verified successfully!")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to verify integrations: {e}")
+            return False
 
     def _get_account_id(self) -> str:
         """Get AWS account ID."""
@@ -471,7 +594,7 @@ class APIGatewayDeployer:
                 handler_names = [
                     'ClientGroupsHandler', 'EntitiesHandler', 'EntityTypesHandler',
                     'TransactionsHandler', 'TransactionTypesHandler', 'TransactionStatusesHandler',
-                    'UsersHandler', 'InvitationsHandler'
+                    'UsersHandler', 'InvitationsHandler', 'PositionKeeper'
                 ]
 
                 if function_name in handler_names:
@@ -691,6 +814,11 @@ class APIGatewayDeployer:
 
             # Update Lambda integrations
             self._update_lambda_integrations(api_id)
+
+            # Verify all integrations are configured correctly
+            if not self._verify_all_integrations(api_id):
+                raise Exception(
+                    "Integration verification failed - cannot deploy API")
 
             # Grant Lambda permissions
             self._grant_lambda_permissions(api_id)
