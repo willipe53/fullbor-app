@@ -4,7 +4,7 @@ import boto3
 import pymysql
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
 from typing import Dict, Any
@@ -308,7 +308,7 @@ def send_to_sqs(transaction_data: Dict[str, Any], operation: str) -> bool:
             "settle_date": transaction_data.get("settle_date"),
             "properties": transaction_data.get("properties"),
             "updated_user_id": transaction_data.get("updated_user_id"),
-            "timestamp": transaction_data.get("timestamp", datetime.utcnow().isoformat())
+            "timestamp": transaction_data.get("timestamp", datetime.now(timezone.utc).isoformat())
         }
 
         # Generate unique message group ID and deduplication ID
@@ -573,7 +573,7 @@ def handle_post_operations(connection, path, path_parameters, body, current_user
             "settle_date": settle_date,
             "properties": properties,
             "updated_user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         send_to_sqs(transaction_data, "create")
 
@@ -726,7 +726,7 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
                 "settle_date": updated_transaction[7],
                 "properties": json.loads(updated_transaction[8]) if updated_transaction[8] else {},
                 "updated_user_id": updated_transaction[9],
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             send_to_sqs(transaction_data, "update")
 

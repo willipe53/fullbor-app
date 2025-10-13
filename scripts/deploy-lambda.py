@@ -30,7 +30,28 @@ from dotenv import load_dotenv
 REGION = "us-east-2"
 ACCOUNT_ID = "316490106381"
 ROLE_NAME = "FullBorLambdaAPIRole"
-LAYER_ARNS = ["arn:aws:lambda:us-east-2:316490106381:layer:PyMySql112Layer:2"]
+
+# Layer configuration
+# Default layers applied to all functions (unless overridden)
+DEFAULT_LAYERS = [
+    "arn:aws:lambda:us-east-2:316490106381:layer:PyMySql112Layer:2"]
+
+# Function-specific layer overrides
+# To add layers to a specific function, add an entry here with the function name
+# and complete list of layers (including defaults if needed)
+# Example:
+#   'MyFunction': [
+#       "arn:aws:lambda:us-east-2:316490106381:layer:PyMySql112Layer:2",
+#       "arn:aws:lambda:us-east-2:316490106381:layer:my-custom-layer:1"
+#   ]
+FUNCTION_SPECIFIC_LAYERS = {
+    'PKManager': [
+        "arn:aws:lambda:us-east-2:316490106381:layer:PyMySql112Layer:2",  # Database access
+        # Pandas for data processing
+        "arn:aws:lambda:us-east-2:316490106381:layer:pandas-layer:1"
+    ]
+}
+
 TIMEOUT = 30
 VPC_SUBNETS = [
     "subnet-0192ac9f05f3f701c",
@@ -105,6 +126,20 @@ class LambdaDeployer:
                 logger.error(f"Error getting IAM role: {e}")
                 sys.exit(1)
 
+    def get_layers_for_function(self, function_name: str) -> List[str]:
+        """Get the appropriate Lambda layers for a specific function."""
+        # Check if function has specific layers defined
+        if function_name in FUNCTION_SPECIFIC_LAYERS:
+            layers = FUNCTION_SPECIFIC_LAYERS[function_name]
+            logger.info(
+                f"Using function-specific layers for {function_name}: {len(layers)} layer(s)")
+            return layers
+        else:
+            # Use default layers
+            logger.info(
+                f"Using default layers for {function_name}: {len(DEFAULT_LAYERS)} layer(s)")
+            return DEFAULT_LAYERS
+
     def create_zip_package(self, lambda_file_path: str) -> bytes:
         """Create a zip package for the Lambda function."""
         lambda_path = Path(lambda_file_path)
@@ -151,7 +186,7 @@ class LambdaDeployer:
                 '/invitations/{invitation_id}',
                 '/invitations/redeem/{code}'
             ],
-            'PositionKeeper': ['/position-keeper/start/{mode}', '/position-keeper/stop', '/position-keeper/status'],
+            'PKManager': ['/position-keeper/start', '/position-keeper/stop', '/position-keeper/status'],
             'TransactionsHandler': ['/transactions', '/transactions/{transaction_id}'],
             'TransactionStatusesHandler': ['/transaction-statuses'],
             'TransactionTypesHandler': ['/transaction-types', '/transaction-types/{transaction_type_name}'],
@@ -204,7 +239,7 @@ class LambdaDeployer:
                         'SubnetIds': VPC_SUBNETS,
                         'SecurityGroupIds': VPC_SECURITY_GROUPS
                     },
-                    Layers=LAYER_ARNS
+                    Layers=self.get_layers_for_function(function_name)
                 )
                 logger.info(
                     f"Successfully updated configuration for {function_name}")
@@ -324,7 +359,7 @@ class LambdaDeployer:
                         'SubnetIds': VPC_SUBNETS,
                         'SecurityGroupIds': VPC_SECURITY_GROUPS
                     },
-                    Layers=LAYER_ARNS
+                    Layers=self.get_layers_for_function(function_name)
                 )
 
                 logger.info(f"Created function: {function_name}")

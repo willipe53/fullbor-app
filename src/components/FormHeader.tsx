@@ -200,7 +200,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         }}
                         onKeyDown={(e) => handleKeyPress(e, "email")}
                         size="small"
-                        variant="standard"
+                        variant="outlined"
                         disabled={isEmailEditDisabled}
                         autoFocus
                         placeholder={!email ? "Enter email address" : undefined}
@@ -248,7 +248,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
                         }}
                         onKeyDown={(e) => handleKeyPress(e, "name")}
                         size="small"
-                        variant="standard"
+                        variant="outlined"
                         disabled={isNameEditDisabled}
                         autoFocus
                         placeholder={

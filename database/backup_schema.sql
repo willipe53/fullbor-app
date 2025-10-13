@@ -214,7 +214,7 @@ DROP TABLE IF EXISTS `lambda_locks`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `lambda_locks` (
   `lock_id` varchar(64) NOT NULL,
-  `holder` varchar(255) DEFAULT NULL,
+  `instance` varchar(255) DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`lock_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

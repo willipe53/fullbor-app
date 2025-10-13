@@ -126,7 +126,7 @@ CREATE TABLE `entities` (
   PRIMARY KEY (`entity_id`),
   KEY `fk_entities_entity_type` (`entity_type_id`),
   CONSTRAINT `fk_entities_entity_type` FOREIGN KEY (`entity_type_id`) REFERENCES `entity_types` (`entity_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=706 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=708 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -197,7 +197,7 @@ DROP TABLE IF EXISTS `lambda_locks`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `lambda_locks` (
   `lock_id` varchar(64) NOT NULL,
-  `holder` varchar(255) DEFAULT NULL,
+  `instance` varchar(255) DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`lock_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -213,8 +213,8 @@ CREATE TABLE `lambda_locks` (
 /*!50032 DROP TRIGGER IF EXISTS after_lambda_locks_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_lambda_locks_insert` AFTER INSERT ON `lambda_locks` FOR EACH ROW BEGIN
-    INSERT INTO position_keepers (lock_id, holder, expires_at)
-    VALUES (NEW.lock_id, NEW.holder, NEW.expires_at);
+    INSERT INTO position_keepers (lock_id, instance, expires_at)
+    VALUES (NEW.lock_id, NEW.instance, NEW.expires_at);
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -232,10 +232,10 @@ DROP TABLE IF EXISTS `position_keepers`;
 CREATE TABLE `position_keepers` (
   `position_keeper_id` int NOT NULL AUTO_INCREMENT,
   `lock_id` varchar(64) DEFAULT NULL,
-  `holder` varchar(255) DEFAULT NULL,
+  `instance` varchar(255) DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`position_keeper_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -264,7 +264,7 @@ CREATE TABLE `position_sandbox` (
   CONSTRAINT `fk_pos_instrument_entity_s` FOREIGN KEY (`instrument_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_position_keeper_s` FOREIGN KEY (`position_keeper_id`) REFERENCES `position_keepers` (`position_keeper_id`),
   CONSTRAINT `fk_position_type_s` FOREIGN KEY (`position_type_id`) REFERENCES `position_types` (`position_type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -312,6 +312,19 @@ CREATE TABLE `positions` (
   CONSTRAINT `fk_pos_instrument_entity` FOREIGN KEY (`instrument_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_position_keeper` FOREIGN KEY (`position_keeper_id`) REFERENCES `position_keepers` (`position_keeper_id`),
   CONSTRAINT `fk_position_type` FOREIGN KEY (`position_type_id`) REFERENCES `position_types` (`position_type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `trading_days`
+--
+
+DROP TABLE IF EXISTS `trading_days`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `trading_days` (
+  `trading_day` date NOT NULL,
+  PRIMARY KEY (`trading_day`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -365,8 +378,8 @@ CREATE TABLE `transactions` (
   `transaction_type_id` int NOT NULL,
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_user_id` int DEFAULT NULL,
-  `trade_date` datetime NOT NULL,
-  `settle_date` datetime NOT NULL,
+  `trade_date` date NOT NULL,
+  `settle_date` date NOT NULL,
   PRIMARY KEY (`transaction_id`),
   KEY `fk_trans_trans_type` (`transaction_type_id`),
   KEY `fk_trans_trans_status` (`transaction_status_id`),
@@ -378,7 +391,29 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_party_entity` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_trans_trans_status` FOREIGN KEY (`transaction_status_id`) REFERENCES `transaction_statuses` (`transaction_status_id`),
   CONSTRAINT `fk_trans_trans_type` FOREIGN KEY (`transaction_type_id`) REFERENCES `transaction_types` (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `transactions_backup`
+--
+
+DROP TABLE IF EXISTS `transactions_backup`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transactions_backup` (
+  `transaction_id` int NOT NULL DEFAULT '0',
+  `portfolio_entity_id` int NOT NULL,
+  `contra_entity_id` int DEFAULT NULL,
+  `instrument_entity_id` int DEFAULT NULL,
+  `properties` json DEFAULT NULL,
+  `transaction_status_id` int NOT NULL,
+  `transaction_type_id` int NOT NULL,
+  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_user_id` int DEFAULT NULL,
+  `trade_date` datetime NOT NULL,
+  `settle_date` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -673,10 +708,10 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-09 11:13:09
+-- Dump completed on 2025-10-10 15:58:12
 -- =============================================================================
 -- OneBor Database Schema Export
--- Generated on: 2025-10-09 11:12:57
+-- Generated on: 2025-10-10 15:57:59
 -- Database: onebor
 -- Host: panda-db.cnqay066ma0a.us-east-2.rds.amazonaws.com:3306
 -- 

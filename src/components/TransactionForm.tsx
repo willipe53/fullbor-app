@@ -1412,6 +1412,35 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 return newSet;
               });
             }}
+            onKeyDown={(e) => {
+              // Immediately resolve shortcuts when k, m, or b is pressed
+              if (
+                e.key === "k" ||
+                e.key === "K" ||
+                e.key === "m" ||
+                e.key === "M" ||
+                e.key === "b" ||
+                e.key === "B"
+              ) {
+                e.preventDefault(); // Prevent the letter from being added to the input
+
+                // Get current value and append the shortcut key
+                const currentValue = (e.target as HTMLInputElement).value;
+                const valueWithShortcut = currentValue + e.key.toLowerCase();
+
+                // Parse the numeric shortcut
+                const numericValue = parseNumericShortcut(valueWithShortcut);
+
+                // Update with the parsed numeric value
+                handlePropertyChange(propertyName, numericValue);
+
+                // Mark this field as formatted to show commas
+                setFormattedFields((prev) => {
+                  const newSet = new Set(prev).add(propertyName);
+                  return newSet;
+                });
+              }
+            }}
             onBlur={(e) => {
               // Parse numeric shortcuts (k, m, b) and convert to number
               const numericValue = parseNumericShortcut(e.target.value);

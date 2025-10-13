@@ -363,7 +363,7 @@ class APIGatewayDeployer:
             'TransactionStatusesHandler': 'TransactionStatusesHandler',
             'UsersHandler': 'UsersHandler',
             'InvitationsHandler': 'InvitationsHandler',
-            'PositionKeeper': 'PositionKeeper'
+            'PKManager': 'PKManager'
         }
 
         return handler_mapping.get(handler_name, handler_name)
@@ -393,7 +393,7 @@ class APIGatewayDeployer:
                 '/transaction-statuses': 'TransactionStatusesHandler',
                 '/users': 'UsersHandler',
                 '/invitations': 'InvitationsHandler',
-                '/position-keeper': 'PositionKeeper'
+                '/position-keeper': 'PKManager'
             }
 
             for resource in resources['items']:
@@ -594,7 +594,7 @@ class APIGatewayDeployer:
                 handler_names = [
                     'ClientGroupsHandler', 'EntitiesHandler', 'EntityTypesHandler',
                     'TransactionsHandler', 'TransactionTypesHandler', 'TransactionStatusesHandler',
-                    'UsersHandler', 'InvitationsHandler', 'PositionKeeper'
+                    'UsersHandler', 'InvitationsHandler', 'PKManager'
                 ]
 
                 if function_name in handler_names:

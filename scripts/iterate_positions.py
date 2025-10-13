@@ -1,7 +1,7 @@
 
 # Current running position keeper id is:
 # select pk.position_keeper_id from position_keepers pk
-# join lambda_locks ll on pk.holder = ll.holder;
+# join lambda_locks ll on pk.instance = ll.instance;
 position_keeper_id = 12345
 
 # All days from min to max inclusive

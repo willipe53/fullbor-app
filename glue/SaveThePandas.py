@@ -22,7 +22,7 @@ import sys
 import json
 import boto3
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 from io import StringIO
 from awsglue.utils import getResolvedOptions
 
@@ -161,7 +161,7 @@ def main():
     s3_client = boto3.client('s3', region_name='us-east-2')
 
     # Generate timestamp for this backup run
-    timestamp = datetime.utcnow().strftime('%Y%m%dT%H%M%S')
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
     backup_prefix = f"{timestamp}/"
 
     results = {

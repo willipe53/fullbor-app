@@ -1010,25 +1010,16 @@ export const deleteTransaction = async (
 };
 
 // Position Keeper API Functions - Updated for FullBor API
-export const startPositionKeeper = async (
-  mode?: "incremental" | "full-refresh"
-): Promise<{
+export const startPositionKeeper = async (): Promise<{
   message: string;
-  mode?: string;
   position_keeper_id?: number;
   sandbox_rows_created?: number;
 }> => {
-  const endpoint =
-    mode === "full-refresh"
-      ? "/position-keeper/start/full-refresh"
-      : "/position-keeper/start";
-
   return apiCall<{
     message: string;
-    mode?: string;
     position_keeper_id?: number;
     sandbox_rows_created?: number;
-  }>(endpoint, {
+  }>("/position-keeper/start", {
     method: "POST",
   });
 };
@@ -1045,12 +1036,12 @@ export const stopPositionKeeper = async (): Promise<{
 
 export const getPositionKeeperStatus = async (): Promise<{
   status: "running" | "idle";
-  holder: string | null;
+  instance: string | null;
   expires_at: string | null;
 }> => {
   return apiCall<{
     status: "running" | "idle";
-    holder: string | null;
+    instance: string | null;
     expires_at: string | null;
   }>("/position-keeper/status", {
     method: "GET",

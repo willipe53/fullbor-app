@@ -60,7 +60,7 @@ info:
 
     **POSITION KEEPER (3 endpoints):**
     - GET    /position-keeper/status
-    - POST   /position-keeper/start/{mode}  (mode: incremental | full-refresh)
+    - POST   /position-keeper/start
     - POST   /position-keeper/stop
 
     **USERS (5 endpoints):**
@@ -2081,29 +2081,15 @@ paths:
                 properties:
                   error:
                     type: string
-  /position-keeper/start/{mode}:
+  /position-keeper/start:
     parameters:
       - $ref: "#/components/parameters/CurrentUserIdHeader"
-      - in: path
-        name: mode
-        required: true
-        schema:
-          type: string
-          enum: [incremental, full-refresh]
-        description: |
-          Position Keeper mode:
-          - `incremental`: Only processes QUEUED transactions (default behavior)
-          - `full-refresh`: Processes ALL transactions and recalculates all positions from scratch
     post:
       tags:
         - PositionKeeper
       summary: Start the Position Keeper process
       description: |
-        Starts the Position Keeper with the specified mode.
-
-        **Modes:**
-        - `incremental`: Only processes QUEUED transactions and updates positions incrementally
-        - `full-refresh`: Processes ALL transactions (QUEUED + PROCESSED) and recalculates all positions from scratch
+        Starts the Position Keeper to process transactions and update positions.
       responses:
         "201":
           description: Position Keeper started successfully
@@ -2116,8 +2102,6 @@ paths:
                     type: string
                   position_keeper_id:
                     type: integer
-                  mode:
-                    type: string
                   sandbox_rows_created:
                     type: integer
         "400":
@@ -2201,7 +2185,7 @@ paths:
                     type: string
                     enum: [running, idle]
                     description: Current status of the Position Keeper
-                  holder:
+                  instance:
                     type: string
                     nullable: true
                     description: User or process holding the lock (if running)
@@ -2215,13 +2199,13 @@ paths:
                   summary: Position Keeper is running
                   value:
                     status: "running"
-                    holder: "user@example.com"
+                    instance: "i-0123456789abcdef0"
                     expires_at: "2025-10-08T15:30:00Z"
                 idle:
                   summary: Position Keeper is idle
                   value:
                     status: "idle"
-                    holder: null
+                    instance: null
                     expires_at: null
         "400":
           description: Bad request - invalid parameters

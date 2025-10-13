@@ -16,8 +16,6 @@ import {
   IconButton,
   Alert,
   Snackbar,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "@mui/material";
 import {
   Add,
@@ -168,10 +166,8 @@ const TransactionsTable: React.FC = () => {
   const [positionKeeperSeverity, setPositionKeeperSeverity] = useState<
     "success" | "error"
   >("success");
-  const [isPollingActive, setIsPollingActive] = useState(false);
-  const [positionKeeperMode, setPositionKeeperMode] = useState<
-    "incremental" | "full-refresh"
-  >("incremental");
+  const [positionKeeperStatus, setPositionKeeperStatus] =
+    useState<string>("stopped");
 
   // Helper function to get field values for filtering
   const getFieldValue = (
@@ -198,17 +194,12 @@ const TransactionsTable: React.FC = () => {
   const queryClient = useQueryClient();
 
   const startPositionKeeperMutation = useMutation({
-    mutationFn: (mode: "incremental" | "full-refresh") =>
-      apiService.startPositionKeeper(mode),
-    onSuccess: (data: { message: string; mode?: string }) => {
-      const modeText = data.mode || positionKeeperMode;
+    mutationFn: () => apiService.startPositionKeeper(),
+    onSuccess: (data: { message: string }) => {
       setPositionKeeperMessage(
-        `${
-          data.message || "Position keeper started successfully"
-        } (${modeText})`
+        data.message || "Position keeper started successfully"
       );
       setPositionKeeperSeverity("success");
-      setIsPollingActive(true);
       // Refresh transactions to see any status changes
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
@@ -217,7 +208,6 @@ const TransactionsTable: React.FC = () => {
         error.message || "Failed to start position keeper"
       );
       setPositionKeeperSeverity("error");
-      setIsPollingActive(false);
     },
   });
 
@@ -228,7 +218,6 @@ const TransactionsTable: React.FC = () => {
         data.message || "Position keeper stopped successfully"
       );
       setPositionKeeperSeverity("success");
-      setIsPollingActive(false);
       // Refresh transactions to see any status changes
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
@@ -323,53 +312,51 @@ const TransactionsTable: React.FC = () => {
   }, [rawTransactionsData, filters]);
 
   // Polling logic to check position keeper status
+  // Poll every 60 seconds while component is mounted
   useEffect(() => {
-    let intervalId: number | null = null;
-
-    if (isPollingActive) {
-      // Check position keeper status every 2 seconds
-      intervalId = setInterval(async () => {
-        try {
-          const status = await apiService.getPositionKeeperStatus();
-
-          if (status.status === "idle") {
-            // Position keeper finished processing, stop polling
-            setIsPollingActive(false);
-            setPositionKeeperMessage("Position keeper completed processing");
-            setPositionKeeperSeverity("success");
-            // Refresh transactions to see any status changes
-            queryClient.invalidateQueries({ queryKey: ["transactions"] });
-          }
-          // If status is "running", continue polling
-        } catch (error) {
-          console.error("Error checking position keeper status:", error);
-          // On error, stop polling to avoid infinite error loop
-          setIsPollingActive(false);
-          setPositionKeeperMessage("Error checking position keeper status");
-          setPositionKeeperSeverity("error");
+    const checkStatus = async () => {
+      try {
+        const status = await apiService.getPositionKeeperStatus();
+        // Update the status based on status field
+        // Note: The API returns "idle" or "running" in the status field
+        // But the new PKManager returns ec2_state in overall_status
+        // We'll check for "running" to determine if running
+        const statusValue =
+          (status as { overall_status?: string; status: string })
+            .overall_status || status.status;
+        if (statusValue === "running") {
+          setPositionKeeperStatus("running");
+        } else {
+          setPositionKeeperStatus("stopped");
         }
-      }, 2000); // 2 seconds
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+      } catch (error) {
+        console.error("Error checking position keeper status:", error);
+        setPositionKeeperStatus("stopped");
       }
     };
-  }, [isPollingActive, queryClient]);
+
+    // Check immediately on mount
+    checkStatus();
+
+    // Then check every 60 seconds
+    const intervalId = setInterval(checkStatus, 60000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // Handle position keeper button click
   const handlePositionKeeperClick = useCallback(() => {
-    if (isPollingActive) {
+    if (positionKeeperStatus === "running") {
       // Stop position keeper
       stopPositionKeeperMutation.mutate();
     } else {
-      // Start position keeper with selected mode
-      startPositionKeeperMutation.mutate(positionKeeperMode);
+      // Start position keeper
+      startPositionKeeperMutation.mutate();
     }
   }, [
-    isPollingActive,
-    positionKeeperMode,
+    positionKeeperStatus,
     startPositionKeeperMutation,
     stopPositionKeeperMutation,
   ]);
@@ -593,51 +580,9 @@ const TransactionsTable: React.FC = () => {
             marginLeft: "auto",
           }}
         >
-          {/* Mode Toggle - only show when Position Keeper is not running */}
-          {!isPollingActive && (
-            <ToggleButtonGroup
-              value={positionKeeperMode}
-              exclusive
-              onChange={(_, newMode) => {
-                if (newMode !== null) {
-                  setPositionKeeperMode(newMode);
-                }
-              }}
-              size="small"
-              disabled={
-                startPositionKeeperMutation.isPending ||
-                stopPositionKeeperMutation.isPending
-              }
-              sx={{
-                height: 32,
-              }}
-            >
-              <ToggleButton
-                value="incremental"
-                sx={{
-                  textTransform: "none",
-                  px: 1.5,
-                  fontSize: "0.8125rem",
-                }}
-              >
-                Incremental
-              </ToggleButton>
-              <ToggleButton
-                value="full-refresh"
-                sx={{
-                  textTransform: "none",
-                  px: 1.5,
-                  fontSize: "0.8125rem",
-                }}
-              >
-                Full Refresh
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
-
           <Button
             variant="contained"
-            color={isPollingActive ? "error" : "primary"}
+            color={positionKeeperStatus === "running" ? "error" : "primary"}
             size="small"
             onClick={handlePositionKeeperClick}
             disabled={
@@ -648,7 +593,7 @@ const TransactionsTable: React.FC = () => {
               startPositionKeeperMutation.isPending ||
               stopPositionKeeperMutation.isPending ? (
                 <CircularProgress size={16} />
-              ) : isPollingActive ? (
+              ) : positionKeeperStatus === "running" ? (
                 <Pause />
               ) : (
                 <PlayArrow />
@@ -660,15 +605,15 @@ const TransactionsTable: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {isPollingActive ? "Stop Position Keeper" : "Run Position Keeper"}
+            {positionKeeperStatus === "running"
+              ? "Stop Position Keeper"
+              : "Run Position Keeper"}
           </Button>
           <Tooltip
             title={
-              isPollingActive
+              positionKeeperStatus === "running"
                 ? "Stop the position keeper and cease processing"
-                : positionKeeperMode === "full-refresh"
-                ? "Start Full Refresh: Recalculates all positions from scratch (all transactions)"
-                : "Start Incremental: Process only queued transactions"
+                : "Start the position keeper to process transactions"
             }
             placement="top"
           >
