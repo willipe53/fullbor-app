@@ -1,5 +1,5 @@
 transaction_status_id	transaction_status_name	update_date	updated_user_id
 1	INCOMPLETE	2025-09-26T19:19:26	10
-2	QUEUED	2025-09-26T19:19:29	10
+2	NEW	2025-09-26T19:19:29	10
 3	PROCESSED	2025-09-26T19:19:31	10
 4	UNKNOWN	2025-09-28T15:18:41	10

@@ -9,7 +9,7 @@ import cors_helper
 # Data consistency functions (inline to avoid import issues)
 
 
-def ensure_primary_client_group_consistency(connection, user_id, primary_client_group_id):
+def ensure_primary_client_group_consistency(connection, user_id, primary_client_group_id, current_user_id_db):
     """Ensure that if a user has a primary_client_group_id, there's a corresponding row in client_group_users table."""
     try:
         with connection.cursor() as cursor:
@@ -35,8 +35,8 @@ def ensure_primary_client_group_consistency(connection, user_id, primary_client_
                 if not cursor.fetchone():
                     # Add the missing relationship
                     cursor.execute(
-                        "INSERT INTO client_group_users (client_group_id, user_id) VALUES (%s, %s)",
-                        (primary_client_group_id, user_id)
+                        "INSERT INTO client_group_users (client_group_id, user_id, updated_user_id) VALUES (%s, %s, %s)",
+                        (primary_client_group_id, user_id, current_user_id_db)
                     )
             return True
     except Exception as e:
@@ -83,7 +83,7 @@ def get_user_id_from_sub(connection, current_user_id):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT user_id FROM users WHERE sub = %s", (current_user_id,))
+                "SELECT user_id FROM users WHERE sub = %s AND deleted = false", (current_user_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
@@ -194,6 +194,9 @@ def lambda_handler(event, context):
         # Get database connection
         connection = get_db_connection()
 
+        # Get current user's database ID
+        current_user_id_db = get_user_id_from_sub(connection, current_user_id)
+
         # Get valid user IDs for authorization
         valid_user_ids = get_valid_user_ids_for_current_user(
             connection, current_user_id)
@@ -222,7 +225,7 @@ def lambda_handler(event, context):
                     cursor.execute("""
                         SELECT u.user_id, u.sub, u.email, u.preferences, u.primary_client_group_id, u.update_date
                         FROM users u
-                        WHERE u.sub = %s AND u.user_id IN ({})
+                        WHERE u.sub = %s AND u.user_id IN ({}) AND u.deleted = false
                     """.format(','.join(['%s'] * len(valid_user_ids))),
                         [sub] + valid_user_ids)
                     result = cursor.fetchone()
@@ -262,21 +265,21 @@ def lambda_handler(event, context):
                                 FROM users u
                                 INNER JOIN client_group_users cgu ON u.user_id = cgu.user_id
                                 INNER JOIN client_groups cg ON cgu.client_group_id = cg.client_group_id
-                                WHERE u.user_id IN ({}) AND cg.client_group_name = %s
+                                WHERE u.user_id IN ({}) AND cg.client_group_name = %s AND u.deleted = false
                             """.format(','.join(['%s'] * len(valid_user_ids))),
                                 valid_user_ids + [client_group_name_filter])
                         elif email_filter:
                             cursor.execute("""
                                 SELECT COUNT(*) as count
                                 FROM users u
-                                WHERE u.user_id IN ({}) AND u.email = %s
+                                WHERE u.user_id IN ({}) AND u.email = %s AND u.deleted = false
                             """.format(','.join(['%s'] * len(valid_user_ids))),
                                 valid_user_ids + [email_filter])
                         else:
                             cursor.execute("""
                                 SELECT COUNT(*) as count
                                 FROM users u
-                                WHERE u.user_id IN ({})
+                                WHERE u.user_id IN ({}) AND u.deleted = false
                             """.format(','.join(['%s'] * len(valid_user_ids))),
                                 valid_user_ids)
                         result = cursor.fetchone()
@@ -284,7 +287,7 @@ def lambda_handler(event, context):
                     else:
                         # Return users data with filters
                         where_conditions = ["u.user_id IN ({})".format(
-                            ','.join(['%s'] * len(valid_user_ids)))]
+                            ','.join(['%s'] * len(valid_user_ids))), "u.deleted = false"]
                         query_params = list(valid_user_ids)
 
                         if email_filter:
@@ -360,9 +363,9 @@ def lambda_handler(event, context):
                     'primary_client_group_id')
 
                 with connection.cursor() as cursor:
-                    # Check if user already exists
+                    # Check if user already exists (only non-deleted users)
                     cursor.execute(
-                        "SELECT user_id FROM users WHERE sub = %s", (sub,))
+                        "SELECT user_id FROM users WHERE sub = %s AND deleted = false", (sub,))
                     existing = cursor.fetchone()
 
                     if existing:
@@ -376,12 +379,12 @@ def lambda_handler(event, context):
                         # Update primary client group relationship if needed
                         if primary_client_group_id:
                             cursor.execute("""
-                                INSERT IGNORE INTO client_group_users (client_group_id, user_id)
-                                VALUES (%s, %s)
-                            """, (primary_client_group_id, existing[0]))
+                                INSERT IGNORE INTO client_group_users (client_group_id, user_id, updated_user_id)
+                                VALUES (%s, %s, %s)
+                            """, (primary_client_group_id, existing[0], current_user_id_db))
 
                         # Ensure primary client group consistency
-                        if not ensure_primary_client_group_consistency(connection, existing[0], primary_client_group_id):
+                        if not ensure_primary_client_group_consistency(connection, existing[0], primary_client_group_id, current_user_id_db):
                             connection.rollback()
                             return {
                                 "statusCode": 500,
@@ -403,13 +406,13 @@ def lambda_handler(event, context):
                         # Add primary client group relationship if specified
                         if primary_client_group_id:
                             cursor.execute("""
-                                INSERT INTO client_group_users (client_group_id, user_id)
-                                VALUES (%s, %s)
-                            """, (primary_client_group_id, new_user_id))
+                                INSERT INTO client_group_users (client_group_id, user_id, updated_user_id)
+                                VALUES (%s, %s, %s)
+                            """, (primary_client_group_id, new_user_id, current_user_id_db))
 
                         # Ensure primary client group consistency
                         if primary_client_group_id:
-                            if not ensure_primary_client_group_consistency(connection, new_user_id, primary_client_group_id):
+                            if not ensure_primary_client_group_consistency(connection, new_user_id, primary_client_group_id, current_user_id_db):
                                 connection.rollback()
                                 return {
                                     "statusCode": 500,
@@ -447,7 +450,7 @@ def lambda_handler(event, context):
                 # Get user_id for the target user
                 with connection.cursor() as cursor:
                     cursor.execute(
-                        "SELECT user_id FROM users WHERE email = %s", (user_name,))
+                        "SELECT user_id FROM users WHERE email = %s AND deleted = false", (user_name,))
                     user_result = cursor.fetchone()
                     if not user_result:
                         return {
@@ -492,9 +495,9 @@ def lambda_handler(event, context):
                     # Insert new relationships
                     for cg_id in final_client_group_ids:
                         cursor.execute("""
-                            INSERT INTO client_group_users (client_group_id, user_id)
-                            VALUES (%s, %s)
-                        """, (cg_id, target_user_id))
+                            INSERT INTO client_group_users (client_group_id, user_id, updated_user_id)
+                            VALUES (%s, %s, %s)
+                        """, (cg_id, target_user_id, current_user_id_db))
 
                     connection.commit()
                     response = {
@@ -548,7 +551,7 @@ def lambda_handler(event, context):
                 # Check if user exists and current user can modify it
                 cursor.execute("""
                     SELECT user_id FROM users 
-                    WHERE sub = %s AND user_id IN ({})
+                    WHERE sub = %s AND user_id IN ({}) AND deleted = false
                 """.format(','.join(['%s'] * len(valid_user_ids))),
                     [sub] + valid_user_ids)
                 existing = cursor.fetchone()
@@ -572,12 +575,12 @@ def lambda_handler(event, context):
                 # Update primary client group relationship if needed
                 if primary_client_group_id:
                     cursor.execute("""
-                        INSERT IGNORE INTO client_group_users (client_group_id, user_id)
-                        VALUES (%s, %s)
-                    """, (primary_client_group_id, target_user_id))
+                        INSERT IGNORE INTO client_group_users (client_group_id, user_id, updated_user_id)
+                        VALUES (%s, %s, %s)
+                    """, (primary_client_group_id, target_user_id, current_user_id_db))
 
                 # Ensure primary client group consistency
-                if not ensure_primary_client_group_consistency(connection, target_user_id, primary_client_group_id):
+                if not ensure_primary_client_group_consistency(connection, target_user_id, primary_client_group_id, current_user_id_db):
                     connection.rollback()
                     return {
                         "statusCode": 500,
@@ -603,7 +606,7 @@ def lambda_handler(event, context):
                 # Check if user exists and current user can modify it
                 cursor.execute("""
                     SELECT user_id FROM users 
-                    WHERE sub = %s AND user_id IN ({})
+                    WHERE sub = %s AND user_id IN ({}) AND deleted = false
                 """.format(','.join(['%s'] * len(valid_user_ids))),
                     [sub] + valid_user_ids)
                 existing = cursor.fetchone()
@@ -615,9 +618,9 @@ def lambda_handler(event, context):
                         "headers": cors_helper.get_cors_headers()
                     }
 
-                # Delete user (CASCADE will handle client_group_users)
+                # Soft delete user (set deleted = true)
                 cursor.execute(
-                    "DELETE FROM users WHERE user_id = %s", (existing[0],))
+                    "UPDATE users SET deleted = true, update_date = NOW() WHERE user_id = %s", (existing[0],))
                 connection.commit()
                 response = {"message": "User deleted successfully"}
 

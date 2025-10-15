@@ -1,0 +1,14 @@
+The transaction_statuses are now limited to:
+
+ 1|INCOMPLETE: Transactions started by the user but not ready for processing.
+ 2|NEW: Transactions completed by the user, ready for processing.      
+ 3|PROCESSED: Transactions that have been processed by the position keeper. 
+ 4|AMENDED: Previously processed transactions amended by the user.   
+
+The behavior of the TransactionForm needs to be as follows:
+
+- The "Save for Later" button is only available on an INCOMPLETE transaction.
+- If a user opens a NEW or AMENDED transaction it is read only, so the only button available is "Cancel". Helper text on the form should read "To amend this transaction, please wait for it to process." 
+- If a user opens a PROCESSED transaction and makes changes to it and presses "Update" it must be saved to the database as AMENDED
+
+Now we need to make changes to the TransactionHandler.py.  Whenever a NEW or AMENDED transaction is inserted or updated in the database, 

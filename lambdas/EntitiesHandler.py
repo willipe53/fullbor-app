@@ -2,16 +2,17 @@ import json
 import boto3
 import pymysql
 import os
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+from typing import Dict, Any
 import cors_helper
 
 
-def get_db_connection():
-    """Get database connection using secrets manager."""
+def get_secret():
+    """Get secret from AWS Secrets Manager. Called once per Lambda invocation."""
     try:
-        # Get secret from AWS Secrets Manager
         secrets_client = boto3.client(
             'secretsmanager', region_name='us-east-2')
         secret_arn = os.environ.get('SECRET_ARN')
@@ -20,8 +21,14 @@ def get_db_connection():
             raise Exception("SECRET_ARN environment variable not set")
 
         response = secrets_client.get_secret_value(SecretId=secret_arn)
-        secret = json.loads(response['SecretString'])
+        return json.loads(response['SecretString'])
+    except Exception as e:
+        raise Exception(f"Failed to retrieve secret: {str(e)}")
 
+
+def get_db_connection(secret):
+    """Get database connection using provided secret."""
+    try:
         connection = pymysql.connect(
             host=secret['DB_HOST'],
             user=secret['DB_USER'],
@@ -53,6 +60,47 @@ def get_user_id_from_sub(connection, current_user_id):
     except Exception as e:
         print(f"Error getting user_id from sub: {e}")
         return None
+
+
+def send_cache_refresh_to_sqs(secret: Dict[str, Any], table: str, primary_key: int) -> bool:
+    """Send cache refresh message to SQS FIFO queue."""
+    try:
+        # Get queue URL from secret
+        queue_url = secret.get('QUEUE_URL')
+
+        if not queue_url:
+            raise Exception("QUEUE_URL not found in secrets")
+
+        sqs = boto3.client('sqs', region_name='us-east-2')
+
+        # Prepare message body
+        message_body = {
+            "operation": "refresh_cache",
+            "table": table,
+            "primary_key": primary_key
+        }
+
+        # Generate unique message group ID and deduplication ID
+        message_group_id = f"cache-refresh-{table}"
+        message_deduplication_id = f"refresh-{table}-{primary_key}-{int(datetime.now(timezone.utc).timestamp() * 1000)}-{uuid.uuid4().hex[:8]}"
+
+        print(
+            f"DEBUG: Sending cache refresh to SQS - Table: {table}, Primary Key: {primary_key}")
+
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body),
+            MessageGroupId=message_group_id,
+            MessageDeduplicationId=message_deduplication_id
+        )
+
+        print(
+            f"DEBUG: Cache refresh SQS message sent successfully: {response['MessageId']}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to send cache refresh message to SQS: {str(e)}")
+        return False
 
 
 def get_user_client_groups(connection, user_id):
@@ -154,7 +202,7 @@ def get_entity_id_by_name(connection, entity_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
+                "SELECT entity_id FROM entities WHERE entity_name = %s AND deleted = false", (entity_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
@@ -175,15 +223,15 @@ def get_user_name_by_id(connection, user_id):
         return None
 
 
-def handle_entity_operations(connection, http_method, path, path_parameters, query_parameters, body, current_user_id, valid_entity_ids):
+def handle_entity_operations(connection, http_method, path, path_parameters, query_parameters, body, current_user_id, valid_entity_ids, secret):
     """Handle all entity operations based on HTTP method and path."""
 
     if http_method == 'GET':
         return handle_get_operations(connection, path, path_parameters, query_parameters, valid_entity_ids)
     elif http_method == 'POST':
-        return handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids)
+        return handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids, secret)
     elif http_method == 'PUT':
-        return handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids)
+        return handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids, secret)
     elif http_method == 'DELETE':
         return handle_delete_operations(connection, path, path_parameters, current_user_id, valid_entity_ids)
     else:
@@ -204,7 +252,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
                        et.entity_type_name
                 FROM entities e
                 JOIN entity_types et ON e.entity_type_id = et.entity_type_id
-                WHERE e.entity_name = %s AND e.entity_id IN ({})
+                WHERE e.entity_name = %s AND e.entity_id IN ({}) AND e.deleted = false
             """.format(','.join(['%s'] * len(valid_entity_ids))),
                 [entity_name] + valid_entity_ids)
             result = cursor.fetchone()
@@ -241,6 +289,7 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
         FROM entities e
         JOIN entity_types et ON e.entity_type_id = et.entity_type_id
         WHERE e.entity_id IN ({})
+        AND e.deleted = false
     """.format(','.join(['%s'] * len(valid_entity_ids)))
 
     params = valid_entity_ids.copy()
@@ -301,12 +350,12 @@ def handle_list_entities(connection, query_parameters, valid_entity_ids):
         return data
 
 
-def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids):
+def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids, secret):
     """Handle POST operations."""
     if '/entities:set' in path and path.startswith('/entities/'):
         return handle_set_client_group_entities(connection, path_parameters, body, current_user_id)
     else:
-        return handle_create_entity(connection, body, current_user_id)
+        return handle_create_entity(connection, body, current_user_id, secret)
 
 
 def handle_set_client_group_entities(connection, path_parameters, body, current_user_id):
@@ -371,7 +420,7 @@ def handle_set_client_group_entities(connection, path_parameters, body, current_
         return {"message": "Entity associations updated successfully"}
 
 
-def handle_create_entity(connection, body, current_user_id):
+def handle_create_entity(connection, body, current_user_id, secret):
     """Handle creating a new entity."""
     try:
         request_data = json.loads(body) if body else {}
@@ -397,9 +446,9 @@ def handle_create_entity(connection, body, current_user_id):
     attributes_json = json.dumps(attributes) if attributes else None
 
     with connection.cursor() as cursor:
-        # Check if entity already exists
+        # Check if entity already exists (only non-deleted entities)
         cursor.execute(
-            "SELECT entity_id FROM entities WHERE entity_name = %s", (entity_name,))
+            "SELECT entity_id FROM entities WHERE entity_name = %s AND deleted = false", (entity_name,))
         existing = cursor.fetchone()
 
         if existing:
@@ -421,6 +470,10 @@ def handle_create_entity(connection, body, current_user_id):
                     """, (primary_client_group_id, existing[0], user_id))
 
             connection.commit()
+
+            # Send cache refresh notification
+            send_cache_refresh_to_sqs(secret, "entities", existing[0])
+
             return {"message": "Entity updated successfully"}
         else:
             # Insert new entity
@@ -465,10 +518,14 @@ def handle_create_entity(connection, body, current_user_id):
                 return {"error": f"Failed to associate entity with client group: {str(e)}"}
 
             connection.commit()
+
+            # Send cache refresh notification
+            send_cache_refresh_to_sqs(secret, "entities", new_entity_id)
+
             return {"message": "Entity created successfully"}
 
 
-def handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids):
+def handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_entity_ids, secret):
     """Handle PUT operations."""
     if 'entity_name' not in path_parameters:
         return {"error": "entity_name is required in path"}
@@ -500,7 +557,7 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
         # Check if entity exists and current user can modify it
         cursor.execute("""
             SELECT entity_id FROM entities 
-            WHERE entity_name = %s AND entity_id IN ({})
+            WHERE entity_name = %s AND entity_id IN ({}) AND deleted = false
         """.format(','.join(['%s'] * len(valid_entity_ids))),
             [entity_name] + valid_entity_ids)
         existing = cursor.fetchone()
@@ -543,6 +600,10 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
             """, update_params)
 
         connection.commit()
+
+        # Send cache refresh notification
+        send_cache_refresh_to_sqs(secret, "entities", target_entity_id)
+
         return {"message": "Entity updated successfully"}
 
 
@@ -557,7 +618,7 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
         # Check if entity exists and current user can modify it
         cursor.execute("""
             SELECT entity_id FROM entities 
-            WHERE entity_name = %s AND entity_id IN ({})
+            WHERE entity_name = %s AND entity_id IN ({}) AND deleted = false
         """.format(','.join(['%s'] * len(valid_entity_ids))),
             [entity_name] + valid_entity_ids)
         existing = cursor.fetchone()
@@ -593,9 +654,10 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
             connection.commit()
             return {"message": "Entity affiliations removed from accessible client groups"}
         else:
-            # Entity is only affiliated with user's client groups - safe to delete the entity
+            # Entity is only affiliated with user's client groups - soft delete the entity
             cursor.execute(
-                "DELETE FROM entities WHERE entity_id = %s", (target_entity_id,))
+                "UPDATE entities SET deleted = true, update_date = NOW(), updated_user_id = %s WHERE entity_id = %s",
+                (current_user_id_db, target_entity_id))
             connection.commit()
             return {"message": "Entity deleted successfully"}
 
@@ -626,8 +688,11 @@ def lambda_handler(event, context):
 
     connection = None
     try:
+        # Get secret from Secrets Manager (called once per invocation)
+        secret = get_secret()
+
         # Get database connection
-        connection = get_db_connection()
+        connection = get_db_connection(secret)
 
         # Get valid entity IDs for authorization
         valid_entity_ids = get_valid_entity_ids_for_current_user(
@@ -642,7 +707,7 @@ def lambda_handler(event, context):
         # Handle different operations based on HTTP method and path
         response = handle_entity_operations(
             connection, http_method, path, path_parameters,
-            query_parameters, body, current_user_id, valid_entity_ids
+            query_parameters, body, current_user_id, valid_entity_ids, secret
         )
 
         connection.close()

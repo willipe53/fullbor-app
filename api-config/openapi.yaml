@@ -615,7 +615,7 @@ paths:
     delete:
       tags:
         - ClientGroups
-      summary: Delete a Client Group
+      summary: Sets the deleted flag for a Client Group
       responses:
         "200":
           description: Deleted
@@ -1117,7 +1117,7 @@ paths:
     delete:
       tags:
         - Entities
-      summary: Delete an Entity
+      summary: Sets the deleted flag for an Entity
       responses:
         "200":
           description: Deleted
@@ -1646,7 +1646,7 @@ paths:
     delete:
       tags:
         - Transactions
-      summary: Delete Transaction
+      summary: Sets the deleted flag for a Transaction
       responses:
         "200":
           description: Deleted
@@ -2047,10 +2047,10 @@ paths:
                       - transaction_status_name: "PROCESSED"
                         update_date: "2025-09-26T19:19:31Z"
                         updated_by_user_name: "10"
-                      - transaction_status_name: "QUEUED"
+                      - transaction_status_name: "NEW"
                         update_date: "2025-09-26T19:19:29Z"
                         updated_by_user_name: "10"
-                      - transaction_status_name: "UNKNOWN"
+                      - transaction_status_name: "AMENDED"
                         update_date: "2025-09-28T15:18:41Z"
                         updated_by_user_name: "10"
                     count: 4
@@ -2454,7 +2454,7 @@ paths:
     delete:
       tags:
         - Users
-      summary: Delete user
+      summary: Sets the deleted flag for a user
       responses:
         "200":
           description: Deleted

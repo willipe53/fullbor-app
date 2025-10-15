@@ -104,7 +104,7 @@ def get_client_group_id_by_name(connection, client_group_name):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT client_group_id FROM client_groups WHERE client_group_name = %s", (client_group_name,))
+                "SELECT client_group_id FROM client_groups WHERE client_group_name = %s AND deleted = false", (client_group_name,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
@@ -117,7 +117,7 @@ def get_client_group_name_by_id(connection, client_group_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT client_group_name FROM client_groups WHERE client_group_id = %s", (client_group_id,))
+                "SELECT client_group_name FROM client_groups WHERE client_group_id = %s AND deleted = false", (client_group_id,))
             result = cursor.fetchone()
             return result[0] if result else None
     except Exception as e:
@@ -284,7 +284,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, u
                 cursor.execute("""
                     SELECT client_group_id, client_group_name, preferences, update_date, updated_user_id
                     FROM client_groups
-                    WHERE client_group_id = %s
+                    WHERE client_group_id = %s AND deleted = false
                 """, (client_group_id,))
                 result = cursor.fetchone()
 
@@ -448,6 +448,7 @@ def handle_list_client_groups(connection, query_parameters, user_client_groups):
         base_query = """
             FROM client_groups cg
             WHERE cg.client_group_id IN ({})
+            AND cg.deleted = false
         """.format(','.join(['%s'] * len(user_client_groups)))
         params = user_client_groups.copy()
     else:
@@ -576,9 +577,9 @@ def handle_create_client_group(connection, body, current_user_id_db):
 
         # Associate the creating user with the new client group
         cursor.execute("""
-            INSERT INTO client_group_users (client_group_id, user_id)
-            VALUES (%s, %s)
-        """, (new_client_group_id, current_user_id_db))
+            INSERT INTO client_group_users (client_group_id, user_id, updated_user_id)
+            VALUES (%s, %s, %s)
+        """, (new_client_group_id, current_user_id_db, current_user_id_db))
         print(
             f"Associated user {current_user_id_db} with client group {new_client_group_id}")
 
@@ -675,9 +676,10 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id_
         }
 
     with connection.cursor() as cursor:
-        # Delete client group (cascade will handle related records)
+        # Soft delete client group (set deleted = true)
         cursor.execute(
-            "DELETE FROM client_groups WHERE client_group_id = %s", (client_group_id,))
+            "UPDATE client_groups SET deleted = true, update_date = NOW(), updated_user_id = %s WHERE client_group_id = %s",
+            (current_user_id_db, client_group_id))
         connection.commit()
         return {"message": "Client group deleted successfully"}
 
@@ -747,28 +749,43 @@ def handle_set_users(connection, path_parameters, body, current_user_id_db, user
         return {"error": "Client group not found or access denied"}
 
     # Get user IDs from request
+    sub_values = request_data.get('sub_values', [])
     user_names = request_data.get('user_names', [])
     user_ids = request_data.get('user_ids', [])
 
-    # Convert user names to IDs
-    for user_name in user_names:
-        user_id = get_user_id_by_name(connection, user_name)
-        if user_id and user_id not in user_ids:
-            user_ids.append(user_id)
-        elif not user_id:
-            return {"error": f"User '{user_name}' not found"}
-
     with connection.cursor() as cursor:
+        # Convert sub values to IDs (preferred method)
+        for sub in sub_values:
+            cursor.execute(
+                "SELECT user_id FROM users WHERE sub = %s AND deleted = false", (sub,))
+            result = cursor.fetchone()
+            if result:
+                user_id = result[0]
+                if user_id not in user_ids:
+                    user_ids.append(user_id)
+            else:
+                return {"error": f"User with sub '{sub}' not found"}
+
+        # Convert user names to IDs
+        for user_name in user_names:
+            user_id = get_user_id_by_name(connection, user_name)
+            if user_id and user_id not in user_ids:
+                user_ids.append(user_id)
+            elif not user_id:
+                return {"error": f"User '{user_name}' not found"}
+
         # Delete existing user associations for this client group
         cursor.execute(
             "DELETE FROM client_group_users WHERE client_group_id = %s", (client_group_id,))
+        deleted_count = cursor.rowcount
 
         # Insert new user associations
         for user_id in user_ids:
             cursor.execute("""
-                INSERT INTO client_group_users (client_group_id, user_id)
-                VALUES (%s, %s)
-            """, (client_group_id, user_id))
+                INSERT INTO client_group_users (client_group_id, user_id, updated_user_id)
+                VALUES (%s, %s, %s)
+            """, (client_group_id, user_id, current_user_id_db))
 
         connection.commit()
-        return {"message": "User associations updated successfully"}
+
+    return {"message": f"User associations updated successfully. Deleted {deleted_count}, Added {len(user_ids)} user(s)."}

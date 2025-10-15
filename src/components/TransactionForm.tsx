@@ -661,7 +661,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
       },
     });
 
-    // Handle form submission (Create Transaction button - saves as QUEUED)
+    // Handle form submission (Create Transaction button - saves as NEW)
     const handleSubmit = () => {
       // Find the entity names from the IDs using O(1) map lookups
       const portfolioEntity = entitiesById.get(
@@ -682,11 +682,16 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
         return;
       }
 
+      // Determine the transaction status:
+      // - If updating a PROCESSED transaction, set status to AMENDED
+      // - Otherwise, set status to NEW
+      const statusName = isProcessedTransaction ? "AMENDED" : "NEW";
+
       const submitData: apiService.CreateTransactionRequest = {
         portfolio_entity_name: portfolioEntity.entity_name,
         contra_entity_name: contraEntity?.entity_name,
         instrument_entity_name: instrumentEntity?.entity_name,
-        transaction_status_name: "QUEUED",
+        transaction_status_name: statusName,
         transaction_type_name: transactionType.transaction_type_name,
         trade_date: formData.trade_date,
         settle_date: formData.settle_date,
@@ -706,6 +711,17 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
     // Check if transaction is INCOMPLETE (can be deleted)
     const isIncompleteTransaction = useMemo(() => {
       return editingTransaction?.transaction_status_name === "INCOMPLETE";
+    }, [editingTransaction?.transaction_status_name]);
+
+    // Check if transaction is read-only (NEW or AMENDED - awaiting processing)
+    const isReadOnlyTransaction = useMemo(() => {
+      const status = editingTransaction?.transaction_status_name;
+      return status === "NEW" || status === "AMENDED";
+    }, [editingTransaction?.transaction_status_name]);
+
+    // Check if transaction is PROCESSED (can be amended)
+    const isProcessedTransaction = useMemo(() => {
+      return editingTransaction?.transaction_status_name === "PROCESSED";
     }, [editingTransaction?.transaction_status_name]);
 
     // Handle delete transaction
@@ -1201,6 +1217,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                     handlePropertyChange(propertyName, "");
                   }
                 }}
+                disabled={isReadOnlyTransaction}
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -1216,6 +1233,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   size="small"
                   variant="outlined"
                   onClick={handleTodayClick}
+                  disabled={isReadOnlyTransaction}
                   sx={{ minWidth: "auto", px: 2, mt: 1 }}
                 >
                   Today
@@ -1226,6 +1244,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   size="small"
                   variant="outlined"
                   onClick={handleTPlus3Click}
+                  disabled={isReadOnlyTransaction}
                   sx={{ minWidth: "auto", px: 2, mt: 1 }}
                 >
                   T+3
@@ -1236,6 +1255,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   size="small"
                   variant="outlined"
                   onClick={handleTodayClick}
+                  disabled={isReadOnlyTransaction}
                   sx={{ minWidth: "auto", px: 2, mt: 1 }}
                 >
                   Today
@@ -1246,6 +1266,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   size="small"
                   variant="outlined"
                   onClick={handleTPlus10Click}
+                  disabled={isReadOnlyTransaction}
                   sx={{ minWidth: "auto", px: 2, mt: 1 }}
                 >
                   T+10
@@ -1300,6 +1321,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                   )
                 }
                 loading={categoryData.loading}
+                disabled={isReadOnlyTransaction}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -1334,6 +1356,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 }
                 required={isRequired}
                 fullWidth
+                disabled={isReadOnlyTransaction}
                 helperText={
                   description ||
                   `Category "${paramValue}" not yet supported for API-driven enums`
@@ -1354,6 +1377,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
             onChange={(_, newValue) =>
               handlePropertyChange(propertyName, newValue || "")
             }
+            disabled={isReadOnlyTransaction}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -1453,6 +1477,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
             }}
             required={isRequired}
             fullWidth
+            disabled={isReadOnlyTransaction}
             type="text" // Use text type to allow commas
             helperText={
               description ||
@@ -1475,6 +1500,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           onChange={(e) => handlePropertyChange(propertyName, e.target.value)}
           required={isRequired}
           fullWidth
+          disabled={isReadOnlyTransaction}
           type="text"
           helperText={description}
         />
@@ -1545,6 +1571,15 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
               </Box>
             )}
 
+          {/* Read-only status message for NEW or AMENDED transactions */}
+          {isReadOnlyTransaction && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              This transaction is currently{" "}
+              {editingTransaction?.transaction_status_name} and cannot be
+              edited. To amend this transaction, please wait for it to process.
+            </Alert>
+          )}
+
           {/* Scrollable Content */}
           <Box sx={{ flex: 1, overflow: "auto", pb: "100px" }}>
             <Stepper activeStep={currentStep} sx={{ mb: 3 }}>
@@ -1610,14 +1645,14 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                         }}
                       />
                     )}
-                    disabled={isLoading}
+                    disabled={isLoading || isReadOnlyTransaction}
                     sx={{ flex: 1 }}
                   />
                   <Button
                     variant="outlined"
                     startIcon={<Add />}
                     onClick={() => setShowPortfolioModal(true)}
-                    disabled={isLoading}
+                    disabled={isLoading || isReadOnlyTransaction}
                     sx={{ minWidth: "auto", px: 2 }}
                   >
                     Add New
@@ -1695,14 +1730,14 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                             fullWidth
                           />
                         )}
-                        disabled={isLoading}
+                        disabled={isLoading || isReadOnlyTransaction}
                         sx={{ flex: 1 }}
                       />
                       <Button
                         variant="outlined"
                         startIcon={<Add />}
                         onClick={() => setShowInstrumentModal(true)}
-                        disabled={isLoading}
+                        disabled={isLoading || isReadOnlyTransaction}
                         sx={{ minWidth: "auto", px: 2 }}
                       >
                         Add New
@@ -1744,7 +1779,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                         fullWidth
                       />
                     )}
-                    disabled={isLoading}
+                    disabled={isLoading || isReadOnlyTransaction}
                   />
                   {validTransactionTypes.length === 0 && (
                     <Alert severity="info" sx={{ mt: 1 }}>
@@ -1806,14 +1841,14 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                             fullWidth
                           />
                         )}
-                        disabled={isLoading}
+                        disabled={isLoading || isReadOnlyTransaction}
                         sx={{ flex: 1 }}
                       />
                       <Button
                         variant="outlined"
                         startIcon={<Add />}
                         onClick={() => setShowcontraModal(true)}
-                        disabled={isLoading}
+                        disabled={isLoading || isReadOnlyTransaction}
                         sx={{ minWidth: "auto", px: 2 }}
                       >
                         Add New
@@ -2004,7 +2039,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 Cancel
               </Button>
             )}
-            {onClose && (
+            {onClose && isIncompleteTransaction && (
               <Button
                 variant="outlined"
                 onClick={handleFormDismissal}
@@ -2031,23 +2066,25 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 )}
               </Button>
             )}
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!canSubmit || mutation.isPending}
-              sx={{ ml: "auto" }}
-            >
-              {mutation.isPending ? (
-                <>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  {editingTransaction ? "Updating..." : "Creating..."}
-                </>
-              ) : editingTransaction ? (
-                "Update"
-              ) : (
-                "Create Transaction"
-              )}
-            </Button>
+            {!isReadOnlyTransaction && (
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={!canSubmit || mutation.isPending}
+                sx={{ ml: "auto" }}
+              >
+                {mutation.isPending ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    {editingTransaction ? "Updating..." : "Creating..."}
+                  </>
+                ) : editingTransaction ? (
+                  "Update"
+                ) : (
+                  "Create Transaction"
+                )}
+              </Button>
+            )}
           </Box>
 
           {/* Success Snackbar */}

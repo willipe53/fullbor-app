@@ -325,9 +325,9 @@ def lambda_handler(event, context):
                     # Add user to client group if not already a member
                     if not already_member:
                         cursor.execute("""
-                            INSERT INTO client_group_users (client_group_id, user_id)
-                            VALUES (%s, %s)
-                        """, (client_group_id, user_id))
+                            INSERT INTO client_group_users (client_group_id, user_id, updated_user_id)
+                            VALUES (%s, %s, %s)
+                        """, (client_group_id, user_id, user_id))
 
                     # Mark invitation as expired
                     cursor.execute("""

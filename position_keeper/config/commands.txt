@@ -1,0 +1,38 @@
+# Instance details
+3.144.231.58
+i-01f5d046c86e4f36e
+
+# Github Sync
+sudo yum install -y python3 git
+sudo yum install python3-pip
+pip install "python-dateutil==2.9.0"
+pip3 install boto3 pandas pymysql
+sudo dnf install git
+ssh-keygen -t ed25519 -C "ec2-instance key for github" -f ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -C "ec2 fullbor-pk deploy key" -f ~/.ssh/id_fullbor_pk
+vi ~/.ssh/authorized_keys 
+curl https://github.com/willipe53.keys >>authorized_keys 
+sudo git config --global --add safe.directory /home/ec2-user
+git clone git@github.com:willipe53/fullbor-pk.git
+
+# Auto run at startup
+sudo vi /etc/systemd/system/positionkeeper.service
+sudo systemctl daemon-reload
+sudo systemctl enable positionkeeper
+sudo systemctl start positionkeeper
+sudo systemctl status positionkeeper
+
+# Cloudwatch logs
+sudo yum install -y amazon-cloudwatch-agent
+sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+sudo vi /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+    -a fetch-config \
+    -m ec2 \
+    -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+    -s
+sudo systemctl enable amazon-cloudwatch-agent
+sudo systemctl status amazon-cloudwatch-agent
+
+# Connect from Mac
+ssh ec2-user@3.144.231.58 

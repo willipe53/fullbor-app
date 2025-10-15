@@ -2,16 +2,17 @@ import json
 import boto3
 import pymysql
 import os
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+from typing import Dict, Any
 import cors_helper
 
 
-def get_db_connection():
-    """Get database connection using secrets manager."""
+def get_secret():
+    """Get secret from AWS Secrets Manager. Called once per Lambda invocation."""
     try:
-        # Get secret from AWS Secrets Manager
         secrets_client = boto3.client(
             'secretsmanager', region_name='us-east-2')
         secret_arn = os.environ.get('SECRET_ARN')
@@ -20,8 +21,14 @@ def get_db_connection():
             raise Exception("SECRET_ARN environment variable not set")
 
         response = secrets_client.get_secret_value(SecretId=secret_arn)
-        secret = json.loads(response['SecretString'])
+        return json.loads(response['SecretString'])
+    except Exception as e:
+        raise Exception(f"Failed to retrieve secret: {str(e)}")
 
+
+def get_db_connection(secret):
+    """Get database connection using provided secret."""
+    try:
         connection = pymysql.connect(
             host=secret['DB_HOST'],
             user=secret['DB_USER'],
@@ -55,6 +62,46 @@ def get_user_id_from_sub(connection, current_user_id):
         return None
 
 
+def send_cache_refresh_to_sqs(secret: Dict[str, Any], table: str) -> bool:
+    """Send cache refresh message to SQS FIFO queue."""
+    try:
+        # Get queue URL from secret
+        queue_url = secret.get('QUEUE_URL')
+
+        if not queue_url:
+            raise Exception("QUEUE_URL not found in secrets")
+
+        sqs = boto3.client('sqs', region_name='us-east-2')
+
+        # Prepare message body
+        message_body = {
+            "operation": "refresh_cache",
+            "table": table
+        }
+
+        # Generate unique message group ID and deduplication ID
+        message_group_id = f"cache-refresh-{table}"
+        message_deduplication_id = f"refresh-{table}-{int(datetime.now(timezone.utc).timestamp() * 1000)}-{uuid.uuid4().hex[:8]}"
+
+        print(
+            f"DEBUG: Sending cache refresh to SQS - Table: {table}, Group ID: {message_group_id}")
+
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body),
+            MessageGroupId=message_group_id,
+            MessageDeduplicationId=message_deduplication_id
+        )
+
+        print(
+            f"DEBUG: Cache refresh SQS message sent successfully: {response['MessageId']}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to send cache refresh message to SQS: {str(e)}")
+        return False
+
+
 def lambda_handler(event, context):
     """
     Handle transaction type operations for V2 API.
@@ -78,8 +125,11 @@ def lambda_handler(event, context):
 
     connection = None
     try:
+        # Get secret from Secrets Manager (called once per invocation)
+        secret = get_secret()
+
         # Get database connection
-        connection = get_db_connection()
+        connection = get_db_connection(secret)
 
         if http_method == 'GET':
             # Handle GET operations
@@ -190,6 +240,10 @@ def lambda_handler(event, context):
                         WHERE transaction_type_name = %s
                     """, (properties_json, user_id, transaction_type_name))
                     connection.commit()
+
+                    # Send cache refresh notification
+                    send_cache_refresh_to_sqs(secret, "transaction_types")
+
                     response = {
                         "message": "Transaction type updated successfully"}
                 else:
@@ -199,6 +253,10 @@ def lambda_handler(event, context):
                         VALUES (%s, %s, %s)
                     """, (transaction_type_name, properties_json, user_id))
                     connection.commit()
+
+                    # Send cache refresh notification
+                    send_cache_refresh_to_sqs(secret, "transaction_types")
+
                     response = {
                         "message": "Transaction type created successfully"}
 
@@ -260,6 +318,10 @@ def lambda_handler(event, context):
                         WHERE transaction_type_name = %s
                     """, (properties_json, user_id, transaction_type_name))
                 connection.commit()
+
+                # Send cache refresh notification
+                send_cache_refresh_to_sqs(secret, "transaction_types")
+
                 response = {"message": "Transaction type updated successfully"}
 
         elif http_method == 'DELETE':

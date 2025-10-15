@@ -92,7 +92,7 @@ const STATUS_NAME_MAP: Record<
   }
 > = {
   INCOMPLETE: { color: "warning", variant: "filled" },
-  QUEUED: { color: "info", variant: "filled" },
+  NEW: { color: "info", variant: "filled" },
   PROCESSED: { color: "success", variant: "filled" },
 };
 

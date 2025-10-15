@@ -11,10 +11,9 @@ from typing import Dict, Any
 import cors_helper
 
 
-def get_db_connection():
-    """Get database connection using secrets manager."""
+def get_secret():
+    """Get secret from AWS Secrets Manager. Called once per Lambda invocation."""
     try:
-        # Get secret from AWS Secrets Manager
         secrets_client = boto3.client(
             'secretsmanager', region_name='us-east-2')
         secret_arn = os.environ.get('SECRET_ARN')
@@ -23,8 +22,14 @@ def get_db_connection():
             raise Exception("SECRET_ARN environment variable not set")
 
         response = secrets_client.get_secret_value(SecretId=secret_arn)
-        secret = json.loads(response['SecretString'])
+        return json.loads(response['SecretString'])
+    except Exception as e:
+        raise Exception(f"Failed to retrieve secret: {str(e)}")
 
+
+def get_db_connection(secret):
+    """Get database connection using provided secret."""
+    try:
         connection = pymysql.connect(
             host=secret['DB_HOST'],
             user=secret['DB_USER'],
@@ -225,8 +230,11 @@ def lambda_handler(event, context):
 
     connection = None
     try:
+        # Get secret from Secrets Manager (called once per invocation)
+        secret = get_secret()
+
         # Get database connection
-        connection = get_db_connection()
+        connection = get_db_connection(secret)
 
         # Get valid portfolio entity IDs for authorization
         valid_portfolio_entity_ids = get_valid_portfolio_entity_ids_for_current_user(
@@ -241,7 +249,7 @@ def lambda_handler(event, context):
         # Handle different operations based on HTTP method and path
         response = handle_transaction_operations(
             connection, http_method, path, path_parameters,
-            query_parameters, body, current_user_id, valid_portfolio_entity_ids
+            query_parameters, body, current_user_id, valid_portfolio_entity_ids, secret
         )
 
         connection.close()
@@ -274,30 +282,35 @@ def lambda_handler(event, context):
         }
 
 
-def handle_transaction_operations(connection, http_method, path, path_parameters, query_parameters, body, current_user_id, valid_portfolio_entity_ids):
+def handle_transaction_operations(connection, http_method, path, path_parameters, query_parameters, body, current_user_id, valid_portfolio_entity_ids, secret):
     """Handle all transaction operations based on HTTP method and path."""
 
     if http_method == 'GET':
         return handle_get_operations(connection, path, path_parameters, query_parameters, valid_portfolio_entity_ids)
     elif http_method == 'POST':
-        return handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids)
+        return handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids, secret)
     elif http_method == 'PUT':
-        return handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids)
+        return handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids, secret)
     elif http_method == 'DELETE':
-        return handle_delete_operations(connection, path, path_parameters, current_user_id, valid_portfolio_entity_ids)
+        return handle_delete_operations(connection, path, path_parameters, current_user_id, valid_portfolio_entity_ids, secret)
     else:
         return {"error": f"Method {http_method} not allowed for transactions"}
 
 
-def send_to_sqs(transaction_data: Dict[str, Any], operation: str) -> bool:
+def send_to_sqs(transaction_data: Dict[str, Any], operation: str, secret: Dict[str, Any]) -> bool:
     """Send transaction data to SQS FIFO queue."""
     try:
+        # Get queue URL from secret
+        queue_url = secret.get('QUEUE_URL')
+
+        if not queue_url:
+            raise Exception("QUEUE_URL not found in secrets")
+
         sqs = boto3.client('sqs', region_name='us-east-2')
-        queue_url = "https://sqs.us-east-2.amazonaws.com/316490106381/pandatransactions.fifo"
 
         # Prepare message body
         message_body = {
-            "operation": operation,  # "create" or "update"
+            "operation": operation,  # "create" or "update" or "delete"
             "transaction_id": transaction_data.get("transaction_id"),
             "portfolio_entity_id": transaction_data.get("portfolio_entity_id"),
             "contra_entity_id": transaction_data.get("contra_entity_id"),
@@ -352,7 +365,7 @@ def handle_get_operations(connection, path, path_parameters, query_parameters, v
                 LEFT JOIN entities ie ON t.instrument_entity_id = ie.entity_id
                 LEFT JOIN transaction_statuses ts ON t.transaction_status_id = ts.transaction_status_id
                 LEFT JOIN transaction_types tt ON t.transaction_type_id = tt.transaction_type_id
-                WHERE t.transaction_id = %s AND t.portfolio_entity_id IN ({})
+                WHERE t.transaction_id = %s AND t.portfolio_entity_id IN ({}) AND t.deleted = false
             """.format(','.join(['%s'] * len(valid_portfolio_entity_ids))),
                 [transaction_id] + valid_portfolio_entity_ids)
             result = cursor.fetchone()
@@ -406,6 +419,7 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
         LEFT JOIN transaction_statuses ts ON t.transaction_status_id = ts.transaction_status_id
         LEFT JOIN transaction_types tt ON t.transaction_type_id = tt.transaction_type_id
         WHERE t.portfolio_entity_id IN ({})
+        AND t.deleted = false
     """.format(','.join(['%s'] * len(valid_portfolio_entity_ids)))
 
     params = valid_portfolio_entity_ids.copy()
@@ -487,7 +501,7 @@ def handle_list_transactions(connection, query_parameters, valid_portfolio_entit
         }
 
 
-def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids):
+def handle_post_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids, secret):
     """Handle POST operations."""
     try:
         request_data = json.loads(body) if body else {}
@@ -575,12 +589,12 @@ def handle_post_operations(connection, path, path_parameters, body, current_user
             "updated_user_id": user_id,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        send_to_sqs(transaction_data, "create")
+        send_to_sqs(transaction_data, "create", secret)
 
         return {"message": "Transaction created successfully", "transaction_id": new_transaction_id}
 
 
-def handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids):
+def handle_put_operations(connection, path, path_parameters, body, current_user_id, valid_portfolio_entity_ids, secret):
     """Handle PUT operations."""
     if 'transaction_id' not in path_parameters:
         return {"error": "transaction_id is required in path"}
@@ -599,7 +613,7 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
         # Check if transaction exists and current user can modify it
         cursor.execute("""
             SELECT portfolio_entity_id FROM transactions 
-            WHERE transaction_id = %s AND portfolio_entity_id IN ({})
+            WHERE transaction_id = %s AND portfolio_entity_id IN ({}) AND deleted = false
         """.format(','.join(['%s'] * len(valid_portfolio_entity_ids))),
             [transaction_id] + valid_portfolio_entity_ids)
         existing = cursor.fetchone()
@@ -728,12 +742,12 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
                 "updated_user_id": updated_transaction[9],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-            send_to_sqs(transaction_data, "update")
+            send_to_sqs(transaction_data, "update", secret)
 
         return {"message": "Transaction updated successfully"}
 
 
-def handle_delete_operations(connection, path, path_parameters, current_user_id, valid_portfolio_entity_ids):
+def handle_delete_operations(connection, path, path_parameters, current_user_id, valid_portfolio_entity_ids, secret):
     """Handle DELETE operations."""
     if 'transaction_id' not in path_parameters:
         return {"error": "transaction_id is required in path"}
@@ -744,7 +758,7 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
         # Check if transaction exists and current user can modify it
         cursor.execute("""
             SELECT portfolio_entity_id FROM transactions 
-            WHERE transaction_id = %s AND portfolio_entity_id IN ({})
+            WHERE transaction_id = %s AND portfolio_entity_id IN ({}) AND deleted = false
         """.format(','.join(['%s'] * len(valid_portfolio_entity_ids))),
             [transaction_id] + valid_portfolio_entity_ids)
         existing = cursor.fetchone()
@@ -752,8 +766,40 @@ def handle_delete_operations(connection, path, path_parameters, current_user_id,
         if not existing:
             return {"error": "Transaction not found or access denied"}
 
-        # Delete transaction
+        # Fetch transaction data before soft deletion for SQS notification
+        cursor.execute("""
+            SELECT transaction_id, portfolio_entity_id, contra_entity_id, 
+                   instrument_entity_id, transaction_type_id, transaction_status_id, 
+                   trade_date, settle_date, properties, updated_user_id
+            FROM transactions
+            WHERE transaction_id = %s
+        """, (transaction_id,))
+        transaction_to_delete = cursor.fetchone()
+
+        # Get current user ID for tracking
+        current_user_id_db = get_user_id_from_sub(connection, current_user_id)
+
+        # Soft delete transaction (set deleted = true)
         cursor.execute(
-            "DELETE FROM transactions WHERE transaction_id = %s", (transaction_id,))
+            "UPDATE transactions SET deleted = true, update_date = NOW(), updated_user_id = %s WHERE transaction_id = %s",
+            (current_user_id_db, transaction_id))
         connection.commit()
+
+        # Send delete notification to SQS
+        if transaction_to_delete:
+            transaction_data = {
+                "transaction_id": transaction_to_delete[0],
+                "portfolio_entity_id": transaction_to_delete[1],
+                "contra_entity_id": transaction_to_delete[2],
+                "instrument_entity_id": transaction_to_delete[3],
+                "transaction_type_id": transaction_to_delete[4],
+                "transaction_status_id": transaction_to_delete[5],
+                "trade_date": transaction_to_delete[6],
+                "settle_date": transaction_to_delete[7],
+                "properties": json.loads(transaction_to_delete[8]) if transaction_to_delete[8] else {},
+                "updated_user_id": transaction_to_delete[9],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            send_to_sqs(transaction_data, "delete", secret)
+
         return {"message": "Transaction deleted successfully"}

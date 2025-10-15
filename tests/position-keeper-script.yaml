@@ -22,16 +22,16 @@ tests:
         - path: "message"
           exists: true
 
-  # Step 2: Try to start again (should handle gracefully)
+  # Step 2: Try to start again (should return error - already pending)
   - name: "Start position keeper again (should handle gracefully)"
     request:
       method: POST
       url: "/position-keeper/start"
     expect:
-      status: 201
+      status: 409
       json:
-        - path: "message"
-          exists: true
+        - path: "error"
+          value: "Position Keeper is already pending"
 
   # Step 3: Stop the position keeper
   - name: "Stop position keeper"
@@ -39,40 +39,21 @@ tests:
       method: POST
       url: "/position-keeper/stop"
     expect:
-      status: 201
+      status: 200
       json:
         - path: "message"
-          exists: true
+          value: "Position Keeper instance stop initiated"
 
-  # Step 4: Start again (should work)
-  - name: "Start position keeper again (should work)"
+  # Step 4: Get position keeper status (should report valid EC2 state)
+  - name: "Get position keeper status (should report valid EC2 state)"
     request:
-      method: POST
-      url: "/position-keeper/start"
+      method: GET
+      url: "/position-keeper/status"
     expect:
-      status: 201
+      status: 200
       json:
-        - path: "message"
+        - path: "ec2_state"
+          matches: "^(pending|running|stopping|stopped)$"
+        - path: "instance_id"
           exists: true
-
-  # Step 5: Stop again (should work)
-  - name: "Stop position keeper again (should work)"
-    request:
-      method: POST
-      url: "/position-keeper/stop"
-    expect:
-      status: 201
-      json:
-        - path: "message"
-          exists: true
-
-  # Clean up: Final stop
-  - name: "Final cleanup - Stop position keeper"
-    request:
-      method: POST
-      url: "/position-keeper/stop"
-    expect:
-      status: 201
-      json:
-        - path: "message"
-          exists: true
+          type: "string"

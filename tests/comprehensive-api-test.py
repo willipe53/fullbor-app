@@ -442,8 +442,19 @@ def run_test(client: httpx.Client, tc: TestCase, vars: T_VAR, verbose_level: int
 
         # Send request
         request_start = time.time()
-        resp = client.request(method, url, params=params, json=data_json,
-                              headers=headers, timeout=tc.timeout or 30)
+        # Only pass params if not empty to avoid overwriting embedded query parameters in URL
+        request_kwargs = {
+            'method': method,
+            'url': url,
+            'headers': headers,
+            'timeout': tc.timeout or 30
+        }
+        if params:  # Only add params if not empty
+            request_kwargs['params'] = params
+        if data_json is not None:
+            request_kwargs['json'] = data_json
+
+        resp = client.request(**request_kwargs)
         request_duration = time.time() - request_start
 
         # Show detailed response information if verbose level 1 or higher

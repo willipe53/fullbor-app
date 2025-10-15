@@ -55,9 +55,9 @@ tests:
       method: PUT
       url: "/client-groups/Test Client Group {{timestamp}}"
       json:
-        client_group_name: "Test Client Group {{timestamp}}"
-        description: "Updated test client group description"
-        is_active: true
+        preferences:
+          test_setting: "updated_value"
+          description: "Updated test client group description"
     expect:
       status: 200
       json:
@@ -126,10 +126,14 @@ tests:
     expect:
       status: 200
       json:
-        - path: "@"
-          exists: true
+        - path: "client_group_name"
+          equals: "Test Client Group {{timestamp}}"
+        - path: "preferences.test_setting"
+          equals: "updated_value"
+        - path: "preferences.description"
+          equals: "Updated test client group description"
 
-  # Step 7: Delete the test record
+  # Step 7: Delete the test record (soft delete - sets deleted flag)
   - name: "Delete test client group"
     request:
       method: DELETE
@@ -137,7 +141,7 @@ tests:
     expect:
       status: 204
 
-  # Step 8: Expect zero records returned (404 or empty response)
+  # Step 8: Verify deleted client group is not accessible (soft delete means it's filtered out)
   - name: "Verify test client group is deleted"
     request:
       method: GET
@@ -146,9 +150,9 @@ tests:
       status: 200
       json:
         - path: "error"
-          exists: true
+          equals: "Client group not found or access denied"
 
-  # Step 9: Expect the ORIGINAL_COUNT returned (back to original state)
+  # Step 9: Expect the ORIGINAL_COUNT returned (soft-deleted records are filtered out)
   - name: "Verify client group count back to original"
     request:
       method: GET
@@ -158,6 +162,8 @@ tests:
       json:
         - path: "data"
           exists: true
+        - path: "length(data)"
+          equals: "{{original_count}}"
 
   # Additional test: Verify Byrde Family Foundation exists
   - name: "Verify Byrde Family Foundation exists (basic existence check)"
@@ -181,5 +187,7 @@ tests:
         - path: "count"
           exists: true
           type: "integer"
+        - path: "data"
+          exists: false
     extract:
       total_count: "count"

@@ -90,7 +90,9 @@ tests:
         portfolio_entity_name: "Peter Piper Portfolio"
         contra_entity_name: "Manager Expenses"
         instrument_entity_name: "Harry Hedge Fund"
-        transaction_status_name: "QUEUED"
+        transaction_status_name: "NEW"
+        trade_date: "2025-10-15"
+        settle_date: "2025-10-15"
         properties:
           amount: 1000.00
           fee_period: "monthly"
@@ -165,12 +167,12 @@ tests:
         - path: "length(data)"
           greater_than: 0
 
-  - name: "Filter transactions by status QUEUED (should include new transaction)"
+  - name: "Filter transactions by status NEW (should include new transaction)"
     request:
       method: GET
       url: "/transactions"
       params:
-        transaction_status_name: "QUEUED"
+        transaction_status_name: "NEW"
     expect:
       status: 200
       json:
