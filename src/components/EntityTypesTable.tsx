@@ -8,7 +8,7 @@ import {
   Tooltip,
   IconButton,
 } from "@mui/material";
-import { Add, InfoOutlined } from "@mui/icons-material";
+import { Add, InfoOutlined, Refresh } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
   GridColDef,
@@ -285,6 +285,21 @@ const EntityTypesTable: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
         <Typography variant="h5">Entity Types</Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Entity Types define required and optional attributes of Entities. Making changes here will affect the fields that are visible by default for all Entities in your organization."
           placement="right"

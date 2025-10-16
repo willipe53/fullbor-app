@@ -37,8 +37,9 @@ CREATE TABLE `audit_log` (
   `updated_user_id` int DEFAULT NULL,
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP,
   `changes` json DEFAULT NULL,
+  `action` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`audit_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1331 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -59,7 +60,7 @@ CREATE TABLE `client_group_entities` (
   KEY `entity_id` (`entity_id`),
   CONSTRAINT `client_group_entities_ibfk_1` FOREIGN KEY (`client_group_id`) REFERENCES `client_groups` (`client_group_id`) ON DELETE CASCADE,
   CONSTRAINT `client_group_entities_ibfk_2` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2048 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3141 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -72,7 +73,7 @@ CREATE TABLE `client_group_entities` (
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_entities_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_entities_insert` AFTER INSERT ON `client_group_entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_group_entities', NEW.`client_group_entity_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -91,8 +92,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_entities_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_entities_update` AFTER UPDATE ON `client_group_entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('client_group_entities', NEW.`client_group_entity_id`, 'UPDATE', JSON_OBJECT());
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('client_group_entities', NEW.`client_group_entity_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`client_group_id` <=> NEW.`client_group_id`, JSON_OBJECT(), JSON_OBJECT('client_group_id', JSON_ARRAY(OLD.`client_group_id`, NEW.`client_group_id`))), IF(OLD.`entity_id` <=> NEW.`entity_id`, JSON_OBJECT(), JSON_OBJECT('entity_id', JSON_ARRAY(OLD.`entity_id`, NEW.`entity_id`)))));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -110,7 +111,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_entities_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_entities_delete` AFTER DELETE ON `client_group_entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_group_entities', OLD.`client_group_entity_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -152,7 +153,7 @@ CREATE TABLE `client_group_users` (
   KEY `user_id` (`user_id`),
   CONSTRAINT `client_group_users_ibfk_1` FOREIGN KEY (`client_group_id`) REFERENCES `client_groups` (`client_group_id`) ON DELETE CASCADE,
   CONSTRAINT `client_group_users_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -165,7 +166,7 @@ CREATE TABLE `client_group_users` (
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_users_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_users_insert` AFTER INSERT ON `client_group_users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_group_users', NEW.`client_group_user_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -184,8 +185,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_users_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_users_update` AFTER UPDATE ON `client_group_users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('client_group_users', NEW.`client_group_user_id`, 'UPDATE', JSON_OBJECT());
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('client_group_users', NEW.`client_group_user_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`client_group_id` <=> NEW.`client_group_id`, JSON_OBJECT(), JSON_OBJECT('client_group_id', JSON_ARRAY(OLD.`client_group_id`, NEW.`client_group_id`))), IF(OLD.`user_id` <=> NEW.`user_id`, JSON_OBJECT(), JSON_OBJECT('user_id', JSON_ARRAY(OLD.`user_id`, NEW.`user_id`)))));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -203,7 +204,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_group_users_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_group_users_delete` AFTER DELETE ON `client_group_users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_group_users', OLD.`client_group_user_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -243,7 +244,7 @@ CREATE TABLE `client_groups` (
   `deleted` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`client_group_id`),
   UNIQUE KEY `client_group_name` (`client_group_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=513 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=525 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -256,7 +257,7 @@ CREATE TABLE `client_groups` (
 /*!50032 DROP TRIGGER IF EXISTS after_client_groups_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_groups_insert` AFTER INSERT ON `client_groups` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_groups', NEW.`client_group_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -275,8 +276,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_groups_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_groups_update` AFTER UPDATE ON `client_groups` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('client_groups', NEW.`client_group_id`, 'UPDATE', JSON_OBJECT('preferences', json_diff_simple(OLD.preferences, NEW.preferences)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('client_groups', NEW.`client_group_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`client_group_name` <=> NEW.`client_group_name`, JSON_OBJECT(), JSON_OBJECT('client_group_name', JSON_ARRAY(OLD.`client_group_name`, NEW.`client_group_name`))), IF(OLD.`deleted` <=> NEW.`deleted`, JSON_OBJECT(), JSON_OBJECT('deleted', JSON_ARRAY(OLD.`deleted`, NEW.`deleted`))), json_diff_simple(OLD.`preferences`, NEW.`preferences`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -294,7 +295,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_client_groups_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_client_groups_delete` AFTER DELETE ON `client_groups` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('client_groups', OLD.`client_group_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -322,7 +323,7 @@ CREATE TABLE `entities` (
   PRIMARY KEY (`entity_id`),
   KEY `fk_entities_entity_type` (`entity_type_id`),
   CONSTRAINT `fk_entities_entity_type` FOREIGN KEY (`entity_type_id`) REFERENCES `entity_types` (`entity_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=709 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=712 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -335,7 +336,7 @@ CREATE TABLE `entities` (
 /*!50032 DROP TRIGGER IF EXISTS after_entities_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entities_insert` AFTER INSERT ON `entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('entities', NEW.`entity_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -354,8 +355,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_entities_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entities_update` AFTER UPDATE ON `entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('entities', NEW.`entity_id`, 'UPDATE', JSON_OBJECT('attributes', json_diff_simple(OLD.attributes, NEW.attributes)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('entities', NEW.`entity_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`entity_name` <=> NEW.`entity_name`, JSON_OBJECT(), JSON_OBJECT('entity_name', JSON_ARRAY(OLD.`entity_name`, NEW.`entity_name`))), IF(OLD.`entity_type_id` <=> NEW.`entity_type_id`, JSON_OBJECT(), JSON_OBJECT('entity_type_id', JSON_ARRAY(OLD.`entity_type_id`, NEW.`entity_type_id`))), IF(OLD.`unitized` <=> NEW.`unitized`, JSON_OBJECT(), JSON_OBJECT('unitized', JSON_ARRAY(OLD.`unitized`, NEW.`unitized`))), IF(OLD.`deleted` <=> NEW.`deleted`, JSON_OBJECT(), JSON_OBJECT('deleted', JSON_ARRAY(OLD.`deleted`, NEW.`deleted`))), json_diff_simple(OLD.`attributes`, NEW.`attributes`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -373,7 +374,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_entities_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entities_delete` AFTER DELETE ON `entities` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('entities', OLD.`entity_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -398,7 +399,8 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `update_date`,
  1 AS `updated_user_id`,
  1 AS `email`,
- 1 AS `attributes`*/;
+ 1 AS `attributes`,
+ 1 AS `deleted`*/;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -419,7 +421,7 @@ CREATE TABLE `entity_types` (
   `entity_category` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`entity_type_id`),
   UNIQUE KEY `entity_type_name` (`entity_type_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=317 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=320 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -432,7 +434,7 @@ CREATE TABLE `entity_types` (
 /*!50032 DROP TRIGGER IF EXISTS after_entity_types_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entity_types_insert` AFTER INSERT ON `entity_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('entity_types', NEW.`entity_type_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -451,8 +453,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_entity_types_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entity_types_update` AFTER UPDATE ON `entity_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('entity_types', NEW.`entity_type_id`, 'UPDATE', JSON_OBJECT('attributes_schema', json_diff_simple(OLD.attributes_schema, NEW.attributes_schema)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('entity_types', NEW.`entity_type_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`entity_type_name` <=> NEW.`entity_type_name`, JSON_OBJECT(), JSON_OBJECT('entity_type_name', JSON_ARRAY(OLD.`entity_type_name`, NEW.`entity_type_name`))), IF(OLD.`short_label` <=> NEW.`short_label`, JSON_OBJECT(), JSON_OBJECT('short_label', JSON_ARRAY(OLD.`short_label`, NEW.`short_label`))), IF(OLD.`label_color` <=> NEW.`label_color`, JSON_OBJECT(), JSON_OBJECT('label_color', JSON_ARRAY(OLD.`label_color`, NEW.`label_color`))), IF(OLD.`entity_category` <=> NEW.`entity_category`, JSON_OBJECT(), JSON_OBJECT('entity_category', JSON_ARRAY(OLD.`entity_category`, NEW.`entity_category`))), json_diff_simple(OLD.`attributes_schema`, NEW.`attributes_schema`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -470,7 +472,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_entity_types_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_entity_types_delete` AFTER DELETE ON `entity_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('entity_types', OLD.`entity_type_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -495,7 +497,7 @@ CREATE TABLE `invitations` (
   `email_sent_to` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`invitation_id`),
   UNIQUE KEY `uq_invitations_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=142 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -508,7 +510,7 @@ CREATE TABLE `invitations` (
 /*!50032 DROP TRIGGER IF EXISTS after_invitations_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_invitations_insert` AFTER INSERT ON `invitations` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('invitations', NEW.`invitation_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -527,8 +529,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_invitations_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_invitations_update` AFTER UPDATE ON `invitations` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('invitations', NEW.`invitation_id`, 'UPDATE', JSON_OBJECT());
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('invitations', NEW.`invitation_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`code` <=> NEW.`code`, JSON_OBJECT(), JSON_OBJECT('code', JSON_ARRAY(OLD.`code`, NEW.`code`))), IF(OLD.`expires_at` <=> NEW.`expires_at`, JSON_OBJECT(), JSON_OBJECT('expires_at', JSON_ARRAY(OLD.`expires_at`, NEW.`expires_at`))), IF(OLD.`client_group_id` <=> NEW.`client_group_id`, JSON_OBJECT(), JSON_OBJECT('client_group_id', JSON_ARRAY(OLD.`client_group_id`, NEW.`client_group_id`))), IF(OLD.`email_sent_to` <=> NEW.`email_sent_to`, JSON_OBJECT(), JSON_OBJECT('email_sent_to', JSON_ARRAY(OLD.`email_sent_to`, NEW.`email_sent_to`)))));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -546,7 +548,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_invitations_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_invitations_delete` AFTER DELETE ON `invitations` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('invitations', OLD.`invitation_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -582,7 +584,7 @@ CREATE TABLE `trading_days` (
 /*!50032 DROP TRIGGER IF EXISTS after_trading_days_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_trading_days_insert` AFTER INSERT ON `trading_days` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('trading_days', NEW.`trading_day_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -601,8 +603,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_trading_days_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_trading_days_update` AFTER UPDATE ON `trading_days` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('trading_days', NEW.`trading_day_id`, 'UPDATE', JSON_OBJECT());
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('trading_days', NEW.`trading_day_id`, 'UPDATE', IF(OLD.`trading_day` <=> NEW.`trading_day`, JSON_OBJECT(), JSON_OBJECT('trading_day', JSON_ARRAY(OLD.`trading_day`, NEW.`trading_day`))));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -620,7 +622,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_trading_days_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_trading_days_delete` AFTER DELETE ON `trading_days` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('trading_days', OLD.`trading_day_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -655,7 +657,7 @@ CREATE TABLE `transaction_statuses` (
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_statuses_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_statuses_insert` AFTER INSERT ON `transaction_statuses` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transaction_statuses', NEW.`transaction_status_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -674,8 +676,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_statuses_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_statuses_update` AFTER UPDATE ON `transaction_statuses` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('transaction_statuses', NEW.`transaction_status_id`, 'UPDATE', JSON_OBJECT());
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('transaction_statuses', NEW.`transaction_status_id`, 'UPDATE', IF(OLD.`transaction_status_name` <=> NEW.`transaction_status_name`, JSON_OBJECT(), JSON_OBJECT('transaction_status_name', JSON_ARRAY(OLD.`transaction_status_name`, NEW.`transaction_status_name`))));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -693,7 +695,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_statuses_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_statuses_delete` AFTER DELETE ON `transaction_statuses` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transaction_statuses', OLD.`transaction_status_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -716,7 +718,7 @@ CREATE TABLE `transaction_types` (
   `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_user_id` int DEFAULT NULL,
   PRIMARY KEY (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -729,7 +731,7 @@ CREATE TABLE `transaction_types` (
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_types_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_types_insert` AFTER INSERT ON `transaction_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transaction_types', NEW.`transaction_type_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -748,8 +750,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_types_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_types_update` AFTER UPDATE ON `transaction_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('transaction_types', NEW.`transaction_type_id`, 'UPDATE', JSON_OBJECT('properties', json_diff_simple(OLD.properties, NEW.properties)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('transaction_types', NEW.`transaction_type_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`transaction_type_name` <=> NEW.`transaction_type_name`, JSON_OBJECT(), JSON_OBJECT('transaction_type_name', JSON_ARRAY(OLD.`transaction_type_name`, NEW.`transaction_type_name`))), json_diff_simple(OLD.`properties`, NEW.`properties`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -767,7 +769,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transaction_types_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transaction_types_delete` AFTER DELETE ON `transaction_types` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transaction_types', OLD.`transaction_type_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -807,7 +809,7 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_party_entity` FOREIGN KEY (`portfolio_entity_id`) REFERENCES `entities` (`entity_id`),
   CONSTRAINT `fk_trans_trans_status` FOREIGN KEY (`transaction_status_id`) REFERENCES `transaction_statuses` (`transaction_status_id`),
   CONSTRAINT `fk_trans_trans_type` FOREIGN KEY (`transaction_type_id`) REFERENCES `transaction_types` (`transaction_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -820,7 +822,7 @@ CREATE TABLE `transactions` (
 /*!50032 DROP TRIGGER IF EXISTS after_transactions_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transactions_insert` AFTER INSERT ON `transactions` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transactions', NEW.`transaction_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -839,8 +841,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transactions_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transactions_update` AFTER UPDATE ON `transactions` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('transactions', NEW.`transaction_id`, 'UPDATE', JSON_OBJECT('properties', json_diff_simple(OLD.properties, NEW.properties)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('transactions', NEW.`transaction_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`portfolio_entity_id` <=> NEW.`portfolio_entity_id`, JSON_OBJECT(), JSON_OBJECT('portfolio_entity_id', JSON_ARRAY(OLD.`portfolio_entity_id`, NEW.`portfolio_entity_id`))), IF(OLD.`contra_entity_id` <=> NEW.`contra_entity_id`, JSON_OBJECT(), JSON_OBJECT('contra_entity_id', JSON_ARRAY(OLD.`contra_entity_id`, NEW.`contra_entity_id`))), IF(OLD.`instrument_entity_id` <=> NEW.`instrument_entity_id`, JSON_OBJECT(), JSON_OBJECT('instrument_entity_id', JSON_ARRAY(OLD.`instrument_entity_id`, NEW.`instrument_entity_id`))), IF(OLD.`transaction_status_id` <=> NEW.`transaction_status_id`, JSON_OBJECT(), JSON_OBJECT('transaction_status_id', JSON_ARRAY(OLD.`transaction_status_id`, NEW.`transaction_status_id`))), IF(OLD.`transaction_type_id` <=> NEW.`transaction_type_id`, JSON_OBJECT(), JSON_OBJECT('transaction_type_id', JSON_ARRAY(OLD.`transaction_type_id`, NEW.`transaction_type_id`))), IF(OLD.`trade_date` <=> NEW.`trade_date`, JSON_OBJECT(), JSON_OBJECT('trade_date', JSON_ARRAY(OLD.`trade_date`, NEW.`trade_date`))), IF(OLD.`settle_date` <=> NEW.`settle_date`, JSON_OBJECT(), JSON_OBJECT('settle_date', JSON_ARRAY(OLD.`settle_date`, NEW.`settle_date`))), IF(OLD.`deleted` <=> NEW.`deleted`, JSON_OBJECT(), JSON_OBJECT('deleted', JSON_ARRAY(OLD.`deleted`, NEW.`deleted`))), json_diff_simple(OLD.`properties`, NEW.`properties`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -858,7 +860,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_transactions_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_transactions_delete` AFTER DELETE ON `transactions` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('transactions', OLD.`transaction_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -891,7 +893,8 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `settle_date`,
  1 AS `properties`,
  1 AS `update_date`,
- 1 AS `updated_user_id`*/;
+ 1 AS `updated_user_id`,
+ 1 AS `deleted`*/;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -912,7 +915,7 @@ CREATE TABLE `users` (
   `deleted` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=242 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=247 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -925,7 +928,7 @@ CREATE TABLE `users` (
 /*!50032 DROP TRIGGER IF EXISTS after_users_insert */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_users_insert` AFTER INSERT ON `users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('users', NEW.`user_id`, 'INSERT', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -944,8 +947,8 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_users_update */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_users_update` AFTER UPDATE ON `users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
-    VALUES ('users', NEW.`user_id`, 'UPDATE', JSON_OBJECT('preferences', json_diff_simple(OLD.preferences, NEW.preferences)));
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
+    VALUES ('users', NEW.`user_id`, 'UPDATE', JSON_MERGE_PATCH(IF(OLD.`sub` <=> NEW.`sub`, JSON_OBJECT(), JSON_OBJECT('sub', JSON_ARRAY(OLD.`sub`, NEW.`sub`))), IF(OLD.`email` <=> NEW.`email`, JSON_OBJECT(), JSON_OBJECT('email', JSON_ARRAY(OLD.`email`, NEW.`email`))), IF(OLD.`primary_client_group_id` <=> NEW.`primary_client_group_id`, JSON_OBJECT(), JSON_OBJECT('primary_client_group_id', JSON_ARRAY(OLD.`primary_client_group_id`, NEW.`primary_client_group_id`))), IF(OLD.`deleted` <=> NEW.`deleted`, JSON_OBJECT(), JSON_OBJECT('deleted', JSON_ARRAY(OLD.`deleted`, NEW.`deleted`))), json_diff_simple(OLD.`preferences`, NEW.`preferences`)));
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -963,7 +966,7 @@ DELIMITER ;
 /*!50032 DROP TRIGGER IF EXISTS after_users_delete */;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`admin`@`%`*/ /*!50003 TRIGGER `after_users_delete` AFTER DELETE ON `users` FOR EACH ROW BEGIN
-    INSERT INTO `audit_log` (table_name, record_id, action, changes)
+    INSERT INTO `audit_log` (table_name, primary_key, action, changes)
     VALUES ('users', OLD.`user_id`, 'DELETE', JSON_OBJECT());
 END */;;
 DELIMITER ;
@@ -987,7 +990,8 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `primary_client_group_id`,
  1 AS `update_date`,
  1 AS `sub`,
- 1 AS `preferences`*/;
+ 1 AS `preferences`,
+ 1 AS `deleted`*/;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -1233,7 +1237,7 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `entities_view` AS select `en`.`entity_id` AS `entity_id`,`en`.`entity_name` AS `entity_name`,`et`.`entity_type_name` AS `entity_type_name`,`en`.`entity_type_id` AS `entity_type_id`,`en`.`update_date` AS `update_date`,`en`.`updated_user_id` AS `updated_user_id`,`u`.`email` AS `email`,`en`.`attributes` AS `attributes` from ((`entities` `en` left join `entity_types` `et` on((`en`.`entity_type_id` = `et`.`entity_type_id`))) left join `users` `u` on((`en`.`updated_user_id` = `u`.`user_id`))) */;
+/*!50001 VIEW `entities_view` AS select `en`.`entity_id` AS `entity_id`,`en`.`entity_name` AS `entity_name`,`et`.`entity_type_name` AS `entity_type_name`,`en`.`entity_type_id` AS `entity_type_id`,`en`.`update_date` AS `update_date`,`en`.`updated_user_id` AS `updated_user_id`,`u`.`email` AS `email`,`en`.`attributes` AS `attributes`,`en`.`deleted` AS `deleted` from ((`entities` `en` left join `entity_types` `et` on((`en`.`entity_type_id` = `et`.`entity_type_id`))) left join `users` `u` on((`en`.`updated_user_id` = `u`.`user_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -1251,7 +1255,7 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `transactions_view` AS select `tr`.`transaction_id` AS `transaction_id`,`en1`.`entity_name` AS `portfolio_name`,`tr`.`portfolio_entity_id` AS `portfolio_entity_id`,`en2`.`entity_name` AS `contra_name`,`tr`.`contra_entity_id` AS `contra_entity_id`,`en3`.`entity_name` AS `instrument_name`,`tr`.`instrument_entity_id` AS `instrument_entity_id`,`ts`.`transaction_status_name` AS `transaction_status`,`tr`.`transaction_status_id` AS `transaction_status_id`,`tt`.`transaction_type_name` AS `transaction_type`,`tr`.`transaction_type_id` AS `transaction_type_id`,`tr`.`trade_date` AS `trade_date`,`tr`.`settle_date` AS `settle_date`,`tr`.`properties` AS `properties`,`tr`.`update_date` AS `update_date`,`tr`.`updated_user_id` AS `updated_user_id` from (((((`transactions` `tr` left join `entities` `en1` on((`tr`.`portfolio_entity_id` = `en1`.`entity_id`))) left join `entities` `en2` on((`tr`.`contra_entity_id` = `en2`.`entity_id`))) left join `entities` `en3` on((`tr`.`instrument_entity_id` = `en3`.`entity_id`))) left join `transaction_statuses` `ts` on((`tr`.`transaction_status_id` = `ts`.`transaction_status_id`))) left join `transaction_types` `tt` on((`tr`.`transaction_type_id` = `tt`.`transaction_type_id`))) */;
+/*!50001 VIEW `transactions_view` AS select `tr`.`transaction_id` AS `transaction_id`,`en1`.`entity_name` AS `portfolio_name`,`tr`.`portfolio_entity_id` AS `portfolio_entity_id`,`en2`.`entity_name` AS `contra_name`,`tr`.`contra_entity_id` AS `contra_entity_id`,`en3`.`entity_name` AS `instrument_name`,`tr`.`instrument_entity_id` AS `instrument_entity_id`,`ts`.`transaction_status_name` AS `transaction_status`,`tr`.`transaction_status_id` AS `transaction_status_id`,`tt`.`transaction_type_name` AS `transaction_type`,`tr`.`transaction_type_id` AS `transaction_type_id`,`tr`.`trade_date` AS `trade_date`,`tr`.`settle_date` AS `settle_date`,`tr`.`properties` AS `properties`,`tr`.`update_date` AS `update_date`,`tr`.`updated_user_id` AS `updated_user_id`,`tr`.`deleted` AS `deleted` from (((((`transactions` `tr` left join `entities` `en1` on((`tr`.`portfolio_entity_id` = `en1`.`entity_id`))) left join `entities` `en2` on((`tr`.`contra_entity_id` = `en2`.`entity_id`))) left join `entities` `en3` on((`tr`.`instrument_entity_id` = `en3`.`entity_id`))) left join `transaction_statuses` `ts` on((`tr`.`transaction_status_id` = `ts`.`transaction_status_id`))) left join `transaction_types` `tt` on((`tr`.`transaction_type_id` = `tt`.`transaction_type_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -1269,7 +1273,7 @@ DELIMITER ;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`admin`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `users_view` AS select `us`.`user_id` AS `user_id`,`us`.`email` AS `email`,`cg`.`client_group_name` AS `primary_client_group_name`,`us`.`primary_client_group_id` AS `primary_client_group_id`,`us`.`update_date` AS `update_date`,`us`.`sub` AS `sub`,`us`.`preferences` AS `preferences` from (`users` `us` left join `client_groups` `cg` on((`us`.`primary_client_group_id` = `cg`.`client_group_id`))) */;
+/*!50001 VIEW `users_view` AS select `us`.`user_id` AS `user_id`,`us`.`email` AS `email`,`cg`.`client_group_name` AS `primary_client_group_name`,`us`.`primary_client_group_id` AS `primary_client_group_id`,`us`.`update_date` AS `update_date`,`us`.`sub` AS `sub`,`us`.`preferences` AS `preferences`,`us`.`deleted` AS `deleted` from (`users` `us` left join `client_groups` `cg` on((`us`.`primary_client_group_id` = `cg`.`client_group_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -1284,10 +1288,10 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-14 16:09:38
+-- Dump completed on 2025-10-15 17:22:22
 -- =============================================================================
 -- OneBor Database Schema Export
--- Generated on: 2025-10-14 16:09:24
+-- Generated on: 2025-10-15 17:22:11
 -- Database: onebor
 -- Host: panda-db.cnqay066ma0a.us-east-2.rds.amazonaws.com:3306
 -- 

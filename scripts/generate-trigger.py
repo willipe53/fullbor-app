@@ -75,24 +75,24 @@ def generate_triggers(table: str, pk: str, columns: list[tuple[str, bool]]) -> s
     AFTER INSERT ON `{table_safe}`
     FOR EACH ROW
     BEGIN
-        INSERT INTO `{audit_table}` (table_name, primary_key, action, changes)
-        VALUES ('{table_safe}', NEW.`{pk_safe}`, 'INSERT', JSON_OBJECT());
+        INSERT INTO `{audit_table}` (table_name, primary_key, updated_user_id, action, changes)
+        VALUES ('{table_safe}', NEW.`{pk_safe}`, NEW.`updated_user_id`, 'INSERT', JSON_OBJECT());
     END$$
 
     CREATE TRIGGER `after_{table_safe}_update`
     AFTER UPDATE ON `{table_safe}`
     FOR EACH ROW
     BEGIN
-        INSERT INTO `{audit_table}` (table_name, primary_key, action, changes)
-        VALUES ('{table_safe}', NEW.`{pk_safe}`, 'UPDATE', {diff_expr});
+        INSERT INTO `{audit_table}` (table_name, primary_key, updated_user_id, action, changes)
+        VALUES ('{table_safe}', NEW.`{pk_safe}`, NEW.`updated_user_id`, 'UPDATE', {diff_expr});
     END$$
 
     CREATE TRIGGER `after_{table_safe}_delete`
     AFTER DELETE ON `{table_safe}`
     FOR EACH ROW
     BEGIN
-        INSERT INTO `{audit_table}` (table_name, primary_key, action, changes)
-        VALUES ('{table_safe}', OLD.`{pk_safe}`, 'DELETE', JSON_OBJECT());
+        INSERT INTO `{audit_table}` (table_name, primary_key, updated_user_id, action, changes)
+        VALUES ('{table_safe}', OLD.`{pk_safe}`, OLD.`updated_user_id`, 'DELETE', JSON_OBJECT());
     END$$
 
     DELIMITER ;

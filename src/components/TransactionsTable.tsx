@@ -23,6 +23,7 @@ import {
   ArrowBack,
   PlayArrow,
   Pause,
+  Refresh,
 } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
@@ -383,6 +384,22 @@ const TransactionsTable: React.FC = () => {
       );
 
       if (originalTransaction) {
+        console.log("Passing transaction to form:", {
+          transaction_id: originalTransaction.transaction_id,
+          portfolio_entity_name: originalTransaction.portfolio_entity_name,
+          instrument_entity_name: originalTransaction.instrument_entity_name,
+          transaction_type_name: originalTransaction.transaction_type_name,
+          contra_entity_name: originalTransaction.contra_entity_name,
+          trade_date: originalTransaction.trade_date,
+          settle_date: originalTransaction.settle_date,
+          transaction_status_name: originalTransaction.transaction_status_name,
+          hasAllFields: !!(
+            originalTransaction.portfolio_entity_name &&
+            originalTransaction.transaction_type_name &&
+            originalTransaction.trade_date &&
+            originalTransaction.settle_date
+          ),
+        });
         setEditingTransaction(originalTransaction);
         setIsFormOpen(true);
       }
@@ -540,6 +557,21 @@ const TransactionsTable: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <Typography variant="h5">Transactions</Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Transactions represent trades, transfers, or other financial activities between entities. Each transaction involves a party (buyer/seller), contra (other party), instrument (what was traded), and currency (denomination)."
           placement="right"

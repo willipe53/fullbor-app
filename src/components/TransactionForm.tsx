@@ -316,11 +316,26 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           entitiesByName
             .get(editingTransaction.portfolio_entity_name)
             ?.entity_id.toString() || "";
-        const instrumentId = editingTransaction.instrument_entity_name
-          ? entitiesByName
-              .get(editingTransaction.instrument_entity_name)
-              ?.entity_id.toString() || ""
-          : "";
+        const instrumentEntity = editingTransaction.instrument_entity_name
+          ? entitiesByName.get(editingTransaction.instrument_entity_name)
+          : undefined;
+
+        if (editingTransaction.instrument_entity_name && !instrumentEntity) {
+          console.warn("Instrument lookup failed:", {
+            lookingFor: editingTransaction.instrument_entity_name,
+            entitiesByNameSize: entitiesByName.size,
+            allEntityNames: Array.from(entitiesByName.keys()).slice(0, 20),
+            matchingEntities: Array.from(entitiesByName.keys()).filter((name) =>
+              name
+                .toLowerCase()
+                .includes(
+                  editingTransaction.instrument_entity_name!.toLowerCase()
+                )
+            ),
+          });
+        }
+
+        const instrumentId = instrumentEntity?.entity_id.toString() || "";
         const contraId = editingTransaction.contra_entity_name
           ? entitiesByName
               .get(editingTransaction.contra_entity_name)
@@ -338,6 +353,18 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           ? editingTransaction.settle_date.split("T")[0]
           : "";
 
+        console.log("Loading transaction into form:", {
+          transactionId: editingTransaction.transaction_id,
+          portfolio_name: editingTransaction.portfolio_entity_name,
+          portfolioId,
+          instrument_name: editingTransaction.instrument_entity_name,
+          instrumentId,
+          transaction_type_name: editingTransaction.transaction_type_name,
+          transactionTypeId,
+          contra_name: editingTransaction.contra_entity_name,
+          contraId,
+        });
+
         setFormData({
           portfolio_entity_id: portfolioId,
           instrument_entity_id: instrumentId,
@@ -347,8 +374,9 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           settle_date: settleDate,
           properties: parsedProperties,
         });
-        // Mark as having unsaved changes when editing an existing transaction
-        setHasUnsavedChanges(true);
+        // Don't mark as having unsaved changes when initially loading
+        // Only mark as changed when user actually modifies something
+        setHasUnsavedChanges(false);
       }
     }, [editingTransaction, entitiesByName, transactionTypesByName]);
 
@@ -604,9 +632,11 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
           } as apiService.Transaction;
         }
       },
-      onSuccess: () => {
+      onSuccess: async () => {
         setShowSuccessSnackbar(true);
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        // Wait for queries to refetch before closing
+        await queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        await queryClient.refetchQueries({ queryKey: ["transactions"] });
         if (onClose) {
           setTimeout(() => onClose(), 1000);
         }
@@ -890,26 +920,81 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
     // Check if form can be submitted
     const canSubmit = useMemo(() => {
+      const hasPortfolio = !!formData.portfolio_entity_id;
+      const hasInstrument =
+        isInvestorTransaction || !!formData.instrument_entity_id;
+      const hasTransactionType = !!formData.transaction_type_id;
+      const hasTradeDate = !!formData.trade_date;
+      const hasSettleDate = !!formData.settle_date;
+      const hasSchema = !!transactionSchema;
+      const requiredPropsValid =
+        !transactionSchema?.required ||
+        transactionSchema.required.length === 0 ||
+        transactionSchema.required.every(
+          (req) => formData.properties[req] !== undefined
+        );
+
       const baseRequirements =
-        formData.portfolio_entity_id &&
-        (isInvestorTransaction || formData.instrument_entity_id) && // Skip instrument requirement for investor transactions
-        formData.transaction_type_id &&
-        formData.trade_date && // Mandatory
-        formData.settle_date && // Mandatory
-        transactionSchema &&
-        (!transactionSchema.required ||
-          transactionSchema.required.length === 0 ||
-          transactionSchema.required.every(
-            (req) => formData.properties[req] !== undefined
-          ));
+        hasPortfolio &&
+        hasInstrument &&
+        hasTransactionType &&
+        hasTradeDate &&
+        hasSettleDate &&
+        hasSchema &&
+        requiredPropsValid;
 
       // Only require contra_entity_id if contra step is required
-      const contraRequirement = isContraRequired
-        ? formData.contra_entity_id
-        : true;
+      const hasContra = !!formData.contra_entity_id;
+      const contraRequirement = isContraRequired ? hasContra : true;
 
-      return baseRequirements && contraRequirement;
-    }, [formData, transactionSchema, isContraRequired, isInvestorTransaction]);
+      const formIsValid = baseRequirements && contraRequirement;
+
+      console.log("Form validation breakdown:", {
+        hasPortfolio,
+        hasInstrument,
+        hasTransactionType,
+        hasTradeDate,
+        hasSettleDate,
+        hasSchema,
+        requiredPropsValid,
+        isContraRequired,
+        hasContra,
+        contraRequirement,
+        baseRequirements,
+        formIsValid,
+      });
+
+      // For editing transactions:
+      // - INCOMPLETE transactions can be submitted without changes (to change status to NEW)
+      // - Other transactions require unsaved changes
+      // For new transactions, only require form validity
+      if (editingTransaction) {
+        const result =
+          formIsValid && (isIncompleteTransaction || hasUnsavedChanges);
+        console.log("canSubmit check (editing):", {
+          formIsValid,
+          hasUnsavedChanges,
+          isIncompleteTransaction,
+          result,
+          transactionId: editingTransaction.transaction_id,
+          status: editingTransaction.transaction_status_name,
+        });
+        return result;
+      }
+
+      console.log("canSubmit check (new):", {
+        formIsValid,
+      });
+      return formIsValid;
+    }, [
+      formData,
+      transactionSchema,
+      isContraRequired,
+      isInvestorTransaction,
+      editingTransaction,
+      hasUnsavedChanges,
+      isIncompleteTransaction,
+    ]);
 
     // Handle form dismissal (clicking outside the form)
     const handleFormDismissal = useCallback(() => {
@@ -1029,8 +1114,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
           apiService
             .updateTransaction(editingTransaction.transaction_id, updateData)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+            .then(async () => {
+              // Wait for queries to refetch before closing
+              await queryClient.invalidateQueries({
+                queryKey: ["transactions"],
+              });
+              await queryClient.refetchQueries({ queryKey: ["transactions"] });
               // Close the form after successful save
               if (onClose) {
                 onClose();
@@ -1121,8 +1210,12 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
 
           apiService
             .createTransaction(submitData)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+            .then(async () => {
+              // Wait for queries to refetch before closing
+              await queryClient.invalidateQueries({
+                queryKey: ["transactions"],
+              });
+              await queryClient.refetchQueries({ queryKey: ["transactions"] });
               // Close the form after successful save
               if (onClose) {
                 onClose();
@@ -1904,9 +1997,13 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                               trade_date: e.target.value,
                             });
                             setHasUnsavedChanges(true);
+                            console.log(
+                              "Trade date changed, hasUnsavedChanges set to true"
+                            );
                           }}
                           fullWidth
                           required
+                          disabled={isReadOnlyTransaction}
                           InputLabelProps={{ shrink: true }}
                           helperText="Date the transaction was executed"
                           sx={{ flexGrow: 1 }}
@@ -1924,7 +2021,11 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                               trade_date: todayString,
                             });
                             setHasUnsavedChanges(true);
+                            console.log(
+                              "Trade date set to today, hasUnsavedChanges set to true"
+                            );
                           }}
+                          disabled={isReadOnlyTransaction}
                           sx={{ minWidth: "auto", px: 2, mt: 1 }}
                         >
                           Today
@@ -1947,9 +2048,13 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                               settle_date: e.target.value,
                             });
                             setHasUnsavedChanges(true);
+                            console.log(
+                              "Settle date changed, hasUnsavedChanges set to true"
+                            );
                           }}
                           fullWidth
                           required
+                          disabled={isReadOnlyTransaction}
                           InputLabelProps={{ shrink: true }}
                           helperText="Date the transaction settles"
                           sx={{ flexGrow: 1 }}
@@ -1971,7 +2076,11 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                               settle_date: tPlus3String,
                             });
                             setHasUnsavedChanges(true);
+                            console.log(
+                              "Settle date set to T+3, hasUnsavedChanges set to true"
+                            );
                           }}
+                          disabled={isReadOnlyTransaction}
                           sx={{ minWidth: "auto", px: 2, mt: 1 }}
                         >
                           T+3
@@ -2039,7 +2148,7 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 Cancel
               </Button>
             )}
-            {onClose && isIncompleteTransaction && (
+            {onClose && (!editingTransaction || isIncompleteTransaction) && (
               <Button
                 variant="outlined"
                 onClick={handleFormDismissal}
@@ -2076,10 +2185,18 @@ const TransactionForm = forwardRef<TransactionFormRef, TransactionFormProps>(
                 {mutation.isPending ? (
                   <>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
-                    {editingTransaction ? "Updating..." : "Creating..."}
+                    {editingTransaction
+                      ? isIncompleteTransaction
+                        ? "Submitting..."
+                        : "Updating..."
+                      : "Creating..."}
                   </>
                 ) : editingTransaction ? (
-                  "Update"
+                  isIncompleteTransaction ? (
+                    "Submit"
+                  ) : (
+                    "Update"
+                  )
                 ) : (
                   "Create Transaction"
                 )}

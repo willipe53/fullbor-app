@@ -15,7 +15,7 @@ import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { parseServerDate, formatLocalDateShort } from "../utils";
-import { Add, InfoOutlined } from "@mui/icons-material";
+import { Add, InfoOutlined, Refresh } from "@mui/icons-material";
 import { InviteUserForm } from "./InviteUserForm";
 import * as apiService from "../services/api";
 
@@ -269,6 +269,21 @@ const InvitationsTable: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
         <Typography variant="h5">Invitations</Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Invitations are the way that new users are set up in fullbor. The user receives an email containing a code that will allow them to get access to your organization."
           placement="right"

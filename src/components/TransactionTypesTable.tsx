@@ -8,7 +8,7 @@ import {
   Tooltip,
   IconButton,
 } from "@mui/material";
-import { Add, InfoOutlined } from "@mui/icons-material";
+import { Add, InfoOutlined, Refresh } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
   GridColDef,
@@ -241,6 +241,21 @@ const TransactionTypesTable: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
         <Typography variant="h5">Transaction Types</Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Transaction Types define the different kinds of transactions that can be recorded in the system (Buy, Sell, Dividend, etc.)."
           placement="right"

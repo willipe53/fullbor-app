@@ -1,0 +1,26 @@
+/var/log/positionkeeper.log {
+    # Rotate daily or when file reaches 50MB
+    daily
+    size 50M
+    
+    # Keep 7 rotated logs
+    rotate 7
+    
+    # Compress old logs
+    compress
+    delaycompress
+    
+    # Don't error if log is missing
+    missingok
+    
+    # Don't rotate if empty
+    notifempty
+    
+    # Create new log with correct permissions
+    create 644 ec2-user ec2-user
+    
+    # Post-rotation: send SIGHUP to reload if needed (not needed for our append-only logger)
+    # We use copytruncate instead which is safer for services that keep file handles open
+    copytruncate
+}
+

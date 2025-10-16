@@ -14,6 +14,7 @@ Environment="DB_PASS=LiBoR45%"
 Environment="DATABASE=onebor"
 Environment="QUEUE_URL=https://sqs.us-east-2.amazonaws.com/316490106381/pandatransactions.fifo"
 Environment="PK_INSTANCE=i-01f5d046c86e4f36e"
+ExecStartPre=+/home/ec2-user/fullbor-pk/rotate-log.sh
 ExecStart=/usr/bin/python3 -u /home/ec2-user/fullbor-pk/positionkeeper.py
 Restart=always
 StandardOutput=file:/var/log/positionkeeper.log

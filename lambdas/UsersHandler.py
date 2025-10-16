@@ -2,9 +2,11 @@ import json
 import boto3
 import pymysql
 import os
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from urllib.parse import unquote
+from typing import Dict, Any
 import cors_helper
 # Data consistency functions (inline to avoid import issues)
 
@@ -67,9 +69,51 @@ def get_db_connection():
             read_timeout=10,
             write_timeout=10
         )
-        return connection
+        return connection, secret
     except Exception as e:
         raise Exception(f"Failed to connect to database: {str(e)}")
+
+
+def send_cache_refresh_to_sqs(secret: Dict[str, Any], table: str, primary_key: int) -> bool:
+    """Send cache refresh message to SQS FIFO queue."""
+    try:
+        # Get queue URL from secret
+        queue_url = secret.get('QUEUE_URL')
+
+        if not queue_url:
+            raise Exception("QUEUE_URL not found in secrets")
+
+        sqs = boto3.client('sqs', region_name='us-east-2')
+
+        # Prepare message body
+        message_body = {
+            "operation": "refresh_cache",
+            "table": table,
+            "primary_key": primary_key,
+            "primary_key_column": "user_id"
+        }
+
+        # Generate unique message group ID and deduplication ID
+        message_group_id = f"cache-refresh-{table}"
+        message_deduplication_id = f"refresh-{table}-{primary_key}-{int(datetime.now(timezone.utc).timestamp() * 1000)}-{uuid.uuid4().hex[:8]}"
+
+        print(
+            f"DEBUG: Sending cache refresh to SQS - Table: {table}, Primary Key: {primary_key}")
+
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body),
+            MessageGroupId=message_group_id,
+            MessageDeduplicationId=message_deduplication_id
+        )
+
+        print(
+            f"DEBUG: Cache refresh SQS message sent successfully: {response['MessageId']}")
+        return True
+
+    except Exception as e:
+        print(f"ERROR: Failed to send cache refresh message to SQS: {str(e)}")
+        return False
 
 
 def get_user_id_from_sub(connection, current_user_id):
@@ -191,8 +235,8 @@ def lambda_handler(event, context):
 
     connection = None
     try:
-        # Get database connection
-        connection = get_db_connection()
+        # Get database connection and secrets
+        connection, secret = get_db_connection()
 
         # Get current user's database ID
         current_user_id_db = get_user_id_from_sub(connection, current_user_id)
@@ -393,6 +437,10 @@ def lambda_handler(event, context):
                             }
 
                         connection.commit()
+
+                        # Send cache refresh notification
+                        send_cache_refresh_to_sqs(secret, "users", existing[0])
+
                         response = {"message": "User updated successfully"}
                     else:
                         # Insert new user
@@ -421,6 +469,10 @@ def lambda_handler(event, context):
                                 }
 
                         connection.commit()
+
+                        # Send cache refresh notification
+                        send_cache_refresh_to_sqs(secret, "users", new_user_id)
+
                         response = {"message": "User created successfully"}
 
             elif '/client-groups:set' in path:
@@ -589,6 +641,10 @@ def lambda_handler(event, context):
                     }
 
                 connection.commit()
+
+                # Send cache refresh notification
+                send_cache_refresh_to_sqs(secret, "users", target_user_id)
+
                 response = {"message": "User updated successfully"}
 
         elif http_method == 'DELETE':
@@ -622,6 +678,10 @@ def lambda_handler(event, context):
                 cursor.execute(
                     "UPDATE users SET deleted = true, update_date = NOW() WHERE user_id = %s", (existing[0],))
                 connection.commit()
+
+                # Send cache refresh notification
+                send_cache_refresh_to_sqs(secret, "users", existing[0])
+
                 response = {"message": "User deleted successfully"}
 
         else:

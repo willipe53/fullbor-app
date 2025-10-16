@@ -308,6 +308,15 @@ def send_to_sqs(transaction_data: Dict[str, Any], operation: str, secret: Dict[s
 
         sqs = boto3.client('sqs', region_name='us-east-2')
 
+        # Convert date objects to strings for JSON serialization
+        trade_date = transaction_data.get("trade_date")
+        if hasattr(trade_date, 'isoformat'):
+            trade_date = trade_date.isoformat()
+
+        settle_date = transaction_data.get("settle_date")
+        if hasattr(settle_date, 'isoformat'):
+            settle_date = settle_date.isoformat()
+
         # Prepare message body
         message_body = {
             "operation": operation,  # "create" or "update" or "delete"
@@ -317,12 +326,16 @@ def send_to_sqs(transaction_data: Dict[str, Any], operation: str, secret: Dict[s
             "instrument_entity_id": transaction_data.get("instrument_entity_id"),
             "transaction_type_id": transaction_data.get("transaction_type_id"),
             "transaction_status_id": transaction_data.get("transaction_status_id"),
-            "trade_date": transaction_data.get("trade_date"),
-            "settle_date": transaction_data.get("settle_date"),
+            "trade_date": trade_date,
+            "settle_date": settle_date,
             "properties": transaction_data.get("properties"),
             "updated_user_id": transaction_data.get("updated_user_id"),
             "timestamp": transaction_data.get("timestamp", datetime.now(timezone.utc).isoformat())
         }
+
+        # Include changes for update operations
+        if "changes" in transaction_data:
+            message_body["changes"] = transaction_data["changes"]
 
         # Generate unique message group ID and deduplication ID
         message_group_id = f"transaction-{transaction_data.get('transaction_id', 'new')}"
@@ -610,9 +623,12 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
     user_id = get_user_id_from_sub(connection, current_user_id)
 
     with connection.cursor() as cursor:
-        # Check if transaction exists and current user can modify it
+        # Fetch the existing transaction data for comparison
         cursor.execute("""
-            SELECT portfolio_entity_id FROM transactions 
+            SELECT transaction_id, portfolio_entity_id, contra_entity_id, 
+                   instrument_entity_id, transaction_type_id, transaction_status_id, 
+                   trade_date, settle_date, properties, updated_user_id
+            FROM transactions 
             WHERE transaction_id = %s AND portfolio_entity_id IN ({}) AND deleted = false
         """.format(','.join(['%s'] * len(valid_portfolio_entity_ids))),
             [transaction_id] + valid_portfolio_entity_ids)
@@ -620,6 +636,20 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
 
         if not existing:
             return {"error": "Transaction not found or access denied"}
+
+        # Store old values for change tracking
+        old_transaction = {
+            "transaction_id": existing[0],
+            "portfolio_entity_id": existing[1],
+            "contra_entity_id": existing[2],
+            "instrument_entity_id": existing[3],
+            "transaction_type_id": existing[4],
+            "transaction_status_id": existing[5],
+            "trade_date": existing[6],
+            "settle_date": existing[7],
+            "properties": json.loads(existing[8]) if existing[8] else {},
+            "updated_user_id": existing[9]
+        }
 
         # Update transaction (only update provided fields)
         update_fields = []
@@ -742,6 +772,29 @@ def handle_put_operations(connection, path, path_parameters, body, current_user_
                 "updated_user_id": updated_transaction[9],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
+
+            # Build changes object comparing old vs new values
+            changes = {}
+            for key in transaction_data.keys():
+                if key in ["timestamp"]:  # Skip timestamp
+                    continue
+                old_value = old_transaction.get(key)
+                new_value = transaction_data.get(key)
+
+                # Convert date objects to strings for comparison
+                if hasattr(old_value, 'isoformat'):
+                    old_value = old_value.isoformat()
+                if hasattr(new_value, 'isoformat'):
+                    new_value = new_value.isoformat()
+
+                # Only include if values changed
+                if old_value != new_value:
+                    changes[key] = {
+                        "old": old_value,
+                        "new": new_value
+                    }
+
+            transaction_data["changes"] = changes
             send_to_sqs(transaction_data, "update", secret)
 
         return {"message": "Transaction updated successfully"}

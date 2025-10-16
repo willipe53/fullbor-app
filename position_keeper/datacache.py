@@ -4,8 +4,12 @@ import pymysql
 import pandas as pd
 import time
 import logging
+import warnings
 from contextlib import contextmanager
 
+# Suppress pandas UserWarning about pymysql connections
+# pymysql connections still work fine, this is just a deprecation notice
+warnings.filterwarnings('ignore', message='pandas only supports SQLAlchemy')
 
 logger = logging.getLogger("DataCache")
 logger.setLevel(logging.INFO)

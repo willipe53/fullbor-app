@@ -2,7 +2,7 @@
 """
 Quick API testing script using boto3 and Cognito authentication.
 Usage: ./test-api.py <METHOD> <api_url> [request_body]
-Examples: 
+Examples:
   ./test-api.py GET https://api.fullbor.ai/v2/transaction-statuses
   ./test-api.py DELETE https://api.fullbor.ai/v2/entities/1
   ./test-api.py POST https://api.fullbor.ai/v2/entity-types/Investor '{"entity_category": "Person"}'
@@ -99,9 +99,9 @@ def test_api_endpoint(method, url, request_body=None):
                 sys.exit(1)
 
         # Make the request
-        print(f"🔍 Testing {method.upper()} {url}")
-        print(
-            f"📋 Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'}, indent=2)}")
+        print(f"🔍 Calling {method.upper()} {url}")
+        # print(
+        #     f"📋 Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'}, indent=2)}")
 
         if data:
             print(f"📤 Request Body: {json.dumps(data, indent=2)}")
@@ -123,7 +123,8 @@ def test_api_endpoint(method, url, request_body=None):
             sys.exit(1)
 
         # Print results
-        print(f"\n📊 Response Status: {response.status_code}")
+        print(
+            f"\n📊 Response Status: {response.status_code} {'✅' if 200 <= response.status_code < 300 else '❌'}")
         print(f"⏱️  Response Time: {response.elapsed.total_seconds():.2f}s")
 
         # Try to parse JSON response
@@ -136,19 +137,13 @@ def test_api_endpoint(method, url, request_body=None):
             print(response.text)
 
         # Print headers if there are any interesting ones
-        interesting_headers = ['content-type',
-                               'content-length', 'x-amzn-requestid']
-        response_headers = {k: v for k, v in response.headers.items()
-                            if k.lower() in interesting_headers}
-        if response_headers:
-            print(f"\n📋 Response Headers:")
-            print(json.dumps(response_headers, indent=2))
-
-        # Success/failure indicator
-        if 200 <= response.status_code < 300:
-            print(f"\n✅ Success!")
-        else:
-            print(f"\n❌ Error!")
+        # interesting_headers = ['content-type',
+        #                        'content-length', 'x-amzn-requestid']
+        # response_headers = {k: v for k, v in response.headers.items()
+        #                     if k.lower() in interesting_headers}
+        # if response_headers:
+        #     print(f"\n📋 Response Headers:")
+        #     print(json.dumps(response_headers, indent=2))
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Request failed: {e}")

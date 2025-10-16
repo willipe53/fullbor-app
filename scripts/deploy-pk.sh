@@ -19,7 +19,7 @@ ssh "$user@$host" "mkdir -p $directory"
 # Copy all root-level files (excluding directories)
 echo "Copying root-level files..."
 cd $source_dir
-for file in *.py *.md; do
+for file in *.py *.md *.sh; do
     if [ -f "$file" ]; then
         echo "  - Copying $file..."
         scp "$file" "$user@$host:$directory/"
@@ -29,11 +29,12 @@ for file in *.py *.md; do
         fi
     fi
 done
+cd - > /dev/null
 cd scripts
 
-# Make Python scripts executable
-echo "Making Python scripts executable..."
-ssh "$user@$host" "chmod +x $directory/*.py"
+# Make Python scripts and shell scripts executable
+echo "Making scripts executable..."
+ssh "$user@$host" "chmod +x $directory/*.py $directory/*.sh"
 
 # Copy service file
 echo "Copying systemd service file..."
@@ -43,9 +44,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Install service file and restart
+# Copy logrotate configuration
+echo "Copying logrotate configuration..."
+scp "../position_keeper/config/positionkeeper.logrotate" "$user@$host:/tmp/positionkeeper.logrotate"
+if [ $? -ne 0 ]; then
+    echo "WARNING: Failed to copy logrotate config (non-critical)"
+fi
+
+# Install service file, logrotate config, and restart
 echo "Installing and restarting service..."
 ssh "$user@$host" "sudo mv /tmp/positionkeeper.service /etc/systemd/system/ && \
+    sudo mv /tmp/positionkeeper.logrotate /etc/logrotate.d/positionkeeper 2>/dev/null && \
     sudo systemctl daemon-reload && \
     sudo systemctl restart positionkeeper && \
     sudo systemctl status positionkeeper --no-pager"

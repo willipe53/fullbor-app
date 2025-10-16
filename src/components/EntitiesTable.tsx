@@ -9,7 +9,7 @@ import {
   IconButton,
   Checkbox,
 } from "@mui/material";
-import { Add, InfoOutlined } from "@mui/icons-material";
+import { Add, InfoOutlined, Refresh } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
   GridColDef,
@@ -513,6 +513,21 @@ const EntitiesTable: React.FC<EntitiesTableProps> = ({
             ? `${groupSelectionMode.clientGroupName} (${selectedEntityIds.size} selected)`
             : "Entities"}
         </Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title={
             groupSelectionMode

@@ -9,7 +9,7 @@ import {
   Tooltip,
   IconButton,
 } from "@mui/material";
-import { InfoOutlined, ArrowBack } from "@mui/icons-material";
+import { InfoOutlined, ArrowBack, Refresh } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import type {
   GridColDef,
@@ -339,6 +339,21 @@ const UsersTable: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <Typography variant="h5">Users</Typography>
+        <Tooltip title="Refresh" placement="top" arrow>
+          <IconButton
+            size="small"
+            onClick={() => refetch()}
+            sx={{
+              color: "text.secondary",
+              p: 0.25,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.04)",
+              },
+            }}
+          >
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Users are people who have successfully logged in to fullbor.ai. You will only see the users who are members of the client groups that you have access to. You can invite a user to join your organization on the Invitations tab."
           placement="right"
